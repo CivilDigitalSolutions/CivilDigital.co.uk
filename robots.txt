@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://civildigital.co.uk/sitemap.xml

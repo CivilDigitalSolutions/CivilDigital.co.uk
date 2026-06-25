@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact | Arrange a Discovery Call | Civil Digital Solutions</title>
+  <meta name="description" content="Contact Civil Digital Solutions. Tell us about your project and arrange a no-obligation discovery call. UK public sector digital consultancy and Power Platform specialists.">
+  <link rel="canonical" href="https://civildigital.co.uk/contact.html">
+  <meta name="theme-color" content="#0f766e">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Civil Digital Solutions">
+  <meta property="og:title" content="Contact Civil Digital Solutions">
+  <meta property="og:description" content="Tell us about your project and arrange a no-obligation discovery call.">
+  <meta property="og:url" content="https://civildigital.co.uk/contact.html">
+  <meta property="og:image" content="https://civildigital.co.uk/images/og-default.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="index.html" aria-label="Civil Digital Solutions home">
+        <img class="brand__mark" src="assets/brand/CivilDigitalIcon.svg" alt="" aria-hidden="true">
+        <span class="brand__text">Civil Digital Solutions<small>Public sector digital delivery</small></span>
+      </a>
+      <button class="nav__toggle" aria-expanded="false" aria-controls="primary-nav">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <span class="visually-hidden">Menu</span>
+      </button>
+      <ul class="nav__links" id="primary-nav">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="services/index.html">Services</a></li>
+        <li><a href="insights/index.html">Insights</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="contact.html" aria-current="page">Contact</a></li>
+        <li class="nav__cta"><a class="btn btn--primary" href="contact.html">Contact Us</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="page-head">
+      <div class="container">
+        <p class="breadcrumb"><a href="index.html">Home</a> / Contact</p>
+        <h1>Contact us</h1>
+        <p>Tell us what you're trying to achieve and we'll get back to you. There's no obligation &mdash; we're happy to give honest, practical advice.</p>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="container">
+        <div class="contact-cols">
+          <div>
+            <h2>Send us a message</h2>
+            <p class="lead" style="margin-bottom:var(--sp-5)">Fields marked <span class="req" aria-hidden="true">*</span> are required.</p>
+
+            <!--
+              CONTACT FORM WIRING
+              ===================
+              This is a static site, so the form needs a third-party backend OR a mailto fallback.
+
+              1) RECOMMENDED — connect a form service (Formspree, Web3Forms, Getform, Formsubmit):
+                 - Create a form/endpoint and replace YOUR_FORM_ID in the action below.
+                 - Once "YOUR_FORM_ID" is gone, main.js lets the browser POST normally.
+              2) FALLBACK (default until configured) — main.js intercepts the submit and opens the
+                 visitor's email client with the message pre-filled to data-mailto.
+              See README.md > "Contact form" for full instructions.
+            -->
+            <form id="contact-form"
+                  class="form-grid"
+                  method="POST"
+                  action="https://formspree.io/f/YOUR_FORM_ID"
+                  data-endpoint="https://formspree.io/f/YOUR_FORM_ID"
+                  data-mailto="info@civildigital.co.uk"
+                  novalidate>
+              <div id="form-status" class="form-status" role="alert" aria-live="polite"></div>
+
+              <div class="field">
+                <label for="name">Name <span class="req" aria-hidden="true">*</span></label>
+                <input type="text" id="name" name="name" autocomplete="name" required>
+              </div>
+              <div class="field">
+                <label for="organisation">Organisation</label>
+                <input type="text" id="organisation" name="organisation" autocomplete="organization">
+              </div>
+              <div class="field">
+                <label for="email">Email <span class="req" aria-hidden="true">*</span></label>
+                <input type="email" id="email" name="email" autocomplete="email" required>
+              </div>
+              <div class="field">
+                <label for="subject">Subject <span class="req" aria-hidden="true">*</span></label>
+                <input type="text" id="subject" name="subject" required>
+              </div>
+              <div class="field">
+                <label for="message">Message <span class="req" aria-hidden="true">*</span></label>
+                <textarea id="message" name="message" required></textarea>
+              </div>
+              <!-- Simple honeypot for spam (hidden from people, visible to bots) -->
+              <div class="field" hidden aria-hidden="true">
+                <label for="company-website">Leave this field empty</label>
+                <input type="text" id="company-website" name="_gotcha" tabindex="-1" autocomplete="off">
+              </div>
+              <div>
+                <button type="submit" class="btn btn--primary">Send message</button>
+              </div>
+              <p class="form-note">By submitting this form you agree to us using your details to respond to your enquiry. See our <a href="privacy.html">Privacy Policy</a>.</p>
+            </form>
+          </div>
+
+          <aside class="contact-card" aria-labelledby="other-ways">
+            <h2 id="other-ways" style="font-size:var(--fs-600)">Other ways to reach us</h2>
+            <p style="margin-top:var(--sp-3)"><strong>Email</strong><br>
+              <a href="mailto:info@civildigital.co.uk">info@civildigital.co.uk</a></p>
+            <p style="margin-top:var(--sp-4)"><strong>Discovery calls</strong><br>
+              We arrange discovery calls by email &mdash; there's no booking system to wrestle with. Send a message or email us directly and we'll find a time that suits you.</p>
+            <p style="margin-top:var(--sp-4)"><strong>Location</strong><br>United Kingdom</p>
+            <p style="margin-top:var(--sp-4)"><strong>Response time</strong><br>We aim to reply to enquiries within two working days.</p>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="index.html">
+            <img class="brand__mark" src="assets/brand/CivilDigitalIcon.svg" alt="" aria-hidden="true">
+            <span class="brand__text" style="color:#fff">Civil Digital Solutions</span>
+          </a>
+          <p>Practical, affordable digital solutions for the UK public sector and small businesses.</p>
+        </div>
+        <nav aria-label="Services">
+          <h2>Services</h2>
+          <ul class="footer-links">
+            <li><a href="services/microsoft-power-platform.html">Power Platform</a></li>
+            <li><a href="services/application-development.html">Application Development</a></li>
+            <li><a href="services/digital-transformation-consulting.html">Digital Transformation</a></li>
+            <li><a href="services/web-development.html">Web Development</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Company">
+          <h2>Company</h2>
+          <ul class="footer-links">
+            <li><a href="about.html">About</a></li>
+            <li><a href="insights/index.html">Insights</a></li>
+            <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </nav>
+        <div>
+          <h2>Contact Info</h2>
+          <ul class="footer-links">
+            <li><a href="mailto:info@civildigital.co.uk">info@civildigital.co.uk</a></li>
+            <li>United Kingdom</li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; <span id="year">2026</span> Civil Digital Solutions. All rights reserved.</p>
+        <p><a href="privacy.html">Privacy Policy</a></p>
+      </div>
+    </div>
+  </footer>
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

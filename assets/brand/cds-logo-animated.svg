@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1184 320" width="1184" height="320" role="img" aria-label="Civil Digital Solutions">
+  <title>Civil Digital Solutions</title>
+  <defs>
+    <style>
+      .lockup {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: cds-intro 1.2s cubic-bezier(.2,.7,.2,1) both,
+                   cds-breathe 6s ease-in-out 1.2s infinite;
+      }
+      @keyframes cds-intro {
+        from { opacity: 0; transform: scale(.965); }
+        to   { opacity: 1; transform: scale(1); }
+      }
+      @keyframes cds-breathe {
+        0%,100% { transform: scale(1); }
+        50%     { transform: scale(1.012); }
+      }
+      .shine { mix-blend-mode: screen; }
+      @media (prefers-reduced-motion: reduce) {
+        .lockup { animation: cds-intro .01s both; }
+        .shineGroup { display: none; }
+      }
+    </style>
+    <!-- mask = the logo artwork, so the shimmer only appears on the mark + text -->
+    <mask id="logoMask">
+      <g fill="#fff">
+        <rect x="70" y="60" width="200" height="200" rx="44"/>
+        <text x="170" y="160" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="150" font-weight="700" text-anchor="middle" dominant-baseline="central">CD</text>
+        <text x="312" y="142" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="78" font-weight="700" dominant-baseline="alphabetic">Civil Digital Solutions</text>
+        <text x="314" y="196" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="29" font-weight="400" dominant-baseline="alphabetic">Public sector digital delivery</text>
+      </g>
+    </mask>
+    <linearGradient id="shineGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"  stop-color="#fff" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#fff" stop-opacity=".55"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <g class="lockup">
+    <!-- mark -->
+    <rect x="70" y="60" width="200" height="200" rx="44" fill="#0f766e"/>
+    <text x="170" y="160" fill="#ffffff" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="150" font-weight="700" text-anchor="middle" dominant-baseline="central">CD</text>
+    <!-- wordmark -->
+    <text x="312" y="142" fill="#0f172a" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="78" font-weight="700">Civil Digital Solutions</text>
+    <text x="314" y="196" fill="#64748b" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="29" font-weight="400">Public sector digital delivery</text>
+
+    <!-- gentle shimmer sweep, confined to the artwork via the mask -->
+    <g class="shineGroup" mask="url(#logoMask)">
+      <rect class="shine" x="-500" y="0" width="380" height="320" fill="url(#shineGrad)">
+        <animate attributeName="x" from="-500" to="1184" dur="6s" begin="1.2s" repeatCount="indefinite"/>
+      </rect>
+    </g>
+  </g>
+</svg>

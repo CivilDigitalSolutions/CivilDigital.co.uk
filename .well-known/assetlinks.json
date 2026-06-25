@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.civildigital.farmflow",
+      "sha256_cert_fingerprints": [
+        "A3:87:3D:0B:17:D6:7C:80:2E:45:87:30:46:E5:51:D0:E8:FD:0C:C1:BA:E9:0C:CB:49:F6:0B:26:E5:12:CA:1A"
+      ]
+    }
+  }
+]
