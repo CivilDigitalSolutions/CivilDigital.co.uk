@@ -3,6 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    // Deep-link router. GitHub Pages serves this 404 page for any unmatched path. Shared FarmFlow
+    // listing links (/farmflow/listing/{id}) have no static file, so forward them to the listing
+    // landing page carrying the id as a query param. Runs before render (location.replace, no history
+    // entry, no flash). All other 404s fall through to the normal "page not found" content below.
+    (function () {
+      var m = location.pathname.match(/^\/farmflow\/listing\/(.+?)\/?$/);
+      if (m && m[1]) {
+        location.replace("/farmflow/listing/?id=" + encodeURIComponent(decodeURIComponent(m[1])));
+      }
+    })();
+  </script>
   <title>Page not found | Civil Digital</title>
   <meta name="description" content="The page you were looking for could not be found.">
   <meta name="robots" content="noindex">
