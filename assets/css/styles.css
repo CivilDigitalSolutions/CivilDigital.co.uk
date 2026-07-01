@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Civil Digital Solutions — Design System (Option C)
+   Civil Digital — Design System (Option C)
    Clean, modern, professional, lightweight, accessible, fast.
    No external fonts or frameworks: system font stack for performance.
    ONE strong accent colour: purple (--accent) — from CivilDigital brand mark.
@@ -247,7 +247,7 @@ p { max-width: var(--maxw-prose); }
 .prose ul, .prose ol { padding-left: 1.4rem; }
 .prose li + li { margin-top: var(--sp-2); }
 
-/* ---- Insights list ------------------------------------------------------ */
+/* ---- Editorial list ------------------------------------------------------ */
 .article-card { position: relative; }
 .article-card .meta { font-size: var(--fs-300); color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
 .article-card h3 { font-size: var(--fs-500); }
@@ -379,7 +379,7 @@ p { max-width: var(--maxw-prose); }
 .stepc h3 { font-size: var(--fs-500); }
 .stepc p { color: var(--muted); font-size: var(--fs-300); max-width: 22ch; margin: var(--sp-1) auto 0; }
 
-/* Insights — editorial, Medium-like */
+/* Editorial cards, Medium-like */
 .posts { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-7); }
 @media (max-width: 820px) { .posts { grid-template-columns: 1fr; gap: var(--sp-5); } }
 .post { display: block; text-decoration: none; color: inherit; padding-top: var(--sp-4); border-top: 2px solid var(--accent); }

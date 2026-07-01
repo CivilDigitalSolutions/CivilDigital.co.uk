@@ -1,4 +1,4 @@
-/* Civil Digital Solutions — site behaviour.
+/* Civil Digital — site behaviour.
    Vanilla JS, no dependencies. Progressive enhancement only:
    the site works fully without it. */
 

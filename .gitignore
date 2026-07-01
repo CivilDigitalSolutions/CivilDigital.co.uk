@@ -8,3 +8,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# stray FUSE artifacts (do not commit)
+.fuse_hidden*

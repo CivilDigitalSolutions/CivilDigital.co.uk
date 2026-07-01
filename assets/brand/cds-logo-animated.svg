@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1184 320" width="1184" height="320" role="img" aria-label="Civil Digital Solutions">
-  <title>Civil Digital Solutions</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1184 320" width="1184" height="320" role="img" aria-label="Civil Digital">
+  <title>Civil Digital</title>
   <defs>
     <style>
       .lockup {
@@ -27,7 +27,7 @@
       <g fill="#fff">
         <rect x="70" y="60" width="200" height="200" rx="44"/>
         <text x="170" y="160" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="150" font-weight="700" text-anchor="middle" dominant-baseline="central">CD</text>
-        <text x="312" y="142" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="78" font-weight="700" dominant-baseline="alphabetic">Civil Digital Solutions</text>
+        <text x="312" y="142" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="78" font-weight="700" dominant-baseline="alphabetic">Civil Digital</text>
         <text x="314" y="196" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="29" font-weight="400" dominant-baseline="alphabetic">Public sector digital delivery</text>
       </g>
     </mask>
@@ -43,7 +43,7 @@
     <rect x="70" y="60" width="200" height="200" rx="44" fill="#0f766e"/>
     <text x="170" y="160" fill="#ffffff" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="150" font-weight="700" text-anchor="middle" dominant-baseline="central">CD</text>
     <!-- wordmark -->
-    <text x="312" y="142" fill="#0f172a" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="78" font-weight="700">Civil Digital Solutions</text>
+    <text x="312" y="142" fill="#0f172a" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="78" font-weight="700">Civil Digital</text>
     <text x="314" y="196" fill="#64748b" font-family="system-ui,-apple-system,'Segoe UI',Arial,sans-serif" font-size="29" font-weight="400">Public sector digital delivery</text>
 
     <!-- gentle shimmer sweep, confined to the artwork via the mask -->
