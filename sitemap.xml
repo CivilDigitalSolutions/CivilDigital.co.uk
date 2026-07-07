@@ -10,4 +10,15 @@
   <url><loc>https://civildigital.co.uk/contact.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://civildigital.co.uk/privacy.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://civildigital.co.uk/lull/privacy/</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://civildigital.co.uk/farmflow/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://civildigital.co.uk/farmflow/help.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://civildigital.co.uk/farmflow/faqs.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://civildigital.co.uk/farmflow/contact.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://civildigital.co.uk/farmflow/privacy.html</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://civildigital.co.uk/farmflow/terms.html</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://civildigital.co.uk/farmflow/prohibited-items.html</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://civildigital.co.uk/farmflow/safety.html</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://civildigital.co.uk/farmflow/community-guidelines.html</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://civildigital.co.uk/farmflow/account-deletion.html</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://civildigital.co.uk/farmflow/verified-sellers.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 </urlset>
