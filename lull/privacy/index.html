@@ -7,86 +7,305 @@
   <meta name="description" content="Privacy policy for the Lull app: how information is handled. Lull stores all data locally on your device and displays a single Google AdMob advertisement.">
   <link rel="canonical" href="https://civildigital.co.uk/lull/privacy/">
   <meta name="robots" content="index,follow">
+  <meta name="theme-color" content="#141b33">
   <link rel="icon" href="/images/favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.6;
-      color: #1a1a1a;
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 40px 20px;
+    :root {
+      --navy-deep: #10172b;
+      --navy: #1a2340;
+      --navy-card: rgba(20, 27, 51, 0.55);
+      --peach: #f2b880;
+      --peach-soft: #f5c99d;
+      --text: #eef1f8;
+      --text-dim: #b8c0d8;
+      --line: rgba(255, 255, 255, 0.14);
     }
-    h1 { font-size: 1.8rem; }
-    h2 { font-size: 1.25rem; margin-top: 2rem; }
-    .meta { color: #666; font-size: 0.9rem; }
-    a { color: #1a5fb4; }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.7;
+      color: var(--text);
+      margin: 0;
+      min-height: 100vh;
+      background-color: var(--navy-deep);
+      background-image:
+        radial-gradient(ellipse 90% 70% at 85% -10%, rgba(242, 168, 110, 0.55) 0%, rgba(214, 140, 96, 0.28) 35%, rgba(26, 35, 64, 0) 70%),
+        radial-gradient(ellipse 70% 60% at 100% 100%, rgba(224, 146, 92, 0.22) 0%, rgba(26, 35, 64, 0) 60%),
+        linear-gradient(160deg, #232f52 0%, #1a2340 45%, #141b33 100%);
+      background-attachment: fixed;
+    }
+
+    .page {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 48px 20px 64px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+
+    .moon {
+      flex: none;
+      width: 52px;
+      height: 52px;
+      filter: drop-shadow(0 2px 10px rgba(242, 184, 128, 0.25));
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      color: #fff;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      font-size: 0.95rem;
+      color: var(--text-dim);
+    }
+
+    .sparkle {
+      margin-left: auto;
+      width: 34px;
+      height: 34px;
+      opacity: 0.85;
+    }
+
+    /* Hero */
+    .hero {
+      margin-bottom: 32px;
+    }
+
+    .hero h2 {
+      margin: 0 0 8px;
+      font-size: 1.6rem;
+      font-weight: 400;
+      color: #fff;
+    }
+
+    .meta {
+      display: inline-block;
+      font-size: 0.85rem;
+      color: var(--navy-deep);
+      background: var(--peach);
+      border-radius: 999px;
+      padding: 4px 14px;
+      font-weight: 500;
+    }
+
+    .hero .intro {
+      margin-top: 18px;
+      color: var(--text-dim);
+    }
+
+    /* Content cards — echo the app's rounded schedule cards */
+    section {
+      background: var(--navy-card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px 26px;
+      margin-bottom: 18px;
+      backdrop-filter: blur(4px);
+    }
+
+    section h2 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 10px;
+      font-size: 1.15rem;
+      font-weight: 500;
+      color: var(--peach-soft);
+    }
+
+    section h2 .dot {
+      flex: none;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--peach);
+      box-shadow: 0 0 8px rgba(242, 184, 128, 0.7);
+    }
+
+    section p {
+      margin: 0 0 12px;
+      color: var(--text);
+    }
+
+    section p:last-child { margin-bottom: 0; }
+
+    a {
+      color: var(--peach);
+      text-decoration: underline;
+      text-decoration-color: rgba(242, 184, 128, 0.4);
+      text-underline-offset: 3px;
+    }
+
+    a:hover { color: var(--peach-soft); }
+
+    /* Contact button — echoes the app's "Start session" pill */
+    .contact-btn {
+      display: inline-block;
+      margin-top: 6px;
+      background: var(--peach);
+      color: var(--navy-deep);
+      font-weight: 500;
+      text-decoration: none;
+      border-radius: 999px;
+      padding: 10px 26px;
+    }
+
+    .contact-btn:hover {
+      background: var(--peach-soft);
+      color: var(--navy-deep);
+    }
+
+    footer {
+      margin-top: 36px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    footer .sparkle-sm {
+      display: block;
+      width: 22px;
+      height: 22px;
+      margin: 0 auto 10px;
+      opacity: 0.7;
+    }
+
+    @media (max-width: 480px) {
+      .page { padding: 32px 16px 48px; }
+      section { padding: 18px 18px; }
+      .brand h1 { font-size: 1.6rem; }
+      .hero h2 { font-size: 1.35rem; }
+    }
   </style>
 </head>
 <body>
-  <h1>Privacy Policy for Lull</h1>
-  <p class="meta">Last updated: 8 June 2026</p>
+  <div class="page">
 
-  <p>This privacy policy explains how Lull ("the app", "we", "us") handles information when
-  you use it. By using the app, you agree to the practices described below.</p>
+    <header>
+      <!-- Crescent moon with zZ, as in the app artwork -->
+      <svg class="moon" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <mask id="moon-crescent">
+          <circle cx="26" cy="38" r="20" fill="#fff"/>
+          <circle cx="36" cy="30" r="18" fill="#000"/>
+        </mask>
+        <circle cx="26" cy="38" r="20" fill="#cfd6e8" mask="url(#moon-crescent)"/>
+        <text x="36" y="24" fill="#cfd6e8" font-family="Roboto, Arial, sans-serif" font-size="12" font-weight="500">z</text>
+        <text x="45" y="15" fill="#cfd6e8" font-family="Roboto, Arial, sans-serif" font-size="10" font-weight="500">Z</text>
+      </svg>
+      <div class="brand">
+        <h1>Lull</h1>
+        <p>Lull your baby to sleep with ease.</p>
+      </div>
+      <!-- Four-point sparkle star -->
+      <svg class="sparkle" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M16 2l3 11 11 3-11 3-3 11-3-11-11-3 11-3z" fill="#e8d8c4" opacity="0.9"/>
+      </svg>
+    </header>
 
-  <h2>Information We Collect</h2>
-  <p>Lull itself does not collect any personal data. The app does not transmit any information
-  to our servers. All data generated by your use of the app — such as historical timings and
-  saved interval schedules — is stored exclusively on your device using local storage and
-  never leaves it.</p>
-  <p>However, Lull displays a single advertisement provided by Google AdMob. Google AdMob may
-  collect certain information automatically in order to serve that advertisement, such as your
-  device identifiers, approximate location, and usage signals. This data is collected and
-  processed by Google, not by us. Please refer to
-  <a href="https://policies.google.com/privacy">Google's Privacy Policy</a> for full details
-  of what Google collects and how it is used.</p>
+    <div class="hero">
+      <h2>Privacy Policy</h2>
+      <span class="meta">Last updated: 8 June 2026</span>
+      <p class="intro">This privacy policy explains how Lull ("the app", "we", "us") handles information when
+      you use it. By using the app, you agree to the practices described below.</p>
+    </div>
 
-  <h2>How We Use Information</h2>
-  <p>Data stored locally on your device is used solely to provide the app's core features,
-  such as recalling your saved schedules between sessions. This data is under your full
-  control at all times. We do not use any personal information for our own purposes, as none
-  is transmitted to us.</p>
+    <section>
+      <h2><span class="dot"></span>Information We Collect</h2>
+      <p>Lull itself does not collect any personal data. The app does not transmit any information
+      to our servers. All data generated by your use of the app — such as historical timings and
+      saved interval schedules — is stored exclusively on your device using local storage and
+      never leaves it.</p>
+      <p>However, Lull displays a single advertisement provided by Google AdMob. Google AdMob may
+      collect certain information automatically in order to serve that advertisement, such as your
+      device identifiers, approximate location, and usage signals. This data is collected and
+      processed by Google, not by us. Please refer to
+      <a href="https://policies.google.com/privacy">Google's Privacy Policy</a> for full details
+      of what Google collects and how it is used.</p>
+    </section>
 
-  <h2>Advertising</h2>
-  <p>Lull displays one advertisement on the home screen, served by Google AdMob. Google may
-  use your data to show you personalised ads based on your interests. If you are located in
-  the EEA, the UK, or Switzerland, you will be presented with a consent prompt before
-  personalised advertising is applied. You can review or revoke your advertising consent at
-  any time by visiting:
-  <a href="https://support.google.com/admob/answer/14189727">Google's consent management page</a>.
-  You may also manage your ad preferences through your device's privacy settings.</p>
+    <section>
+      <h2><span class="dot"></span>How We Use Information</h2>
+      <p>Data stored locally on your device is used solely to provide the app's core features,
+      such as recalling your saved schedules between sessions. This data is under your full
+      control at all times. We do not use any personal information for our own purposes, as none
+      is transmitted to us.</p>
+    </section>
 
-  <h2>Sharing of Information</h2>
-  <p>We do not sell or share your personal information with any third party. The only
-  third-party service present in the app is Google AdMob for advertising purposes. Google's
-  own data practices are governed by
-  <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>.</p>
+    <section>
+      <h2><span class="dot"></span>Advertising</h2>
+      <p>Lull displays one advertisement on the home screen, served by Google AdMob. Google may
+      use your data to show you personalised ads based on your interests. If you are located in
+      the EEA, the UK, or Switzerland, you will be presented with a consent prompt before
+      personalised advertising is applied. You can review or revoke your advertising consent at
+      any time by visiting:
+      <a href="https://support.google.com/admob/answer/14189727">Google's consent management page</a>.
+      You may also manage your ad preferences through your device's privacy settings.</p>
+    </section>
 
-  <h2>Data Retention and Deletion</h2>
-  <p>All data held by Lull is stored locally on your device and remains there for as long as
-  the app is installed. You can remove it at any time by clearing the app's local storage
-  through your device settings or by uninstalling the app. As we hold no personal data on our
-  own servers, we have no facility to process remote deletion requests. For data held by
-  Google AdMob, please refer to Google's privacy controls and their
-  <a href="https://policies.google.com/privacy">Privacy Policy</a>.</p>
+    <section>
+      <h2><span class="dot"></span>Sharing of Information</h2>
+      <p>We do not sell or share your personal information with any third party. The only
+      third-party service present in the app is Google AdMob for advertising purposes. Google's
+      own data practices are governed by
+      <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>.</p>
+    </section>
 
-  <h2>Children's Privacy</h2>
-  <p>Lull is intended for adults only. It is not directed at or designed for use by anyone
-  under the age of 18. We do not knowingly collect any information from children.</p>
+    <section>
+      <h2><span class="dot"></span>Data Retention and Deletion</h2>
+      <p>All data held by Lull is stored locally on your device and remains there for as long as
+      the app is installed. You can remove it at any time by clearing the app's local storage
+      through your device settings or by uninstalling the app. As we hold no personal data on our
+      own servers, we have no facility to process remote deletion requests. For data held by
+      Google AdMob, please refer to Google's privacy controls and their
+      <a href="https://policies.google.com/privacy">Privacy Policy</a>.</p>
+    </section>
 
-  <h2>Security</h2>
-  <p>Because all data remains on your device and is never transmitted, there is no exposure
-  to network-level security risks from our side. The security of locally stored data is
-  governed by your device's own operating system and settings.</p>
+    <section>
+      <h2><span class="dot"></span>Children's Privacy</h2>
+      <p>Lull is intended for adults only. It is not directed at or designed for use by anyone
+      under the age of 18. We do not knowingly collect any information from children.</p>
+    </section>
 
-  <h2>Changes to This Policy</h2>
-  <p>We may update this policy from time to time. Any changes will be posted on this page
-  with an updated date.</p>
+    <section>
+      <h2><span class="dot"></span>Security</h2>
+      <p>Because all data remains on your device and is never transmitted, there is no exposure
+      to network-level security risks from our side. The security of locally stored data is
+      governed by your device's own operating system and settings.</p>
+    </section>
 
-  <h2>Contact Us</h2>
-  <p>If you have any questions about this privacy policy, contact us at:
-  <a href="mailto:beechts@gmail.com">beechts@gmail.com</a>.</p>
+    <section>
+      <h2><span class="dot"></span>Changes to This Policy</h2>
+      <p>We may update this policy from time to time. Any changes will be posted on this page
+      with an updated date.</p>
+    </section>
+
+    <section>
+      <h2><span class="dot"></span>Contact Us</h2>
+      <p>If you have any questions about this privacy policy, contact us at:</p>
+      <a class="contact-btn" href="mailto:info@civildigital.co.uk">info@civildigital.co.uk</a>
+    </section>
+
+    <footer>
+      <svg class="sparkle-sm" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M16 2l3 11 11 3-11 3-3 11-3-11-11-3 11-3z" fill="#e8d8c4"/>
+      </svg>
+      Lull &middot; Simple. Soothing.
+    </footer>
+
+  </div>
 </body>
 </html>
