@@ -4,14 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script>
-    // Deep-link router. GitHub Pages serves this 404 page for any unmatched path. Shared FarmFlow
-    // listing links (/farmflow/listing/{id}) have no static file, so forward them to the listing
-    // landing page carrying the id as a query param. Runs before render (location.replace, no history
-    // entry, no flash). All other 404s fall through to the normal "page not found" content below.
+    // Legacy-path router. GitHub Pages serves this 404 page for any unmatched path. FarmFlow now
+    // lives at farmflow.civildigital.co.uk, so anything under /farmflow/ is forwarded there with
+    // the prefix stripped: shared listing links (/farmflow/listing/{id}) become /listing/?id={id},
+    // and every other FarmFlow path maps across unchanged. Runs before render (location.replace,
+    // no history entry, no flash). Other 404s fall through to the "page not found" content below.
     (function () {
+      var FF = "https://farmflow.civildigital.co.uk";
       var m = location.pathname.match(/^\/farmflow\/listing\/(.+?)\/?$/);
       if (m && m[1]) {
-        location.replace("/farmflow/listing/?id=" + encodeURIComponent(decodeURIComponent(m[1])));
+        location.replace(FF + "/listing/?id=" + encodeURIComponent(decodeURIComponent(m[1])));
+        return;
+      }
+      m = location.pathname.match(/^\/farmflow(\/.*)?$/);
+      if (m) {
+        location.replace(FF + (m[1] || "/") + location.search);
       }
     })();
   </script>
