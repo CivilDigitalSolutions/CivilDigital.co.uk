@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://civildigital.co.uk/</loc><changefreq>monthly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://civildigital.co.uk/services/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://civildigital.co.uk/services/microsoft-power-platform.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://civildigital.co.uk/services/application-development.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://civildigital.co.uk/services/digital-transformation-consulting.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://civildigital.co.uk/services/web-development.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://civildigital.co.uk/about.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://civildigital.co.uk/contact.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://civildigital.co.uk/privacy.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
-  <url><loc>https://civildigital.co.uk/lull/privacy/</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://civildigital.co.uk/</loc><lastmod>2026-07-15</lastmod><changefreq>monthly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://civildigital.co.uk/services/</loc><lastmod>2026-07-15</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://civildigital.co.uk/services/microsoft-power-platform.html</loc><lastmod>2026-07-15</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://civildigital.co.uk/services/application-development.html</loc><lastmod>2026-07-15</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://civildigital.co.uk/services/digital-transformation-consulting.html</loc><lastmod>2026-07-15</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://civildigital.co.uk/services/web-development.html</loc><lastmod>2026-07-15</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://civildigital.co.uk/about.html</loc><lastmod>2026-07-15</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://civildigital.co.uk/contact.html</loc><lastmod>2026-07-15</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://civildigital.co.uk/privacy.html</loc><lastmod>2026-07-15</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://civildigital.co.uk/lull/privacy/</loc><lastmod>2026-07-15</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
 </urlset>
