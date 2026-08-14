@@ -25,47 +25,4 @@
       }
     });
   }
-
-  /* Contact form.
-     Default: posts to a form backend (see data-endpoint on the <form>).
-     If no real endpoint is configured (placeholder), fall back to a
-     pre-filled mailto: so enquiries still reach the inbox on a static host. */
-  var form = document.getElementById("contact-form");
-  if (form) {
-    var statusEl = document.getElementById("form-status");
-    var endpoint = form.getAttribute("data-endpoint") || "";
-    var mailto = form.getAttribute("data-mailto") || "";
-    var configured = endpoint.indexOf("YOUR_FORM_ID") === -1 && endpoint !== "";
-
-    form.addEventListener("submit", function (e) {
-      // If a real backend is configured, let the browser submit normally.
-      if (configured) return;
-
-      // Otherwise: build a mailto so the message is not lost on a static host.
-      e.preventDefault();
-      var get = function (id) {
-        var el = document.getElementById(id);
-        return el ? el.value.trim() : "";
-      };
-      var subject = get("subject") || "Website enquiry";
-      var bodyLines = [
-        "Name: " + get("name"),
-        "Organisation: " + get("organisation"),
-        "Email: " + get("email"),
-        "",
-        get("message")
-      ];
-      var href = "mailto:" + mailto +
-        "?subject=" + encodeURIComponent(subject) +
-        "&body=" + encodeURIComponent(bodyLines.join("\n"));
-
-      if (statusEl) {
-        statusEl.className = "form-status is-error";
-        statusEl.textContent =
-          "This demo build isn't connected to a form service yet, so your email app " +
-          "has been opened with the message ready to send. See the README to connect a backend.";
-      }
-      window.location.href = href;
-    });
-  }
 })();

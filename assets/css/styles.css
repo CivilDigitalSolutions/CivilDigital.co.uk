@@ -24,7 +24,6 @@
 
   /* Feedback */
   --focus:         #7c3aed;
-  --error:         #b91c1c;
 
   /* Typography */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
@@ -217,21 +216,7 @@ p { max-width: var(--maxw-prose); }
 .prose ul, .prose ol { padding-left: 1.4rem; }
 .prose li + li { margin-top: var(--sp-2); }
 
-/* ---- Contact / forms ---------------------------------------------------- */
-.form-grid { display: grid; gap: var(--sp-4); }
-.field { display: flex; flex-direction: column; gap: var(--sp-2); }
-.field label { font-weight: 600; color: var(--ink); }
-.field .req { color: var(--error); }
-.field input, .field select, .field textarea {
-  font: inherit; color: var(--ink); padding: var(--sp-3); border: 1px solid var(--line);
-  border-radius: var(--radius-sm); background: #fff; width: 100%;
-}
-.field textarea { min-height: 160px; resize: vertical; }
-.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); outline-offset: 0; }
-.form-note { font-size: var(--fs-300); color: var(--muted); }
-.form-status { padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-sm); display: none; }
-.form-status.is-error { display: block; background: #fef2f2; color: var(--error); border: 1px solid #fecaca; }
-
+/* ---- Contact ------------------------------------------------------------ */
 .contact-cols { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--sp-8); align-items: start; }
 @media (max-width: 820px) { .contact-cols { grid-template-columns: 1fr; } }
 .contact-card { background: var(--surface-alt); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--sp-6); }
@@ -340,14 +325,6 @@ p { max-width: var(--maxw-prose); }
 }
 .stepc h3 { font-size: var(--fs-500); }
 .stepc p { color: var(--muted); font-size: var(--fs-300); max-width: 22ch; margin: var(--sp-1) auto 0; }
-
-/* Editorial cards, Medium-like */
-.posts { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-7); }
-@media (max-width: 820px) { .posts { grid-template-columns: 1fr; gap: var(--sp-5); } }
-.post { display: block; text-decoration: none; color: inherit; padding-top: var(--sp-4); border-top: 2px solid var(--accent); }
-.post .cat { color: var(--accent-dark); font-size: var(--fs-300); font-weight: 700; text-transform: uppercase; letter-spacing: .07em; }
-.post h3 { font-size: var(--fs-600); margin-top: var(--sp-3); letter-spacing: -0.015em; line-height: 1.25; }
-.post:hover h3 { color: var(--accent-dark); }
 
 /* Closing CTA — big, calm, centered */
 .closing { text-align: center; padding-block: clamp(4.5rem, 11vh, 8.5rem); }
