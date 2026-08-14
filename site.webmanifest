@@ -1,0 +1,14 @@
+{
+  "name": "Civil Digital",
+  "short_name": "Civil Digital",
+  "description": "Practical digital solutions for businesses and organisations.",
+  "start_url": "/",
+  "display": "browser",
+  "theme_color": "#7d0a70",
+  "background_color": "#ffffff",
+  "icons": [
+    { "src": "/images/favicon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/images/favicon.png", "type": "image/png", "sizes": "64x64" },
+    { "src": "/images/apple-touch-icon.png", "type": "image/png", "sizes": "180x180" }
+  ]
+}

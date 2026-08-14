@@ -1,17 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
-  <rect width="1200" height="630" fill="#0b1f29"/>
-  <rect x="0" y="0" width="1200" height="630" fill="url(#g)"/>
+  <!-- Vector source for images/og-default.png (the served Open Graph card). -->
   <defs>
-    <radialGradient id="g" cx="80%" cy="0%" r="90%">
-      <stop offset="0%" stop-color="#0f766e" stop-opacity="0.45"/>
-      <stop offset="60%" stop-color="#0b1f29" stop-opacity="0"/>
+    <radialGradient id="glow" cx="80%" cy="0%" r="90%">
+      <stop offset="0%" stop-color="#7d0a70" stop-opacity="0.42"/>
+      <stop offset="72%" stop-color="#7d0a70" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <g transform="translate(90,150)">
-    <rect width="84" height="84" rx="18" fill="#0f766e"/>
-    <text x="42" y="46" text-anchor="middle" dominant-baseline="middle" font-family="system-ui, sans-serif" font-size="40" font-weight="700" fill="#ffffff">CD</text>
+  <rect width="1200" height="630" fill="#1a1f28"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <!-- Brand mark, reversed to white for the dark card -->
+  <g transform="translate(90,152) scale(0.97561) translate(-9,-49)">
+    <path fill="#ffffff" d="M34.5 49H63.5L130.25 115.75L155.75 90.25L130 64.5L107.5 87L93 72.5L116.5 49H145.5L171 74.5V105.5L145.5 131H116.5L49.75 64.25L24.25 89.75L50 115.5L72.5 93L87 107.5L63.5 131H34.5L9 105.5V74.5Z"/>
   </g>
+
   <text x="90" y="330" font-family="system-ui, sans-serif" font-size="64" font-weight="700" fill="#ffffff">Civil Digital</text>
-  <text x="90" y="400" font-family="system-ui, sans-serif" font-size="34" fill="#ccfbf1">Practical digital solutions for the public sector</text>
-  <text x="90" y="470" font-family="system-ui, sans-serif" font-size="26" fill="#94a3b8">Power Platform &middot; Application Development &middot; Consulting &middot; Web &middot; United Kingdom</text>
+  <text x="90" y="400" font-family="system-ui, sans-serif" font-size="34" fill="#f0d9ee">Practical digital solutions for businesses &amp; organisations</text>
+  <text x="90" y="470" font-family="system-ui, sans-serif" font-size="26" fill="#a9a2b4">Power Platform &middot; Application Development &middot; Consulting &middot; Web &middot; United Kingdom</text>
 </svg>

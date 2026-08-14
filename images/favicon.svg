@@ -1,5 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#0f172a"/>
-  <text x="50%" y="50%" dy="0.07em" text-anchor="middle" dominant-baseline="middle"
-        font-family="system-ui, sans-serif" font-size="30" font-weight="700" fill="#38bdf8">CD</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180" role="img" aria-label="Civil Digital">
+  <!-- Civil Digital brand mark. Geometry matches images/favicon.png and
+       images/apple-touch-icon.png exactly (same 180-unit grid). -->
+  <circle cx="90" cy="90" r="90" fill="#ffffff"/>
+  <path fill="#7d0a70" d="M34.5 49H63.5L130.25 115.75L155.75 90.25L130 64.5L107.5 87L93 72.5L116.5 49H145.5L171 74.5V105.5L145.5 131H116.5L49.75 64.25L24.25 89.75L50 115.5L72.5 93L87 107.5L63.5 131H34.5L9 105.5V74.5Z"/>
 </svg>
