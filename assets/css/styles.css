@@ -238,8 +238,9 @@ p { max-width: var(--maxw-prose); }
 @media (max-width: 460px) { .footer-grid { grid-template-columns: 1fr; } }
 .site-footer h2 { color: #fff; font-size: var(--fs-400); text-transform: uppercase; letter-spacing: .06em; margin-bottom: var(--sp-3); }
 .footer-brand .brand { color: #fff; }
-/* The brand mark is purple for light backgrounds; reverse it out to white here. */
-.footer-brand .brand__mark { filter: brightness(0) invert(1); }
+/* The footer uses CivilDigitalIconWhite.svg directly rather than filtering the
+   purple mark — a CSS filter would silently render any opaque source as a
+   solid block. */
 .footer-brand p { color: #94a3b8; font-size: var(--fs-300); margin-top: var(--sp-3); }
 .footer-links { list-style: none; padding: 0; display: grid; gap: var(--sp-2); }
 .footer-bottom { border-top: 1px solid rgba(148,163,184,.2); margin-top: var(--sp-6); padding-top: var(--sp-5); display: flex; flex-wrap: wrap; gap: var(--sp-3); justify-content: space-between; font-size: var(--fs-300); }
