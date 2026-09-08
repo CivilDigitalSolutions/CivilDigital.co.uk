@@ -1,0 +1,15 @@
+{
+  "name": "FiDo-5",
+  "short_name": "FiDo-5",
+  "description": "A pixel-art endless runner shooter set in Neo City. Run. Shoot. Survive. Upgrade.",
+  "start_url": "play.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#080a12",
+  "theme_color": "#080a12",
+  "icons": [
+    { "src": "../images/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "../images/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

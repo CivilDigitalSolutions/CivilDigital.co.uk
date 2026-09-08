@@ -1,0 +1,145 @@
+/* ==========================================================================
+   FiDo-5 landing page — extends the Civil Digital design system.
+   Only styles used by fido5/index.html live here.
+   ========================================================================== */
+
+:root {
+  --neo-bg:    #0b0d17;
+  --neo-bg-2:  #151a33;
+  --neo-cyan:  #35d0ff;
+  --neo-pink:  #ff3d68;
+  --neo-amber: #ffb238;
+}
+
+/* ---- Hero --------------------------------------------------------------- */
+.g-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 118%, rgba(139, 92, 246, .42) 0%, transparent 62%),
+    linear-gradient(180deg, var(--neo-bg) 0%, var(--neo-bg-2) 100%);
+  color: #cfd6f7;
+  padding-block: var(--sp-9) var(--sp-8);
+  text-align: center;
+}
+
+/* Perspective floor grid */
+.g-hero__grid {
+  position: absolute; inset: auto 0 0 0; height: 46%;
+  background-image:
+    linear-gradient(rgba(53, 208, 255, .30) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(53, 208, 255, .22) 1px, transparent 1px);
+  background-size: 100% 26px, 40px 100%;
+  transform: perspective(240px) rotateX(62deg);
+  transform-origin: bottom center;
+  opacity: .5;
+  mask-image: linear-gradient(180deg, transparent, #000 55%);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 55%);
+}
+
+/* Blocky skyline built from repeating gradients — no images needed */
+.g-hero__skyline {
+  position: absolute; inset: auto 0 30% 0; height: 130px;
+  opacity: .35;
+  background-repeat: repeat-x;
+  background-position: bottom left;
+  background-size: 220px 130px;
+  background-image:
+    linear-gradient(to top, #1d2445 0 100%),
+    none;
+  clip-path: polygon(
+    0% 100%, 0% 58%, 6% 58%, 6% 40%, 13% 40%, 13% 66%, 19% 66%, 19% 30%,
+    26% 30%, 26% 52%, 33% 52%, 33% 22%, 39% 22%, 39% 60%, 46% 60%, 46% 44%,
+    53% 44%, 53% 16%, 59% 16%, 59% 50%, 66% 50%, 66% 34%, 72% 34%, 72% 62%,
+    79% 62%, 79% 26%, 86% 26%, 86% 56%, 93% 56%, 93% 38%, 100% 38%, 100% 100%
+  );
+}
+
+.g-hero__inner { position: relative; z-index: 2; }
+
+.g-eyebrow {
+  text-transform: uppercase; letter-spacing: .14em; font-size: var(--fs-300);
+  font-weight: 700; color: var(--neo-cyan); margin-bottom: var(--sp-4);
+}
+
+.g-title { margin: 0; }
+.g-title__main {
+  display: inline-block;
+  font-size: clamp(3.2rem, 13vw, 7rem);
+  line-height: .95;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  color: #fff;
+  text-shadow:
+    0 0 12px rgba(139, 92, 246, .9),
+    0 0 42px rgba(139, 92, 246, .55),
+    0 3px 0 #6d28d9;
+}
+
+.g-slogan {
+  margin: var(--sp-4) auto 0;
+  font-size: clamp(1rem, 3.4vw, 1.35rem);
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--neo-amber);
+}
+
+.g-lede {
+  margin: var(--sp-5) auto 0;
+  max-width: 56ch;
+  font-size: var(--fs-500);
+  color: #b6bfe8;
+}
+
+.g-actions { margin-top: var(--sp-6); display: flex; gap: var(--sp-3); justify-content: center; flex-wrap: wrap; }
+.g-actions--center { margin-top: var(--sp-7); }
+
+/* The play button gets a little extra presence without leaving the system */
+.g-play {
+  box-shadow: 0 0 0 0 rgba(139, 92, 246, .55);
+  animation: g-pulse 2.6s ease-out infinite;
+}
+@keyframes g-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(139, 92, 246, .55); }
+  70%  { box-shadow: 0 0 0 18px rgba(139, 92, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .g-play { animation: none; } }
+
+.g-hero .btn--secondary { color: #cfd6f7; border-color: rgba(207, 214, 247, .45); }
+.g-hero .btn--secondary:hover { background: rgba(207, 214, 247, .12); color: #fff; }
+
+.g-note { margin: var(--sp-5) auto 0; max-width: 46ch; font-size: var(--fs-300); color: #8e98c6; }
+
+/* ---- Feature cards ------------------------------------------------------ */
+.g-cards {
+  display: grid; gap: var(--sp-5);
+  grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+}
+.g-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--sp-5);
+  border-top: 3px solid var(--accent);
+}
+.g-card h3 { margin-bottom: var(--sp-3); }
+.g-card p { color: var(--body); max-width: none; }
+
+/* ---- Controls ----------------------------------------------------------- */
+.g-controls { display: grid; gap: var(--sp-6); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.g-controls__col h3 { margin-bottom: var(--sp-4); }
+.g-keys { list-style: none; padding: 0; display: grid; gap: var(--sp-3); }
+.g-keys li { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap; color: var(--body); }
+.g-key {
+  display: inline-block;
+  font: 600 var(--fs-300)/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px;
+  border-radius: 6px; padding: .35em .5em; color: var(--ink); white-space: nowrap;
+}
+
+/* ---- Closing strip ------------------------------------------------------ */
+.g-strip { max-width: var(--maxw-prose); }
+.g-strip h2 { margin-bottom: var(--sp-4); }
+.g-strip p { margin-bottom: var(--sp-4); }

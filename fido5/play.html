@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>FiDo-5 — Run. Shoot. Survive. Upgrade.</title>
+  <meta name="description" content="FiDo-5: a pixel-art endless runner shooter set in Neo City.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#080a12">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" href="../images/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../images/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- The play surface. Fixed internal resolution, scaled to fit. -->
+  <canvas id="stage" width="320" height="180" aria-label="FiDo-5 game view" role="img"></canvas>
+
+  <!-- ==================== HUD ==================== -->
+  <div id="hud" class="layer" hidden>
+    <div class="hud-top">
+      <div class="hud-left">
+        <div class="stat stat--score"><span class="stat__label">Score</span><span class="stat__val" id="hud-score">0</span></div>
+        <div class="stat"><span class="stat__label">Distance</span><span class="stat__val" id="hud-dist">0 m</span></div>
+      </div>
+      <div class="hud-right">
+        <div class="pill pill--coin"><span class="ico ico-coin" aria-hidden="true"></span><span id="hud-coins">0</span></div>
+        <div class="pill pill--key" id="hud-key-wrap" hidden><span class="ico ico-key" aria-hidden="true"></span><span id="hud-keys">0</span></div>
+        <div class="pill pill--streak" id="hud-streak" hidden>&times;1.00</div>
+        <button class="iconbtn" id="btn-pause" aria-label="Pause">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="hud-bars">
+      <div class="hud-drone" id="hud-drone">
+        <span class="hud-drone__name">FiDo-5</span>
+        <span class="hud-drone__state" id="hud-drone-state">Ready</span>
+        <div class="hud-drone__bar"><div id="hud-drone-fill"></div></div>
+      </div>
+      <div class="bar bar--health" role="img" aria-label="Health">
+        <span class="bar__glyph" aria-hidden="true">HP</span>
+        <div class="bar__track"><div class="bar__fill" id="hud-health"></div></div>
+        <span class="bar__num" id="hud-health-num">100</span>
+      </div>
+      <div class="bar bar--shield" id="hud-shield-wrap" hidden role="img" aria-label="Shield">
+        <span class="bar__glyph" aria-hidden="true">SH</span>
+        <div class="bar__track"><div class="bar__fill" id="hud-shield"></div></div>
+      </div>
+      <div class="bar bar--energy" role="img" aria-label="Weapon energy">
+        <span class="bar__glyph" aria-hidden="true">EN</span>
+        <div class="bar__track"><div class="bar__fill" id="hud-energy"></div></div>
+      </div>
+    </div>
+
+    <ul class="hud-powers" id="hud-powers"></ul>
+
+    <!-- Touch controls. Large targets, and they never overlap the play area
+         the player needs to read. -->
+    <div class="pad" id="pad">
+      <button class="pad__btn pad__btn--jump" id="btn-jump" aria-label="Jump">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l7 8h-4v8h-6v-8H5z"/></svg>
+      </button>
+      <button class="pad__btn pad__btn--slide" id="btn-slide" aria-label="Slide or drop down">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20l-7-8h4V4h6v8h4z"/></svg>
+      </button>
+      <button class="pad__btn pad__btn--fire" id="btn-fire" aria-label="Fire">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg>
+      </button>
+      <button class="pad__btn pad__btn--gadget" id="btn-gadget" aria-label="Use gadget">
+        <canvas id="gadget-icon" width="15" height="15" aria-hidden="true"></canvas>
+        <span class="pad__cool" id="gadget-cool"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== Loading ==================== -->
+  <section class="layer screen screen--center" id="screen-loading">
+    <div class="brandmark">
+      <h1 class="logo">FiDo<span>-5</span></h1>
+      <p class="tagline">Run. Shoot. Survive. Upgrade.</p>
+      <p class="loading">Loading…</p>
+    </div>
+  </section>
+
+  <!-- ==================== Main menu ==================== -->
+  <section class="layer screen" id="screen-menu" hidden>
+    <canvas id="menu-scene" width="320" height="180" aria-hidden="true"></canvas>
+    <div class="menu">
+      <div class="menu__head">
+        <h1 class="logo logo--sm">FiDo<span>-5</span></h1>
+        <p class="tagline">Run. Shoot. Survive. Upgrade.</p>
+      </div>
+      <div class="menu__wallet">
+        <span class="pill pill--coin"><span class="ico ico-coin" aria-hidden="true"></span><span id="menu-coins">0</span></span>
+        <span class="pill pill--part"><span class="ico ico-part" aria-hidden="true"></span><span id="menu-parts">0</span></span>
+        <span class="pill pill--key"><span class="ico ico-key" aria-hidden="true"></span><span id="menu-keys">0</span></span>
+        <span class="pill pill--lvl" id="menu-level">Lv 1</span>
+      </div>
+      <button class="btn btn--play" id="btn-play">Play</button>
+      <nav class="menu__nav" aria-label="Menu">
+        <button class="btn btn--menu" id="btn-loadout">Loadout</button>
+        <button class="btn btn--menu" id="btn-upgrades">Upgrades</button>
+        <button class="btn btn--menu" id="btn-drone">FiDo-5</button>
+        <button class="btn btn--menu" id="btn-missions">Missions</button>
+        <button class="btn btn--menu" id="btn-settings">Settings</button>
+      </nav>
+      <p class="menu__best">
+        Best score <strong id="menu-best">0</strong> &middot; Best distance <strong id="menu-bestd">0 m</strong>
+      </p>
+      <p class="menu__foot"><a href="index.html">&larr; Back to the FiDo-5 page</a> &middot; <a href="/">Civil Digital</a></p>
+    </div>
+    <button class="daily-nudge" id="btn-daily" hidden>Daily reward ready</button>
+  </section>
+
+  <!-- ==================== Loadout ==================== -->
+  <section class="layer screen screen--panel" id="screen-loadout" hidden>
+    <header class="phead">
+      <button class="btn btn--back" data-back aria-label="Back">&larr;</button>
+      <h2>Loadout</h2>
+      <span class="phead__wallet"><span class="ico ico-coin" aria-hidden="true"></span><span data-coins>0</span></span>
+    </header>
+    <div class="pbody">
+      <h3 class="grouphead">Primary weapon</h3>
+      <div class="cards" id="ld-weapons"></div>
+      <h3 class="grouphead">Gadget</h3>
+      <div class="cards" id="ld-gadgets"></div>
+      <h3 class="grouphead">FiDo-5 core</h3>
+      <div class="cards" id="ld-cores"></div>
+      <h3 class="grouphead">FiDo-5 skin</h3>
+      <div class="cards cards--skins" id="ld-skins"></div>
+    </div>
+    <footer class="pfoot"><button class="btn btn--play btn--wide" data-start>Start run</button></footer>
+  </section>
+
+  <!-- ==================== Upgrades ==================== -->
+  <section class="layer screen screen--panel" id="screen-upgrades" hidden>
+    <header class="phead">
+      <button class="btn btn--back" data-back aria-label="Back">&larr;</button>
+      <h2>Upgrades</h2>
+      <span class="phead__wallet">
+        <span class="ico ico-coin" aria-hidden="true"></span><span data-coins>0</span>
+        <span class="ico ico-part" aria-hidden="true"></span><span data-parts>0</span>
+      </span>
+    </header>
+    <div class="pbody">
+      <h3 class="grouphead">Operative</h3>
+      <div class="ups" id="up-operative"></div>
+      <h3 class="grouphead">Weapon <small id="up-weapon-name"></small></h3>
+      <div class="ups" id="up-weapon"></div>
+      <p class="note" id="up-weapon-effect"></p>
+      <h3 class="grouphead">FiDo-5 &mdash; Combat</h3>
+      <div class="ups" id="up-drone-combat"></div>
+      <h3 class="grouphead">FiDo-5 &mdash; Utility</h3>
+      <div class="ups" id="up-drone-utility"></div>
+      <h3 class="grouphead">FiDo-5 &mdash; Defense</h3>
+      <div class="ups" id="up-drone-defense"></div>
+    </div>
+  </section>
+
+  <!-- ==================== FiDo-5 ==================== -->
+  <section class="layer screen screen--panel" id="screen-drone" hidden>
+    <header class="phead">
+      <button class="btn btn--back" data-back aria-label="Back">&larr;</button>
+      <h2>FiDo-5</h2>
+      <span class="phead__wallet"><span class="ico ico-coin" aria-hidden="true"></span><span data-coins>0</span></span>
+    </header>
+    <div class="pbody pbody--drone">
+      <div class="inspector">
+        <canvas id="drone-view" width="240" height="180"></canvas>
+        <p class="inspector__hint">Drag to turn</p>
+      </div>
+      <div class="inspector__side">
+        <h3 class="grouphead">Skin</h3>
+        <div class="cards cards--skins" id="dr-skins"></div>
+        <h3 class="grouphead">Core</h3>
+        <div class="cards" id="dr-cores"></div>
+        <h3 class="grouphead">Upgrades</h3>
+        <dl class="statlist" id="dr-stats"></dl>
+        <button class="btn btn--menu btn--wide" id="dr-to-upgrades">Open upgrades</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== Missions ==================== -->
+  <section class="layer screen screen--panel" id="screen-missions" hidden>
+    <header class="phead">
+      <button class="btn btn--back" data-back aria-label="Back">&larr;</button>
+      <h2>Missions</h2>
+      <span class="phead__wallet" id="mi-level">Lv 1</span>
+    </header>
+    <div class="pbody">
+      <div class="xpwrap">
+        <div class="xpbar"><div id="mi-xp"></div></div>
+        <p class="note" id="mi-xp-note"></p>
+      </div>
+      <div class="missions" id="mi-list"></div>
+      <h3 class="grouphead">Daily rewards</h3>
+      <div class="daily" id="mi-daily"></div>
+      <h3 class="grouphead">Lifetime</h3>
+      <dl class="statlist" id="mi-stats"></dl>
+    </div>
+  </section>
+
+  <!-- ==================== Settings ==================== -->
+  <section class="layer screen screen--panel" id="screen-settings" hidden>
+    <header class="phead">
+      <button class="btn btn--back" data-back aria-label="Back">&larr;</button>
+      <h2>Settings</h2>
+    </header>
+    <div class="pbody">
+      <div class="setrow">
+        <label for="set-sound">Sound effects</label>
+        <button class="toggle" id="set-sound" role="switch" aria-checked="true"><span></span></button>
+      </div>
+      <div class="setrow">
+        <label for="set-music">Music</label>
+        <button class="toggle" id="set-music" role="switch" aria-checked="true"><span></span></button>
+      </div>
+      <div class="setrow">
+        <label for="set-haptics">Vibration</label>
+        <button class="toggle" id="set-haptics" role="switch" aria-checked="true"><span></span></button>
+      </div>
+      <div class="setrow">
+        <label for="set-contrast">High contrast</label>
+        <button class="toggle" id="set-contrast" role="switch" aria-checked="false"><span></span></button>
+      </div>
+      <div class="setrow setrow--col">
+        <label for="set-quality">Graphics quality</label>
+        <select id="set-quality">
+          <option value="auto">Automatic</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div class="setrow setrow--col">
+        <label for="set-buttons">On-screen buttons</label>
+        <select id="set-buttons">
+          <option value="auto">Automatic</option>
+          <option value="on">Always show</option>
+          <option value="off">Hide (swipe only)</option>
+        </select>
+      </div>
+      <div class="setrow setrow--col">
+        <label for="set-sens">Swipe sensitivity <span id="set-sens-val">1.0</span></label>
+        <input type="range" id="set-sens" min="0.5" max="2" step="0.1" value="1">
+      </div>
+      <p class="note">
+        Progress is saved in this browser only. Nothing is uploaded and there is no account.
+      </p>
+      <button class="btn btn--danger" id="set-reset">Erase all progress</button>
+    </div>
+  </section>
+
+  <!-- ==================== Pause ==================== -->
+  <section class="layer screen screen--center screen--dim" id="screen-pause" hidden>
+    <div class="dialog">
+      <h2>Paused</h2>
+      <button class="btn btn--play btn--wide" id="btn-resume">Resume</button>
+      <button class="btn btn--menu btn--wide" id="btn-restart">Restart run</button>
+      <button class="btn btn--menu btn--wide" id="btn-pause-settings">Settings</button>
+      <button class="btn btn--menu btn--wide" id="btn-quit">Main menu</button>
+    </div>
+  </section>
+
+  <!-- ==================== Results ==================== -->
+  <section class="layer screen screen--panel" id="screen-results" hidden>
+    <header class="phead phead--center">
+      <h2 id="res-title">Run complete</h2>
+    </header>
+    <div class="pbody">
+      <p class="res-score"><span id="res-score">0</span><small>score</small></p>
+      <p class="note" id="res-best" hidden></p>
+      <dl class="statlist statlist--res" id="res-stats"></dl>
+      <div id="res-missions"></div>
+      <div class="res-xp">
+        <div class="xpbar"><div id="res-xp"></div></div>
+        <p class="note" id="res-xp-note"></p>
+      </div>
+      <p class="note" id="res-hint"></p>
+    </div>
+    <footer class="pfoot pfoot--two">
+      <button class="btn btn--play" id="btn-again">Run again</button>
+      <button class="btn btn--menu" id="btn-res-loadout">Loadout</button>
+    </footer>
+  </section>
+
+  <!-- ==================== Daily reward ==================== -->
+  <section class="layer screen screen--center screen--dim" id="screen-daily" hidden>
+    <div class="dialog">
+      <h2>Daily reward</h2>
+      <div class="daily" id="dl-list"></div>
+      <button class="btn btn--play btn--wide" id="btn-claim">Claim</button>
+      <button class="btn btn--menu btn--wide" data-back>Later</button>
+    </div>
+  </section>
+
+  <!-- ==================== Debug (hidden in normal play) ==================== -->
+  <section class="layer screen screen--panel debugpanel" id="screen-debug" hidden>
+    <header class="phead">
+      <button class="btn btn--back" data-back aria-label="Back">&larr;</button>
+      <h2>Debug</h2>
+    </header>
+    <div class="pbody" id="debug-body"></div>
+  </section>
+
+  <!-- Rotate hint for portrait phones -->
+  <div class="rotate" id="rotate" hidden>
+    <div>
+      <svg viewBox="0 0 24 24" width="46" height="46" aria-hidden="true"><path d="M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2zm5 15h.01"/></svg>
+      <p>Turn your phone sideways</p>
+      <small>FiDo-5 is built for landscape</small>
+    </div>
+  </div>
+
+</div>
+
+<script type="module" src="js/main.js"></script>
+<noscript>
+  <p style="color:#dfe4ff;background:#080a12;padding:1.5rem;font:600 1rem system-ui">
+    FiDo-5 needs JavaScript to run. <a href="index.html" style="color:#35d0ff">Back to the FiDo-5 page</a>.
+  </p>
+</noscript>
+</body>
+</html>
