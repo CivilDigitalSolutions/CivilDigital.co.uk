@@ -342,11 +342,12 @@ body {
   text-transform: uppercase; color: var(--cyan); border: 1px solid var(--cyan);
   border-radius: 4px; padding: .1em .35em; vertical-align: 1px;
 }
-.card__name { font-weight: 800; font-size: .88rem; }
-.card__blurb { font-size: .72rem; color: var(--dim); line-height: 1.4; }
+.card__name { display: block; font-weight: 800; font-size: .88rem; }
+.card__blurb { display: block; font-size: .72rem; color: var(--dim); line-height: 1.4; }
 .card__stats { display: flex; gap: .8rem; flex-wrap: wrap; font-size: .66rem; color: var(--text); margin-top: .1rem; }
 .card__stats b { color: var(--yellow); font-variant-numeric: tabular-nums; }
 .cards--skins .card { flex-direction: row; align-items: center; gap: .6rem; }
+.cards--skins .card > span:last-child { display: block; }
 .card__swatch {
   width: 34px; height: 26px; flex: none; border-radius: 5px; border: 1px solid var(--line);
   display: grid; place-items: center;
@@ -384,7 +385,7 @@ body {
   display: grid; place-items: center; padding: .7rem; position: relative;
   min-height: 190px;
 }
-#drone-view { image-rendering: pixelated; touch-action: none; cursor: grab; max-width: 100%; }
+#drone-view { image-rendering: pixelated; touch-action: none; cursor: grab; width: 100%; height: auto; max-width: 260px; }
 .inspector__hint {
   position: absolute; bottom: .4rem; font-size: .62rem; letter-spacing: .12em;
   text-transform: uppercase; color: var(--dim);
@@ -459,7 +460,7 @@ body {
   padding: .6rem 0; border-bottom: 1px solid var(--line);
 }
 .setrow--col { flex-direction: column; align-items: stretch; gap: .4rem; }
-.setrow label { font-size: .86rem; font-weight: 600; }
+.setrow label, .setrow__label { font-size: .86rem; font-weight: 600; }
 .toggle {
   width: 54px; height: 30px; flex: none; border-radius: 999px; cursor: pointer;
   background: #232a55; border: 2px solid var(--line); position: relative;

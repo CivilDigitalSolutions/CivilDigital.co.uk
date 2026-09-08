@@ -26,12 +26,12 @@ export const WORLD = {
    everything the runner scales with is expressed here rather than in code. */
 export const DIFFICULTY = {
   rampMetres: 2600,      // distance over which t goes 0 -> 1
-  speed:        [112, 248],
-  enemyDensity: [0.55, 1.85],
-  enemyHealth:  [1.0, 2.5],
+  speed:        [112, 224],
+  enemyDensity: [0.80, 2.00],
+  enemyHealth:  [1.0, 2.1],
   enemyDamage:  [1.0, 1.9],
   obstacleDensity: [0.5, 1.5],
-  eliteChance:  [0.0, 0.30],
+  eliteChance:  [0.06, 0.50],
   variety:      [2, 5],   // how many enemy types are in the pool
 };
 
@@ -368,7 +368,7 @@ export const ENEMIES = [
 /* Elite variants are a single multiplier set applied over any enemy, so
    every future enemy gets an elite for free. */
 export const ELITE = {
-  health: 3.4,
+  health: 2.6,
   damage: 1.5,
   score: 4.0,
   coins: 3.5,

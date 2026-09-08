@@ -121,8 +121,11 @@ export class World {
       if (c.type === 'elite' && !eliteAllowed) continue;
       let w = c.weight;
       if (this.recent.includes(c.id)) w *= 0.18;      // discourage immediate repeats
+      // When an elite is allowed at all it should actually turn up, otherwise
+      // keys and vaults never enter the loop.
+      if (c.type === 'elite') w *= 3;
       // Early on, favour the gentler chunk types.
-      if (diff < 0.15 && (c.type === 'elite')) w *= 0.3;
+      if (diff < 0.15 && (c.type === 'elite')) w *= 0.4;
       if (w > 0) pool.push([c, w]);
     }
     if (pool.length === 0) return CHUNKS.find((c) => c.breather);

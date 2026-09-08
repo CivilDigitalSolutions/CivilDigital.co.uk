@@ -514,6 +514,16 @@ export class Renderer {
         x.fillRect(sx - 3, sy - 3, img.w + 6, img.h + 6);
         x.globalAlpha = 1;
       }
+      // A tractor tether up to the drone, so carrying reads as deliberate.
+      if (c.carried) {
+        x.globalAlpha = 0.45;
+        x.strokeStyle = '#35d0ff';
+        x.beginPath();
+        x.moveTo(sx + img.w / 2, sy);
+        x.lineTo(Math.round(g.drone.x - cam), Math.round(g.drone.y));
+        x.stroke();
+        x.globalAlpha = 1;
+      }
       x.drawImage(img.c, sx, sy);
       // Scan progress, drawn as a filling bar so it is not colour-only.
       if (c.state === 'opening' && !c.opened) {

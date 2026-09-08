@@ -83,6 +83,7 @@ export const makePickup = () => ({
 export const makeCrate = () => ({
   alive: false, x: 0, y: 0, tier: 0, rarity: 'common', state: 'idle',
   scan: 0, scanTime: 1, opened: false, detected: false, bob: 0,
+  carried: false, lingering: 0,
 });
 
 export const makeEnemy = () => ({

@@ -88,6 +88,11 @@ const ui = new UI({
   },
 });
 
+/* Development diagnostics, behind the same flag as the debug panel: only
+   present when the page was opened with ?debug=1 or the panel was unlocked.
+   Normal play exposes nothing on window. */
+if (ui.debugOn) window.__fido5 = { game, ui, sv };
+
 /* Bind the on-screen buttons to the same actions as the keys. */
 input.bindButton(document.getElementById('btn-jump'), 'jump');
 input.bindButton(document.getElementById('btn-slide'), 'down');
@@ -188,7 +193,9 @@ function makeDebugHooks() {
     forceRescue() {
       if (!game.run) return 'Start a run first.';
       game.drone.rescueCool = 0;
-      game.player.health = 0.5;
+      game.player.shield = 0;
+      game.player.invuln = 0;
+      game.player.health = 0;       // isLethal() needs health at or below zero
       return 'Rescue armed — the next tick will trigger it.';
     },
     speedMul(v) {

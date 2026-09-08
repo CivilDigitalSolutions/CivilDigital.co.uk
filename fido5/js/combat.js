@@ -36,7 +36,10 @@ export function spawnEnemy(ctx, spec) {
   e.coins = Math.round(def.coins * (elite ? ELITE.coins : 1));
   e.x = spec.x;
   const h = def.h * e.scale;
-  e.y = isFlyer(def) ? WORLD.tierY[tier] - 22 - h / 2 : WORLD.tierY[tier] - h / 2;
+  // Flyers hover on the player's firing line rather than above it. The
+  // player cannot aim in a runner, so an enemy their shots pass under is an
+  // enemy they can never kill.
+  e.y = isFlyer(def) ? WORLD.tierY[tier] - 15 : WORLD.tierY[tier] - h / 2;
   e.baseY = e.y;
   e.vy = 0; e.vx = 0;
   e.t = 0;
@@ -46,6 +49,10 @@ export function spawnEnemy(ctx, spec) {
   e.charge = 0; e.stun = 0; e.flash = 0; e.burn = 0; e.burnT = 0;
   e.dying = 0; e.aim = 0; e.marked = false; e.seen = false;
   e.bombT = 0;
+  // How long this enemy will hold pace with the player once they close.
+  // Without it an elite is only in weapons range for about a second, which is
+  // not an encounter — it is a thing that goes past.
+  e.paceT = elite ? 5.5 : (def.behaviour === 'tank' ? 3.5 : 0);
   return e;
 }
 
@@ -88,6 +95,13 @@ export function updateEnemies(dt, ctx) {
     const dy = player.midY - e.y;
     const dist = Math.hypot(dx, dy);
     const onScreen = e.x < camX + WORLD.viewW + 30;
+
+    // Elites and tanks back away at just under the player's speed while their
+    // pacing budget lasts, so the fight lasts long enough to be a fight.
+    if (e.paceT > 0 && onScreen && e.x - player.x < 210) {
+      e.x += run.speed * 0.74 * dt;
+      e.paceT -= dt;
+    }
 
     if (onScreen && !e.seen) {
       e.seen = true;
@@ -308,7 +322,9 @@ export function updateBullets(dt, ctx) {
       if (consumed || e.dying > 0) return;
       const hw = (e.def.w * e.scale) / 2, hh = (e.def.h * e.scale) / 2;
       if (b.x < e.x - hw || b.x > e.x + hw) return;
-      if (b.y < e.y - hh || b.y > e.y + hh) return;
+      // A little vertical tolerance: the player has no way to aim, so a shot
+      // that visually clips the target should count.
+      if (b.y + 2 < e.y - hh || b.y - 2 > e.y + hh) return;
 
       let dmg = b.dmg;
       let blocked = false;

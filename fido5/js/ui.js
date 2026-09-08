@@ -520,8 +520,9 @@ export class UI {
     x.imageSmoothingEnabled = false;
     const W = cv.width, H = cv.height;
 
-    x.fillStyle = '#0b0f24';
-    x.fillRect(0, 0, W, H);
+    // Transparent, so the panel's own gradient shows through instead of a
+    // flat dark rectangle sitting inside it.
+    x.clearRect(0, 0, W, H);
 
     // Turntable floor.
     x.strokeStyle = 'rgba(53,208,255,0.22)';
@@ -606,7 +607,8 @@ export class UI {
       const right = document.createElement('span');
       right.innerHTML = '';
       const b = document.createElement('b');
-      b.textContent = `${fmt(def.reward.coins)} coins` + (def.reward.parts ? ` + ${def.reward.parts} parts` : '');
+      b.textContent = `${fmt(def.reward.coins)} coins` +
+        (def.reward.parts ? ` + ${def.reward.parts} part${def.reward.parts === 1 ? '' : 's'}` : '');
       right.appendChild(b);
       meta.appendChild(left); meta.appendChild(right);
       el.appendChild(n); el.appendChild(bar); el.appendChild(meta);
@@ -743,8 +745,10 @@ export class UI {
       const b = document.createElement('b');
       b.textContent = 'Mission complete — ';
       el.appendChild(b);
-      el.appendChild(document.createTextNode(
-        `${m.label}. ${fmt(m.reward.coins)} coins` + (m.reward.parts ? ` and ${m.reward.parts} parts.` : '.')));
+      const parts = m.reward.parts
+        ? ` and ${m.reward.parts} upgrade part${m.reward.parts === 1 ? '' : 's'}.`
+        : '.';
+      el.appendChild(document.createTextNode(`${m.label}. ${fmt(m.reward.coins)} coins${parts}`));
       mw.appendChild(el);
     }
 

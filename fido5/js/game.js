@@ -5,7 +5,7 @@
    ui.js; this file raises events and lets the UI decide what to show.
    ========================================================================== */
 
-import { WORLD, DIFFICULTY, SCORE, ONBOARDING, POWERUPS, ELITE } from './data.js';
+import { WORLD, DIFFICULTY, SCORE, ONBOARDING, POWERUPS, ELITE, ENEMIES } from './data.js';
 import { World, makeRng, pick, clamp } from './world.js';
 import { Pool, Particles, makeBullet, makeCoin, makePickup, makeCrate, makeEnemy, makeFloater, makeBlast } from './entities.js';
 import { Player } from './player.js';
@@ -281,6 +281,7 @@ export class Game {
 
     this.world.update(p.x, r.diff);
     this._drainSpawns();
+    this._director(dt);
 
     Combat.updateEnemies(dt, this._ctx);
     Combat.updateBullets(dt, this._ctx);
@@ -301,8 +302,10 @@ export class Game {
     // below zero for the length of the dash, so the check has to stand down
     // while a rescue is already under way or the player dies mid-save.
     if (p.isLethal() && !this.drone.rescuePhase) {
-      if (!this.drone.tryRescue(this._ctx)) {
-        p.die('damage');
+      if (this.drone.tryRescue(this._ctx)) {
+        if (p.fellIntoPit) this._liftFromPit();
+      } else {
+        p.die(p.fellIntoPit ? 'pit' : 'damage');
         this._onDeath();
       }
     }
@@ -325,6 +328,67 @@ export class Game {
     }
 
     this.frameCount++;
+  }
+
+  /* Encounter director.
+     The chunk templates place the set pieces, but which templates come up is
+     random, so a run can hit a stretch of pure coin corridors with nothing to
+     shoot. This tops the field up towards a target that rises with difficulty,
+     which is what keeps the shooter half of the game present at all times.
+     Only flying types are placed this way: a turret dropped in unannounced is
+     exactly the kind of thing the fairness rules exist to prevent. */
+  _director(dt) {
+    const r = this.run;
+    r.directorT = (r.directorT || 0) - dt;
+    if (r.directorT > 0) return;
+    r.directorT = pick([1.9, 0.55], r.diff);
+
+    const target = Math.round(pick([2, 6], r.diff));
+    if (this.pools.enemies.live >= Math.min(11, target)) return;
+
+    const variety = Math.round(pick(DIFFICULTY.variety, r.diff));
+    const pool = ENEMIES
+      .filter((e) => r.diff >= e.fromDifficulty && e.behaviour !== 'turret' && e.behaviour !== 'tank')
+      .slice(0, Math.max(1, variety));
+    if (!pool.length) return;
+
+    let total = 0;
+    for (const e of pool) total += e.weight;
+    let roll = Math.random() * total;
+    let def = pool[0];
+    for (const e of pool) { roll -= e.weight; if (roll <= 0) { def = e; break; } }
+
+    // Place it on a level that exists a little way ahead.
+    const x = this.player.x + 300 + Math.random() * 90;
+    const col = this.world.colOfX(x);
+    const tiers = [];
+    for (let t = 0; t < WORLD.tierCount; t++) if (this.world.hasPlatform(col, t)) tiers.push(t);
+    if (!tiers.length) return;
+    // Favour the player's own level so combat is something they meet head on.
+    const tier = Math.random() < 0.55 && tiers.includes(this.player.tier)
+      ? this.player.tier
+      : tiers[Math.floor(Math.random() * tiers.length)];
+
+    const elite = Math.random() < pick(DIFFICULTY.eliteChance, r.diff) * 0.35;
+    Combat.spawnEnemy(this._ctx, { def, x, tier, elite });
+  }
+
+  /* FiDo-5 caught the player over a gap: put them back on solid ground. */
+  _liftFromPit() {
+    const p = this.player;
+    const w = this.world;
+    let col = w.colOfX(p.x);
+    for (let i = 0; i < 40; i++) {
+      if (w.hasPlatform(col + i, 0)) { col = col + i; break; }
+    }
+    p.x = Math.max(p.x, w.xOfCol(col) + WORLD.metre / 2);
+    p.tier = 0;
+    p.y = WORLD.tierY[0];
+    p.vy = 0;
+    p.grounded = true;
+    p.fellIntoPit = false;
+    p.state = 'rescue';
+    this.particles.dust(p.x, p.y);
   }
 
   _drainSpawns() {

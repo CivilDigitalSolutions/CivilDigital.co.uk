@@ -173,7 +173,8 @@ export class Fido {
     const d = this.stats.drone;
     let best = null, bestD = d.crateDetect;
     ctx.pools.crates.each((c) => {
-      if (c.opened || c.state === 'opening') return;
+      if (c.opened || c.carried) return;
+      if (c.x < ctx.player.x - 60) return;      // already behind us
       if (c.rarity === 'vault' && ctx.run.keys <= 0) return;    // no key, no point
       const dist = Math.hypot(c.x - this.x, c.y - this.y);
       if (dist < bestD) { bestD = dist; best = c; }
@@ -250,18 +251,30 @@ export class Fido {
     switch (this.state) {
       case 'crate': {
         const c = this.crate;
-        const tx = c.x, ty = c.y - 12;
-        this._moveToward(tx, ty, dt, 7);
-        const near = Math.hypot(this.x - tx, this.y - ty) < 12;
-        // The player has to be close too — the crate is the risk, not a freebie.
-        const playerNear = Math.abs(player.x - c.x) < 102;
-        if (near && playerNear) {
-          if (c.state !== 'opening') {
+        if (!c.carried) {
+          // Fly out to it. The player has to have come close enough for the
+          // drone to commit — that is what makes an awkwardly placed crate a
+          // decision rather than a freebie.
+          const tx = c.x, ty = c.y - 12;
+          this._moveToward(tx, ty, dt, 7);
+          const reached = Math.hypot(this.x - tx, this.y - ty) < 13;
+          const playerCommitted = Math.abs(player.x - c.x) < 132 &&
+                                  Math.abs(player.midY - c.y) < 72;
+          if (reached && playerCommitted) {
+            c.carried = true;
             c.state = 'opening';
             c.scan = c.scanTime / d.efficiency;
             audio.play('crate.scan', { dur: c.scan });
+          } else if (c.x < player.x - 70) {
+            this.crate = null;      // missed it; back to the player
           }
-          this.scanning = 0.2;
+        } else {
+          // Carry it alongside the player and crack it open in transit, so a
+          // long scan is not a race the player automatically loses.
+          this._moveToward(player.x - 14, player.midY - 30, dt, 6);
+          c.x = this.x;
+          c.y = this.y + 15;
+          this.scanning = 0.25;
           c.scan -= dt;
           particles.spawn(1, (p) => {
             p.x = c.x + (Math.random() - 0.5) * 14;
@@ -274,8 +287,6 @@ export class Fido {
             this.say('crateOpen');
             this.crate = null;
           }
-        } else if (c.state === 'opening' && !playerNear) {
-          c.state = 'idle';          // player left; the crate waits
         }
         break;
       }

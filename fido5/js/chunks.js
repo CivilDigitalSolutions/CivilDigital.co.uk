@@ -19,6 +19,7 @@ export const CHUNKS = [
   {
     id: 'coin_street', type: 'coin', len: 34, weight: 30, from: 0, to: 1,
     plat: [null, [[10, 22]], []],
+    enemies: [{ c: 20, t: 0 }, { c: 30, t: 0 }],
     coins: [
       { c: 4, t: 0, n: 8, pattern: 'line' },
       { c: 12, t: 1, n: 9, pattern: 'line' },
@@ -37,6 +38,7 @@ export const CHUNKS = [
       { c: 26, t: 1, n: 5, pattern: 'line' },
       { c: 29, t: 2, n: 5, pattern: 'line' },
     ],
+    enemies: [{ c: 14, t: 1 }, { c: 32, t: 0 }],
     crates: [{ c: 31, t: 2, rarity: 'rare' }],   // the reward for going high
   },
   {
@@ -44,6 +46,7 @@ export const CHUNKS = [
     plat: [null, [], []],
     gaps: [[10, 12], [22, 24]],
     blocks: [{ c: 17, t: 0, kind: 'low' }],
+    enemies: [{ c: 14, t: 0 }, { c: 27, t: 0 }],
     coins: [
       { c: 8, t: 0, pattern: 'arc', n: 7 },
       { c: 20, t: 0, pattern: 'arc', n: 7 },
@@ -104,6 +107,7 @@ export const CHUNKS = [
     id: 'obst_basic', type: 'obstacle', len: 32, weight: 28, from: 0, to: 1,
     plat: [null, [], []],
     blocks: [{ c: 8, t: 0, kind: 'block' }, { c: 16, t: 0, kind: 'low' }, { c: 24, t: 0, kind: 'block' }],
+    enemies: [{ c: 12, t: 0 }, { c: 28, t: 0 }],
     coins: [{ c: 11, t: 0, n: 4, pattern: 'line' }, { c: 19, t: 0, n: 4, pattern: 'line' }],
   },
   {
@@ -111,6 +115,7 @@ export const CHUNKS = [
     plat: [null, [[16, 28]], []],
     gaps: [[8, 10], [20, 22], [31, 33]],
     blocks: [{ c: 14, t: 0, kind: 'low' }],
+    enemies: [{ c: 18, t: 1 }, { c: 34, t: 0 }],
     coins: [{ c: 8, t: 0, pattern: 'arc', n: 6 }, { c: 18, t: 1, n: 6, pattern: 'line' }],
   },
   {

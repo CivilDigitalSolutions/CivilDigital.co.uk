@@ -56,6 +56,7 @@ export class Player {
     this.rescueT = 0;
     this.landedThisFrame = false;
     this.hitThisFrame = null;
+    this.fellIntoPit = false;
     this.airTime = 0;
     this.maxTierThisChunk = 0;
   }
@@ -208,9 +209,12 @@ export class Player {
         }
       }
 
-      // Fell past the street with no platform under: that is a pit.
-      if (this.y > WORLD.tierY[0] + 26) {
-        this.die('pit');
+      // Fell past the street with no platform under. Treated as lethal damage
+      // rather than an instant death so the rescue can still fire; the game
+      // decides, and lifts the player back onto the deck if FiDo-5 catches it.
+      if (this.y > WORLD.tierY[0] + 26 && !this.fellIntoPit) {
+        this.fellIntoPit = true;
+        this.health = 0;
         return;
       }
     } else {

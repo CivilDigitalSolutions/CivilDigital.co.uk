@@ -38,6 +38,8 @@ export function spawnCrate(ctx, x, tier, rarity) {
   c.scanTime = def.scanTime;
   c.opened = false;
   c.detected = false;
+  c.carried = false;
+  c.lingering = 0;
   c.bob = Math.random() * Math.PI * 2;
   return c;
 }
@@ -238,7 +240,7 @@ export function updateCrates(dt, ctx) {
   const { pools, run } = ctx;
   const camX = run.camX;
   pools.crates.sweep((c) => {
-    if (c.x < camX - 60) return false;
+    if (!c.carried && c.x < camX - 60) return false;
     c.bob += dt * 2;
     // An opened crate lingers briefly so the player sees what happened.
     if (c.opened) {
