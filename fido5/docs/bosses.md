@@ -3,9 +3,9 @@
 Reference for the boss system: why it exists, the rules every boss obeys, the
 planned roster, and the technical notes for building the rest of it.
 
-Status: **the Warden and Hexcell are built.** Bosses 3–6 are designed here and
-not yet implemented. Until they are, the roster loops on the two that exist,
-hardened on each pass.
+Status: **the Warden, Hexcell and the Convoy are built.** Bosses 4–6 are
+designed here and not yet implemented. Until they are, the roster loops on the
+three that exist, hardened on each pass.
 
 ---
 
@@ -35,14 +35,22 @@ and squeeze the sectors together exactly when the player is least able to cope.
 
 A gate runs through three states:
 
-1. **approach** — the timer has expired. The world is asked for an arena, the
-   boss is announced, FiDo-5 calls the threat, and the player keeps running
-   towards it. Nothing is locked yet.
+1. **approach** — the timer has expired. The boss is announced, FiDo-5 calls
+   the threat, and the player keeps running. For a walled fight the world is
+   asked for an arena and the approach ends when the player crosses its mouth;
+   for a moving fight there is no mouth, so it ends on a short timer instead.
 2. **locked** — the player has crossed into the arena. The camera freezes, the
    walls come in, auto-run is suspended and the boss spawns.
 3. **clear** — the boss is dead. The camera is released, auto-run is restored
    to the player's own setting, score and coins are paid, health is topped up
    and the gate counter advances.
+
+A moving fight (`arena: 'moving'`) skips the arena entirely: no walls, no
+camera freeze, the encounter director left running and auto-run untouched. The
+boss is handed the viewport as its arena instead and keeps station on it, so
+every clamp that keeps a walled boss inside its walls keeps this one on screen.
+Lives, the lives HUD and the intro card work identically — they key off
+`Game.inFight`, which is true for either kind.
 
 Because the roster loops, `pass` (how many times the roster has been
 exhausted) raises boss health by 55 %, speed by 15 % and damage by 20 % each
@@ -124,12 +132,32 @@ tier and ignored.
 Teaches: target priority, and that the biggest thing on screen is not always
 the thing to shoot.
 
-### 3. The Convoy — *designed*
-**Moving fight. One on one.** The scroll never stops. A gunship keeps pace
-above the street while the track keeps coming — gaps, obstacles and all. It
-drops low to strafe, and that is the only moment its thrusters are exposed.
-Auto-run stays *on* for this one; it is a running fight, and taking the run
-away would be the wrong shape.
+### 3. The Convoy — *built*
+**Moving fight. One on one.** The scroll never stops. A gunship keeps station
+ahead of the player while the track keeps coming — gaps, obstacles and the
+encounter director's usual traffic. Auto-run stays *on*; it is a running fight,
+and taking the run away would be the wrong shape.
+
+It cruises above everything the player can shoot at, so hitting it up there is
+not a matter of armour — it is simply out of the firing line. It has to come
+down, and coming down is the only thing it does that can be punished.
+
+- **Strafing run** — drops to the player's height, commits to a direction and
+  crosses the screen at it. The attack that hurts most is the attack that
+  leaves it where you can reach it.
+- **Salvo** — a five-shot fan from altitude. Five, not four: an even fan has no
+  centre line, so a player standing still is never actually shot at.
+- **Mines** — three dropped onto the ground ahead, each with a drop line down to
+  where it will land. The route is the second opponent and this is what makes
+  that true.
+
+Two things came out of playtesting it. It recovers *low* from every attack, not
+only from a strafing run: holding altitude through two attacks in three left
+five- and seven-second stretches where the player could not touch it at all,
+which is dead air in a fight they are also running a level through. And its
+attacks **cycle in order** rather than rolling, so a strafing run comes round
+every other time without fail — left to chance, the same fight ran anywhere
+from twenty-four to forty-five seconds depending on the dice.
 
 Teaches: that a boss does not have to mean a stop, and that the track itself is
 the second opponent.
@@ -203,7 +231,7 @@ twice and the fight cannot stall on it.
 | Per-attack damage, speed, spread, counts | `BOSS_ATTACKS` in `data.js` |
 | Behaviour and the phase machine | `boss.js` |
 | Arena template | `ARENA` in `chunks.js` |
-| Gate states and rewards | `Game._sector`, `_lockArena`, `_clearArena`, `_bossDeath` |
+| Gate states and rewards | `Game._sector`, `_startFight`, `_clearFight`, `_bossDeath` |
 | Drawing | `Renderer._boss`, `_bossArena`, `_bossBar` |
 | Lives HUD | `play.html`, `.hud-lives` in `css/game.css`, `UI.updateHud` |
 
@@ -226,6 +254,12 @@ A boss without a `parts` block falls back to the Warden's rule: exposed in the
 moment after it attacks. Set `float: true` and the boss hovers and tracks the
 player's height instead of walking.
 
-A moving fight (The Convoy, The Ripper) is the one case that needs more: it
-skips `requestArena`/`_lockArena` entirely and instead suppresses the gate
-timer while the boss is alive, leaving the scroll and the director running.
+A moving fight needs one more thing: `arena: 'moving'` on the definition, which
+routes it past the arena request and gives it the viewport to fly in. Set
+`float: true` alongside it and the boss is carried with the camera every frame,
+so its `walkSpeed` is the relative speed it trims its station by rather than an
+absolute one a sprinting player leaves behind inside a second. The Ripper will
+want exactly this, plus a station offset behind the player instead of ahead.
+
+`cycleAttacks: true` steps the attack list in order instead of rolling it. Use
+it wherever one particular attack carries the fight's damage window.

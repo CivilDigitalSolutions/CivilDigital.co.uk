@@ -822,7 +822,7 @@ export class UI {
     // Lives: only during a boss fight, and only ever redrawn when the count
     // changes, since this runs every frame.
     const lw = $('hud-lives');
-    const inFight = !!r.arena;
+    const inFight = game.inFight;
     lw.hidden = !inFight;
     if (inFight && this._livesShown !== r.lives) {
       const lost = this._livesShown !== undefined && r.lives < this._livesShown;

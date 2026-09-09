@@ -716,10 +716,52 @@ export const BOSSES = [
       respawn: 10,         // seconds before a downed relay comes back
     },
   },
+  {
+    id: 'convoy',
+    name: 'The Convoy',
+    subtitle: 'Gunship escort',
+    /* The one fight that does not stop the world. The scroll, the track and
+       the encounter director all keep running, so the player is reading the
+       route and the boss at once — and auto-run stays on, because taking the
+       run away from a running fight is the wrong shape. */
+    arena: 'moving',
+    /* Less health than Hexcell despite being later in the roster: its damage
+       window is a fraction of theirs. It is only worth shooting while it is
+       low and recovering from a strafing run, so the same health bar would
+       take three times as long to empty. */
+    health: 400,
+    contact: 18,
+    score: 4000,
+    coins: 150,
+    w: 45, h: 19,
+    core: { x: 42, y: 9 },  // the thrusters, and only reachable when it is low
+    tier: 2,
+    float: true,
+    /* It holds altitude above everything the player can shoot, so hitting it up
+       there is close to pointless. It has to come down to strafe, and coming
+       down is the only thing it does that can be punished. */
+    armour: 0.12,
+    armourLabel: 'OUT OF REACH',
+    telegraph: 0.8,
+    recover: 1.6,
+    walkSpeed: 52,
+    /* Cycled in order rather than rolled, so a strafing run — the only attack
+       that really opens it up — comes round every other time without fail. */
+    cycleAttacks: true,
+    attacks: ['strafe', 'salvo', 'strafe', 'mines'],
+  },
 ];
 
 /* Per-attack tuning, kept out of the behaviour code. */
 export const BOSS_ATTACKS = {
+  /* The Convoy. A strafing run is the whole fight: it is the only time the
+     gunship is at a height the player can shoot, and it costs the most to be
+     hit by, so both sides are committing to the same moment. */
+  strafe: { damage: 22, speed: 205, duration: 1.0 },
+  /* An odd number of shots on purpose: an even fan has no centre line, so a
+     player standing still is never actually shot at, only shot around. */
+  salvo:  { damage: 12, shots: 5, speed: 195, spread: 0.22 },
+  mines:  { damage: 20, count: 3, spacing: 26, radius: 20 },
   /* Hexcell. The beam is a full-width line at the node's own height, so the
      answer is to be at a different height — which is also how you reach the
      relays, and is the whole lesson of the fight. */

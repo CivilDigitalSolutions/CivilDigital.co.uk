@@ -416,6 +416,28 @@ const B_RELAY = rows('relay', [
   '............',
 ]);
 
+const B_CONVOY = rows('convoy', [
+  '.........................KKKKKKKKKKKKKKK.....',
+  '........................KMMMMMMMMMMMMMMMK....',
+  '.........................KKMMMMMMMMMMMMMK....',
+  '..........................KKKMMMMMMMMMMMKKK..',
+  '..............K...KKKKKKKKMMMMSSSSSSSSSMrrrK.',
+  '............KKNKKKNMMMNMMMNSSMSSSSSSSSSMrRRAK',
+  '....KKKKKKKKMMMMMMMMMMMMMMMMMMSSSSSSSSSMrrrK.',
+  '.KKKcCEECCCcSSNSSSNSSSNSSSNSSMSSSSSSSSSMKKK..',
+  'KMMMcCCCCCCcSSNSSSNSSSNSSSNSSMSSSSSSSSSMrrrK.',
+  'KSSScCCCCCCcSSNSSSNSSSNSSSNSSMSSSSSSSSSMrRRAK',
+  'KMMMccccccccSSNSSSNSSSNSSSNSSMSSSSSSSSSMrrrK.',
+  '.KKKKMMMMMMMSSNSSSNSSSNSSSNSSMSSSSSSSSSMKKK..',
+  '.....KKKKKKKMMNMMMNSSSNSSSNSSMSSSSSSSSSMrrrK.',
+  '............KKNKKKNMMMNMMMNSSMSSSSSSSSSMrRRAK',
+  '..............K.KKKKKKKKKKMMMMSSSSSSSSSMrrrK.',
+  '...............KMSSSSSSSSSSSMMMMMMMMMMMMKKK..',
+  '...............KMSSSSSSSSSSSMKKKKKKKKKKK.....',
+  '...............KMMMAAMAAMAAMMK...............',
+  '................KKKKKKKKKKKKK................',
+]);
+
 const E_TANK = rows('tank', [
   '.........KKKKKK...........',
   '........KMRRRRMK..........',
@@ -633,8 +655,12 @@ export function buildSprites() {
   };
 
   // Bosses. Mirrored once at boot, the same way the player is.
-  S.boss = { warden: fromRows(B_WARDEN), hexcell: fromRows(B_HEXCELL) };
-  S.bossFlip = { warden: flip(S.boss.warden), hexcell: flip(S.boss.hexcell) };
+  S.boss = {
+    warden: fromRows(B_WARDEN), hexcell: fromRows(B_HEXCELL), convoy: fromRows(B_CONVOY),
+  };
+  S.bossFlip = {
+    warden: flip(S.boss.warden), hexcell: flip(S.boss.hexcell), convoy: flip(S.boss.convoy),
+  };
   // Boss parts — relays, pods, anything that orbits a boss and dies separately.
   S.bossPart = { relay: fromRows(B_RELAY) };
   // Turrets and tanks are ground-mounted and face left already; flying enemies

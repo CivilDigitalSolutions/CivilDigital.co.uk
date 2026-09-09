@@ -41,10 +41,15 @@ export class Boss {
     this.maxHp = Math.round(def.health * hpMul);
     this.hp = this.maxHp;
     this.tier = def.tier;
+    /* A moving boss has no arena to enter. It keeps station on the camera
+       instead, and cruises above everything the player can shoot at. */
+    this.moving = def.arena === 'moving';
+    this.cruiseY = WORLD.tierY[2] - 26;
+    this.lastCam = arena.startX;    // for carrying a flying boss with the world
     // Enters from the far end of the arena, facing the player — but never so
     // close to the wall that its relays swing off the screen.
     this.x = arena.endX - def.w / 2 - (def.parts ? def.parts.orbit : def.w / 2);
-    this.y = WORLD.tierY[def.tier] - def.h / 2;
+    this.y = this.moving ? this.cruiseY : WORLD.tierY[def.tier] - def.h / 2;
     this.vx = 0;
     this.dir = -1;
     this.phase = 'wait';
@@ -75,6 +80,7 @@ export class Boss {
     // Animation: how far the body is lifted (negative is up), how hard it is
     // squashed, and how far it has recoiled from its own shot. The renderer
     // reads these; nothing here needs to know how it is drawn.
+    this.atkIdx = 0;        // for bosses that cycle their attacks in order
     this.lift = 0;
     this.squash = 0;
     this.recoil = 0;
@@ -166,6 +172,14 @@ export class Boss {
     // Held for the intro: it breathes, and nothing else.
     if (this.hold) return;
 
+    // The screen is the arena for a moving boss: the clamps that keep a static
+    // boss inside its walls keep this one inside the viewport instead.
+    if (this.moving) {
+      const cam = ctx.run.camX;
+      this.arena = { startX: cam + 16, endX: cam + WORLD.viewW - 10 };
+      this._updateFlight(dt, ctx);
+    }
+
     this._updateAnim(dt);
     this._updateWaves(dt, ctx);
     this._updateShots(dt, ctx);
@@ -178,6 +192,7 @@ export class Boss {
       case 'telegraph': if (this.phaseT <= 0) this._strike(ctx, p); break;
       case 'strike':
         if (this.attack === 'charge') this._charge(dt, ctx, p);
+        if (this.attack === 'strafe') this._strafe(dt, ctx, p);
         if (this.phaseT <= 0) this._enter('recover', this.def.recover);
         break;
       case 'recover':   if (this.phaseT <= 0) this._enter('wait', 0.5 + Math.random() * 0.7); break;
@@ -215,7 +230,66 @@ export class Boss {
     if (!this.def.float && this.phase === 'wait') this.step += dt * 5;
   }
 
+  /* Altitude is the fight. It cruises above the player's firing line and is
+     effectively untouchable there; the strafe is the one manoeuvre that brings
+     it down, and it stays down through the recovery afterwards. Everything the
+     player gets, they get in that window. */
+  _updateFlight(dt, ctx) {
+    /* It flies. Carrying it along with the camera every frame is what makes
+       that true: walkSpeed is then a relative speed, the few dozen pixels a
+       second it trims its station by, rather than an absolute one that a
+       sprinting player leaves behind inside a second. */
+    const cam = ctx.run.camX;
+    this.x += cam - this.lastCam;
+    this.lastCam = cam;
+
+    /* It comes down for every recovery, not only after a strafing run. Holding
+       altitude through two attacks out of three left five and seven second
+       stretches where the player could not touch it at all — dead air in a
+       fight they are also running a level through. Dropping out of its firing
+       arc to reset keeps the idea (it has to come down to be hurt) without the
+       dead time. A strafe additionally comes down for the wind-up and the run,
+       which is why it is still the attack that costs it the most. */
+    const low = this.phase === 'recover'
+      || (this.attack === 'strafe' && (this.phase === 'telegraph' || this.phase === 'strike'));
+    const want = low ? ctx.player.midY : this.cruiseY;
+    const rate = low ? 150 : 70;
+    this.y += Math.sign(want - this.y) * Math.min(Math.abs(want - this.y), rate * dt);
+    this.low = Math.abs(this.y - this.cruiseY) > 12;
+
+    /* Station-keeping runs in every phase but the strike, which is the one it
+       is allowed to break formation for. It matters most during the recovery:
+       a strafing run can end up behind a player who can only shoot forwards,
+       and a damage window you cannot point a gun at is not a damage window.
+       Coming back to station brings it back in front, still low. */
+    if (this.phase !== 'strike') {
+      const home = ctx.player.x + 90;
+      const step = this.def.walkSpeed * this.speedMul * (this.phase === 'recover' ? 3.4 : 1) * dt;
+      if (Math.abs(home - this.x) > 4) this.x += Math.sign(home - this.x) * step;
+    }
+
+    // Kept on screen in every phase, not only while it is choosing what to do.
+    this.x = clamp(this.x, this.arena.startX + this.def.w / 2,
+                   this.arena.endX - this.def.w / 2);
+  }
+
   _enter(phase, time) { this.phase = phase; this.phaseT = time; }
+
+  /* The strafing run. It commits to a direction and crosses the screen at it,
+     which is the same bargain the Warden's charge offers: the attack that
+     hurts most is the attack that leaves it where you can reach it. */
+  _strafe(dt, ctx, p) {
+    const a = BOSS_ATTACKS.strafe;
+    this.x += this.dir * a.speed * this.speedMul * dt;
+    if (Math.random() < 0.6) {
+      ctx.particles.thruster(this.x + this.def.w / 2 * -this.dir, this.y, 'A');
+    }
+    if (this._overlaps(p) && !this.chargeHit) {
+      this.chargeHit = true;
+      this._hit(ctx, a.damage);
+    }
+    this.x = clamp(this.x, this.arena.startX + this.def.w / 2, this.arena.endX - this.def.w / 2);
+  }
 
   /* The charge commits: it picks a direction on the wind-up and does not
      steer, so it is dodged by moving, not by out-running it. Hitting a wall
@@ -282,22 +356,34 @@ export class Boss {
   }
 
   _wait(dt, ctx, p) {
-    // Drift towards the player so the fight does not stall at opposite ends.
-    const want = p.x + (p.x < this.x ? 60 : -60);
+    // Drift towards the player so the fight does not stall at opposite ends —
+    // except for a gunship, which keeps station ahead of the player because it
+    // is escorting the route rather than duelling on it.
+    const want = this.moving ? p.x + 90 : p.x + (p.x < this.x ? 60 : -60);
     const step = this.def.walkSpeed * this.speedMul * dt;
     if (Math.abs(want - this.x) > 4) this.x += Math.sign(want - this.x) * step;
     // A hovering boss also tracks the player's height, slowly, so it cannot be
-    // parked on one tier and ignored.
-    if (this.def.float) {
+    // parked on one tier and ignored. A moving one flies its own profile.
+    if (this.def.float && !this.moving) {
       const wantY = clamp(p.midY, WORLD.tierY[2] - 4, WORLD.tierY[0] - 26);
       this.y += Math.sign(wantY - this.y) * Math.min(Math.abs(wantY - this.y), 16 * dt);
     }
-    this.dir = p.x < this.x ? -1 : 1;
+    // A walker turns to face whoever it is fighting. A gunship escorting the
+    // route faces the way it is flying, which also puts its exhaust — the only
+    // part of it worth shooting — towards the player chasing it.
+    this.dir = this.moving ? 1 : (p.x < this.x ? -1 : 1);
     this.x = clamp(this.x, this.arena.startX + this.margin, this.arena.endX - this.margin);
 
     if (this.phaseT <= 0) {
       const pool = this.def.attacks;
-      this.attack = pool[Math.floor(Math.random() * pool.length)];
+      /* Most bosses roll their next attack, which keeps a stand-up fight from
+         becoming a memorised sequence. A boss whose damage window belongs to
+         one particular attack cycles instead: leaving that to chance means the
+         same fight runs twenty seconds or forty-five depending on the dice,
+         and a rhythm is what makes a boss learnable rather than survivable. */
+      this.attack = this.def.cycleAttacks
+        ? pool[this.atkIdx++ % pool.length]
+        : pool[Math.floor(Math.random() * pool.length)];
       this._enter('telegraph', this.def.telegraph);
       ctx.audio.play('turret.charge');
     }
@@ -333,7 +419,7 @@ export class Boss {
             x: this.x, y: this.y - this.def.h / 2,
             vx: this.dir * a.speed * (0.6 + Math.abs(spread)),
             vy: -150 - Math.random() * 40 + spread * 60,
-            life: 3,
+            life: 3, dmg: a.damage,
           });
         }
         this._enter('strike', 0.3);
@@ -344,6 +430,44 @@ export class Boss {
         this.chargeHit = false;
         this.dir = p.x < this.x ? -1 : 1;
         this._enter('strike', a.duration);
+        break;
+      }
+      case 'strafe': {
+        ctx.audio.play('drone.thrust');
+        this.chargeHit = false;
+        this.dir = p.x < this.x ? -1 : 1;
+        this._enter('strike', a.duration);
+        break;
+      }
+      case 'salvo': {
+        ctx.audio.play('enemy.fire');
+        this.recoil = 3;
+        for (let i = 0; i < a.shots; i++) {
+          const ang = Math.atan2(p.midY - this.y, p.x - this.x)
+            + (i - (a.shots - 1) / 2) * a.spread;
+          this.shots.push({
+            x: this.x, y: this.y + this.def.h / 2,
+            vx: Math.cos(ang) * a.speed, vy: Math.sin(ang) * a.speed,
+            grav: 0, life: 2.6, dmg: a.damage,
+          });
+        }
+        this._enter('strike', 0.3);
+        break;
+      }
+      case 'mines': {
+        // Dropped ahead of the player, on the ground they are about to run
+        // over. The route is the second opponent in this fight and this is
+        // what makes that true.
+        ctx.audio.play('bomb.arm');
+        for (let i = 0; i < a.count; i++) {
+          this.shots.push({
+            x: this.x + (i - (a.count - 1) / 2) * a.spacing,
+            y: this.y + this.def.h / 2,
+            vx: 0, vy: 40, grav: 1, life: 5, dmg: a.damage,
+            blast: a.radius,
+          });
+        }
+        this._enter('strike', 0.35);
         break;
       }
       case 'beam': {
@@ -365,7 +489,7 @@ export class Boss {
             this.shots.push({
               x: q.x, y: q.y,
               vx: Math.cos(ang) * a.speed, vy: Math.sin(ang) * a.speed,
-              grav: 0, life: 2.4,
+              grav: 0, life: 2.4, dmg: a.damage,
             });
           }
         }
@@ -419,21 +543,34 @@ export class Boss {
     }
   }
 
+  /* One list for everything a boss throws: arcing flak, relay fire and mines.
+     Each shot carries its own damage and its own gravity, and a mine carries a
+     blast radius as well — it is the landing that hurts, not the falling. */
   _updateShots(dt, ctx) {
-    const a = BOSS_ATTACKS.flak;
     const p = ctx.player;
+    const street = WORLD.tierY[0];
     for (let i = this.shots.length - 1; i >= 0; i--) {
       const s = this.shots[i];
       s.vy += WORLD.gravity * (s.grav === undefined ? 0.55 : s.grav) * dt;
       s.x += s.vx * dt;
       s.y += s.vy * dt;
       s.life -= dt;
-      if (Math.abs(s.x - p.x) < 9 && Math.abs(s.y - p.midY) < 11) {
-        this._hit(ctx, a.damage);
+      const dmg = s.dmg || BOSS_ATTACKS.flak.damage;
+      if (s.blast) {
+        if (s.y >= street - 2) {
+          ctx.audio.play('explosion');
+          ctx.particles.explode(s.x, street - 4, 0.9, 'A');
+          ctx.shake && ctx.shake(3);
+          if (Math.hypot(p.x - s.x, p.midY - (street - 8)) < s.blast) this._hit(ctx, dmg);
+          this.shots.splice(i, 1);
+          continue;
+        }
+      } else if (Math.abs(s.x - p.x) < 9 && Math.abs(s.y - p.midY) < 11) {
+        this._hit(ctx, dmg);
         this.shots.splice(i, 1);
         continue;
       }
-      if (s.life <= 0 || s.y > WORLD.tierY[0] + 8) {
+      if (s.life <= 0 || s.y > street + 8) {
         ctx.particles.dust(s.x, s.y);
         this.shots.splice(i, 1);
       }

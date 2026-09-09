@@ -137,7 +137,9 @@ export class Game {
       gate: 0,                 // how many gates have been cleared
       gateT: SECTORS.firstGateSeconds,
       lives: SECTORS.lives,
-      bossPhase: null,         // null | 'approach' | 'intro' | 'locked' | 'clear'
+      // null | 'approach' | 'intro' | 'locked' (walled) | 'chase' (moving)
+      bossPhase: null,
+      approachT: 0,            // countdown to a moving fight, which has no mouth
       intro: null,             // {t, name, subtitle, cued} while the flourish runs
       shake: 0,                // screen shake magnitude, decays every frame
       arena: null,             // {startX, endX, camX} while locked
@@ -374,7 +376,7 @@ export class Game {
         this._onDeath();
         // Inside a boss arena a death costs a life and the fight restarts.
         // Out of lives, or anywhere else on the track, the run is over.
-        if (r.arena && this._bossDeath()) { /* back in the fight */ }
+        if (this.inFight && this._bossDeath()) { /* back in the fight */ }
       }
     }
 
@@ -415,10 +417,13 @@ export class Game {
       if (p.dead) return;
       r.gateT -= dt;
       if (r.gateT <= 0) {
-        r.bossPhase = 'approach';
-        this.world.requestArena(arenaCols());
         const { def } = bossForGate(r.gate);
+        r.bossPhase = 'approach';
         r.bossName = def.name;
+        // A moving fight has no arena to build or to walk into, so the approach
+        // is just the warning: it arrives on a timer instead of on a threshold.
+        if (def.arena === 'moving') r.approachT = 1.7;
+        else this.world.requestArena(arenaCols());
         this.announce(def.name.toUpperCase(), 'Incoming', '#ff3d68');
         this.drone.say('threat', true);
       }
@@ -426,16 +431,23 @@ export class Game {
     }
 
     if (r.bossPhase === 'approach') {
+      const { def } = bossForGate(r.gate);
+      if (def.arena === 'moving') {
+        r.approachT -= dt;
+        if (r.approachT <= 0) this._startFight(null);
+        return;
+      }
       const a = this.world.arena;
       // Wait for the arena to be generated, then for the player to walk in.
-      if (a && p.x >= a.startX + 8) this._lockArena(a);
+      if (a && p.x >= a.startX + 8) this._startFight(a);
       return;
     }
 
     if (r.bossPhase === 'intro') { this._intro(dt); return; }
 
-    if (r.bossPhase === 'locked' && !this.boss.active && this.boss.dying <= 0) {
-      this._clearArena();
+    if ((r.bossPhase === 'locked' || r.bossPhase === 'chase')
+        && !this.boss.active && this.boss.dying <= 0) {
+      this._clearFight();
     }
   }
 
@@ -465,36 +477,56 @@ export class Game {
   /* Hand control back and let the boss off its leash. */
   _beginFight() {
     const r = this.run;
-    r.bossPhase = 'locked';
+    r.bossPhase = r.arena ? 'locked' : 'chase';
     r.intro = null;
     this.boss.hold = false;
   }
 
   shake(mag) { this.run.shake = Math.max(this.run.shake, mag); }
 
-  _lockArena(a) {
+  /* True from the moment a gate locks until it clears, whether or not the
+     fight has walls. Lives, the lives HUD and the onboarding prompts key off
+     this rather than off run.arena, which only a static fight has. */
+  get inFight() {
+    const ph = this.run && this.run.bossPhase;
+    return ph === 'intro' || ph === 'locked' || ph === 'chase';
+  }
+
+  /* Start a fight. `a` is the generated arena for a static boss, or null for a
+     moving one — which is the only difference between the two from here on. */
+  _startFight(a) {
     const r = this.run;
     const { def, pass } = bossForGate(r.gate);
-    // Centre the frozen camera on the arena, clamped so it can never move
-    // backwards — the rest of the engine assumes camX only ever grows.
-    const camX = Math.max(r.camX, a.startX - SECTORS.arenaPadCols * WORLD.metre / 2);
-    r.arena = { startX: a.startX, endX: a.endX, camX, startCol: a.startCol, endCol: a.endCol };
+    if (a) {
+      // Centre the frozen camera on the arena, clamped so it can never move
+      // backwards — the rest of the engine assumes camX only ever grows.
+      const camX = Math.max(r.camX, a.startX - SECTORS.arenaPadCols * WORLD.metre / 2);
+      r.arena = { startX: a.startX, endX: a.endX, camX, startCol: a.startCol, endCol: a.endCol };
+      // Auto-run is suspended for a fight with walls: a fixed arena and a
+      // player who cannot stop pressing forward is a player pinned against the
+      // far one. A moving fight keeps the run, because it is a running fight.
+      this.player.autoRun = false;
+    }
     r.bossPhase = 'intro';
     r.prompt = null;
     r.reward = null;              // the flourish owns the screen; nothing shares it
     r.intro = { t: 0, name: def.name.toUpperCase(), subtitle: def.subtitle, cued: {} };
-    // Auto-run is suspended for the fight: a fixed arena and a player who
-    // cannot stop pressing forward is a player pinned against the far wall.
-    this.player.autoRun = false;
     // The boss is on screen for the flourish but held: it stands, it does not
-    // fight, and it cannot be shot before the bell.
-    this.boss.spawn(this._ctx, def, r.arena, pass);
+    // fight, and it cannot be shot before the bell. A moving boss is given the
+    // viewport as its starting arena and takes over from there.
+    this.boss.spawn(this._ctx, def, r.arena || this._viewArena(), pass);
     this.boss.hold = true;
     r.bossHp = 1;
     this.audio.stopMusic();       // the riser needs the room
   }
 
-  _clearArena() {
+  /* The visible screen, as an arena. A moving boss keeps station on this. */
+  _viewArena() {
+    const cam = this.run.camX;
+    return { startX: cam + 16, endX: cam + WORLD.viewW - 10 };
+  }
+
+  _clearFight() {
     const r = this.run;
     const { def } = bossForGate(r.gate);
     r.bossPhase = null;
@@ -529,13 +561,14 @@ export class Game {
     const p = this.player;
     p.revive();
     r.deathT = 0;
-    p.x = r.arena.startX + 20;
+    // Back on your feet where you were, or at the arena mouth if there is one.
+    p.x = r.arena ? r.arena.startX + 20 : Math.max(p.x, r.camX + 24);
     p.tier = 0;
     p.y = WORLD.tierY[0];
     p.vy = 0; p.vx = 0;
     p.grounded = true;
     const { def, pass } = bossForGate(r.gate);
-    this.boss.spawn(this._ctx, def, r.arena, pass);
+    this.boss.spawn(this._ctx, def, r.arena || this._viewArena(), pass);
     this.boss.hold = false;       // straight back into it, no second flourish
     this.announce(`${r.lives} LIVES LEFT`, 'Again', '#ffb238');
     this.audio.play('powerup');
@@ -673,7 +706,7 @@ export class Game {
     if (r.prompt) return;
     // A boss fight owns the top of the screen, and a tip about climbing is
     // not what the player needs while something is winding up at them.
-    if (r.arena) return;
+    if (this.inFight) return;
     const seen = this.sv.seen;
     const show = (id) => {
       const def = ONBOARDING.find((o) => o.id === id);

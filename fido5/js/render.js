@@ -714,11 +714,28 @@ export class Renderer {
       x.globalAlpha = 1;
     }
 
-    // Flak: arcing shells with a short trail so the arc is legible.
+    // Shells and mines. A mine is drawn differently and given a drop line down
+    // to the street: it is the ground it is going to hit that matters, and the
+    // player needs to read that while it is still falling.
     for (const s of b.shots) {
       const sx = Math.round(s.x - cam);
       const sy = Math.round(s.y);
-      if (sx < -6 || sx > W + 6) continue;
+      if (sx < -8 || sx > W + 8) continue;
+      if (s.blast) {
+        const ground = Math.round(WORLD.tierY[0]);
+        x.globalAlpha = 0.3 + 0.25 * Math.abs(Math.sin(b.t * 9));
+        x.fillStyle = '#ffb238';
+        x.fillRect(sx, sy + 3, 1, ground - sy - 3);
+        x.fillRect(sx - s.blast, ground - 1, s.blast * 2, 1);
+        x.globalAlpha = 1;
+        x.fillStyle = '#8c1533';
+        x.fillRect(sx - 3, sy - 3, 6, 6);
+        x.fillStyle = '#ffb238';
+        x.fillRect(sx - 2, sy - 2, 4, 4);
+        x.fillStyle = ((b.t * 10) | 0) % 2 ? '#ffffff' : '#ff3d68';
+        x.fillRect(sx - 1, sy - 1, 2, 2);
+        continue;
+      }
       x.globalAlpha = 0.35;
       x.fillStyle = '#8c1533';
       x.fillRect(sx - Math.sign(s.vx) * 3, sy - 2, 2, 2);
@@ -799,13 +816,14 @@ export class Renderer {
       x.globalAlpha = 1;
       // Name the attack. A boss you can learn beats a boss you can only dodge.
       const label = { stomp: 'STOMP', flak: 'FLAK', charge: 'CHARGE',
-                      beam: 'BEAM', volley: 'VOLLEY' }[b.attack];
+                      beam: 'BEAM', volley: 'VOLLEY',
+                      strafe: 'STRAFING RUN', salvo: 'SALVO', mines: 'MINES' }[b.attack];
       if (label) this.text(label, dx + dw / 2, dy - 16, 'R', 1, 'center');
     }
 
     // Mid-charge: speed lines behind it, so a boss crossing the arena reads as
     // moving rather than as teleporting between frames.
-    if (b.phase === 'strike' && b.attack === 'charge') {
+    if (b.phase === 'strike' && (b.attack === 'charge' || b.attack === 'strafe')) {
       x.globalAlpha = 0.45;
       x.fillStyle = '#ff3d68';
       for (let i = 1; i <= 3; i++) {
@@ -816,7 +834,7 @@ export class Renderer {
 
     x.drawImage(img.c, dx, dy, dw, dh);
 
-    if (b.phase === 'strike' && b.attack === 'charge') {
+    if (b.phase === 'strike' && (b.attack === 'charge' || b.attack === 'strafe')) {
       this._flash(x, img, dx, dy, '#ff3d68', 0.22, dw, dh);
     }
     if (b.phase === 'telegraph') {
