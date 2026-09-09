@@ -339,14 +339,16 @@ export class Game {
       // where the player most needs to see exactly where they are standing.
       const leftWall = Math.max(r.arena.startX + 6, r.camX + this.leftMargin);
       let rightWall = r.arena.endX - 6;
-      /* A boss standing between the player and the far wall is solid. Without
-         this the player can run into the few pixels behind it, where there is
-         no room for it to come back round in front — and a player who can only
-         shoot the way they are facing then cannot touch it at all. The fight
-         simply stopped. The boss is only solid while it is ahead: an attack
-         that crosses the player, like the Warden's charge, has to be able to. */
+      /* A boss standing between the player and the far wall is solid, so they
+         cannot walk into the few pixels behind it. It is only solid while it
+         is ahead — an attack that crosses the player, like the Warden's
+         charge, has to be able to — and only at the height it actually
+         occupies. Without that second condition it was an invisible wall to
+         the top of the screen: a jump that cleared the Warden by 27px still
+         hit it, so hopping over a boss was impossible. */
       const bo = this.boss;
-      if (bo.active && bo.dying <= 0 && !bo.moving && bo.x > p.x) {
+      if (bo.active && bo.dying <= 0 && !bo.moving && bo.x > p.x
+          && Math.abs(p.midY - bo.y) < (bo.def.h + p.h) / 2 - 3) {
         rightWall = Math.min(rightWall, bo.x - bo.def.w / 2 - 4);
       }
       if (p.x < leftWall) { p.x = leftWall; if (p.vx < 0) p.vx = 0; }

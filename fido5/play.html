@@ -79,14 +79,14 @@
     <!-- Touch controls. Large targets, and they never overlap the play area
          the player needs to read. -->
     <div class="pad" id="pad">
-      <!-- Movement on one thumb: left, right and down. Up is deliberately not on
-           the stick — jump is a button, and having it in both places produced
-           jumps nobody asked for. The zone is the whole lower-left quarter and
+      <!-- All four directions on one thumb, with jump also on a button so the
+           right hand can use it. The zone is the whole lower-left quarter and
            the ring follows the thumb down, so the stick is wherever the
            player's thumb already was. -->
       <div class="stick" id="stick" data-btn="stick" role="application"
-           aria-label="Movement. Drag left or right to run, push down to slide or drop. Jump is a button on the right.">
+           aria-label="Movement. Drag to run, push up to jump or climb, push down to slide or drop.">
         <div class="stick__base" id="stick-base">
+          <span class="stick__dir stick__dir--up"></span>
           <span class="stick__dir stick__dir--down"></span>
           <span class="stick__dir stick__dir--left"></span>
           <span class="stick__dir stick__dir--right"></span>

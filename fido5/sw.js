@@ -11,7 +11,7 @@
    Bump VERSION on release and every old cache is dropped.
    ========================================================================== */
 
-const VERSION = 'fido5-v11';
+const VERSION = 'fido5-v12';
 
 /* Fetched fresh whenever the network allows. Anything the game's behaviour
    depends on belongs here, including the voice manifest: it decides whether

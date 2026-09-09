@@ -340,27 +340,38 @@ body {
    @media block below only has to restate these four. */
 .pad {
   position: absolute; inset: 0; pointer-events: none;
-  --btn-main: clamp(58px, 12vh, 80px);   /* fire and jump: the two held ones */
-  --btn-alt:  clamp(52px, 11vh, 74px);   /* gadget */
+  --btn-main: clamp(66px, 13.5vh, 88px); /* fire and jump: the two held ones */
+  --btn-alt:  clamp(56px, 11.5vh, 78px); /* gadget */
   --btn-gap:  .5rem;
   --pad-r:    calc(var(--safe-r) + .7rem);
   --pad-b:    calc(var(--safe-b) + 1.1rem);
+  /* How far apart the staggered pair sits, on both axes. At 0.72 of a button
+     plus the gap the two circles clear each other by about 12px even at the
+     smallest size, while the boxes still overlap — which is fine, because a
+     round button does not take taps in its corners. */
+  --btn-step: calc(var(--btn-main) * .72 + var(--btn-gap));
 }
 
-/* Fire keeps the corner: it is held for most of a run. Jump sits immediately
-   inboard of it on the same row and at the same size — jump is the one input
-   in the game where a few pixels of miss is a death, so it does not get the
-   smaller target. The gadget is cooldown-gated and the least time-critical, so
-   it takes the longest reach, above the pair. */
-.pad__btn--fire   { right: var(--pad-r); bottom: var(--pad-b);
+/* The two held buttons sit on a diagonal rather than a row, along the arc a
+   right thumb actually sweeps: jump low and inboard where the thumb rests,
+   fire up and out in the corner where it reaches. Both are the same size —
+   jump is the one input in the game where a few pixels of miss is a death, so
+   it does not get the smaller target. The gadget is cooldown-gated and the
+   least time-critical, so it takes the longest reach, above the pair. */
+.pad__btn--fire   { right: var(--pad-r);
+                    bottom: calc(var(--pad-b) + var(--btn-step));
                     width: var(--btn-main); height: var(--btn-main); }
-.pad__btn--jump   { right: calc(var(--pad-r) + var(--btn-main) + var(--btn-gap));
+.pad__btn--jump   { right: calc(var(--pad-r) + var(--btn-step));
                     bottom: var(--pad-b);
                     width: var(--btn-main); height: var(--btn-main);
                     background: rgba(46,230,166,.16); border-color: rgba(46,230,166,.5); }
 .pad__btn--jump.is-down { background: rgba(46,230,166,.5); border-color: var(--green); }
-.pad__btn--gadget { right: calc(var(--pad-r) + var(--btn-main) * .75);
-                    bottom: calc(var(--pad-b) + var(--btn-main) + var(--btn-gap)); }
+/* A wider gap above fire than between fire and jump: reaching up for fire and
+   overshooting into the gadget wastes a cooldown, which is worse than either
+   of the two held buttons catching the other. */
+.pad__btn--gadget { right: calc(var(--pad-r) + var(--btn-step) * .5);
+                    bottom: calc(var(--pad-b) + var(--btn-step) + var(--btn-main)
+                                 + var(--btn-gap) * 2.2); }
 
 /* ---- Movement stick -------------------------------------------------------
    One thumb, four directions. Left and right run, up jumps or climbs a level,
@@ -398,17 +409,18 @@ body {
   will-change: transform;
 }
 .stick.is-live .stick__knob { background: rgba(139,92,246,.8); }
-/* Chevrons on the rim, lit by whichever way the stick is pushed. Three of
-   them, not four: the missing one at the top is how the stick says it does not
-   do jump. */
+/* Chevrons on the rim, lit by whichever way the stick is pushed: the stick
+   teaches that up is jump and down is slide without a tutorial line. */
 .stick__dir {
   position: absolute; width: 0; height: 0; opacity: .3;
   border: 7px solid transparent;
   transition: opacity .1s linear;
 }
+.stick__dir--up    { top: 2px;    border-bottom-color: var(--dim); border-top-width: 0; }
 .stick__dir--down  { bottom: 2px; border-top-color: var(--dim); border-bottom-width: 0; }
 .stick__dir--left  { left: 2px;   border-right-color: var(--dim); border-left-width: 0; }
 .stick__dir--right { right: 2px;  border-left-color: var(--dim); border-right-width: 0; }
+.stick__base.on-up    .stick__dir--up    { opacity: 1; border-bottom-color: var(--purple-l); }
 .stick__base.on-down  .stick__dir--down  { opacity: 1; border-top-color: var(--purple-l); }
 .stick__base.on-left  .stick__dir--left  { opacity: 1; border-right-color: var(--purple-l); }
 .stick__base.on-right .stick__dir--right { opacity: 1; border-left-color: var(--purple-l); }
@@ -427,8 +439,8 @@ body {
 /* Health bars sit low-left, so on very short screens shrink the pad instead. */
 @media (max-height: 400px) {
   /* Only these numbers change; every size and position above follows them. */
-  .pad { --btn-main: 60px; --btn-alt: 46px; --btn-gap: .4rem;
-         --pad-b: calc(var(--safe-b) + .8rem); }
+  .pad { --btn-main: 68px; --btn-alt: 50px; --btn-gap: .4rem;
+         --pad-b: calc(var(--safe-b) + .7rem); }
   .stick__base { width: 92px; height: 92px; margin: -46px 0 0 -46px;
                  left: calc(var(--safe-l) + 3.6rem); bottom: calc(var(--safe-b) + 3.2rem); }
   .stick__knob { width: 42px; height: 42px; margin: -21px 0 0 -21px; }
