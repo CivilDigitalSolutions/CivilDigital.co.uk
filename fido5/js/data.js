@@ -627,6 +627,23 @@ export const SECTORS = {
   arenaPadCols: 2,        // breathing room inside the walls
 };
 
+/* The intro flourish, as a timeline in seconds. Every beat is a cue for both
+   the drawing and the sound, so the two can never drift apart. Skippable —
+   an arcade intro nobody can mash through is a cutscene. */
+export const BOSS_INTRO = {
+  bars:   0.00,   // letterbox slides in, the world dims, the riser starts
+  word1:  0.26,   // "BOSS" starts its run in from the left
+  land1:  0.50,   // ...and lands
+  word2:  0.50,   // "FIGHT" starts its run in from the right
+  land2:  0.74,   // ...and lands, harder
+  plate:  1.04,   // the name plate rises
+  plateIn: 0.26,  // how long the plate takes to settle
+  clear:  2.44,   // words and plate punch out
+  fight:  2.60,   // "FIGHT!" stamps, the boss music starts
+  done:   3.40,   // control returns
+  travel: 0.24,   // how long each word spends flying in
+};
+
 /* Bosses in gate order. The roster loops once exhausted, with each pass
    raising health and speed, so the tail of a long run keeps escalating
    instead of flattening out the way the difficulty ramp does. */
@@ -634,7 +651,7 @@ export const BOSSES = [
   {
     id: 'warden',
     name: 'The Warden',
-    subtitle: 'Sector 1 — heavy walker',
+    subtitle: 'Heavy walker',
     arena: 'static',       // fixed camera, no scrolling
     health: 520,
     contact: 16,           // damage from walking into it

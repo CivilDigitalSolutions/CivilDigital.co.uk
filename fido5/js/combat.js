@@ -325,7 +325,7 @@ export function updateBullets(dt, ctx) {
     // A boss is not in the enemy pool — it has its own state machine — so it
     // is checked first and takes the shot before anything else can.
     const boss = ctx.boss;
-    if (boss && boss.active && boss.dying <= 0) {
+    if (boss && boss.active && boss.dying <= 0 && !boss.hold) {
       const hw = boss.def.w / 2, hh = boss.def.h / 2;
       if (b.x > boss.x - hw && b.x < boss.x + hw &&
           b.y + 2 > boss.y - hh && b.y - 2 < boss.y + hh) {

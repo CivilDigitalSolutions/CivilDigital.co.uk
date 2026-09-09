@@ -814,6 +814,11 @@ export class UI {
     $('hud-health-num').textContent = Math.max(0, Math.round(p.health));
     hb.classList.toggle('is-low', hp < 0.3);
 
+    // The intro flourish owns the screen. The HUD is small DOM text and it
+    // clutters a title card, so it steps aside for the three seconds the card
+    // is up and comes back with the bell.
+    this.hud.classList.toggle('is-intro', r.bossPhase === 'intro');
+
     // Lives: only during a boss fight, and only ever redrawn when the count
     // changes, since this runs every frame.
     const lw = $('hud-lives');

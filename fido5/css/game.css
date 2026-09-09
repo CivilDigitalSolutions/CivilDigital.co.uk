@@ -253,6 +253,11 @@ body {
 .hud-drone__bar > div { height: 100%; width: 100%; background: var(--green); transition: width .15s linear; }
 .hud-drone.is-cooling .hud-drone__bar > div { background: var(--dim); }
 
+/* Out of the way for the boss intro card, back with the bell. */
+#hud { transition: opacity .22s ease; }
+#hud.is-intro { opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { #hud { transition: none; } }
+
 /* Lives. Only ever on screen during a boss fight. Deliberately louder than
    the bars beside it: running out of these ends the run outright. */
 .hud-lives {

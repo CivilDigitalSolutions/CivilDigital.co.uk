@@ -5,7 +5,7 @@
    ui.js; this file raises events and lets the UI decide what to show.
    ========================================================================== */
 
-import { WORLD, DIFFICULTY, SCORE, ONBOARDING, POWERUPS, ELITE, ENEMIES, SECTORS } from './data.js';
+import { WORLD, DIFFICULTY, SCORE, ONBOARDING, POWERUPS, ELITE, ENEMIES, SECTORS, BOSS_INTRO } from './data.js';
 import { World, makeRng, pick, clamp } from './world.js';
 import { Pool, Particles, makeBullet, makeCoin, makePickup, makeCrate, makeEnemy, makeFloater, makeBlast } from './entities.js';
 import { Player } from './player.js';
@@ -137,7 +137,9 @@ export class Game {
       gate: 0,                 // how many gates have been cleared
       gateT: SECTORS.firstGateSeconds,
       lives: SECTORS.lives,
-      bossPhase: null,         // null | 'approach' | 'locked' | 'clear'
+      bossPhase: null,         // null | 'approach' | 'intro' | 'locked' | 'clear'
+      intro: null,             // {t, name, subtitle, cued} while the flourish runs
+      shake: 0,                // screen shake magnitude, decays every frame
       arena: null,             // {startX, endX, camX} while locked
       bossName: null,
       bossHp: 0,
@@ -270,6 +272,7 @@ export class Game {
 
     r.time += dt;
     r.empFlash = Math.max(0, r.empFlash - dt);
+    r.shake = Math.max(0, r.shake - dt * 26);
     r.energyWarn = Math.max(0, r.energyWarn - dt);
     r.gadgetCool = Math.max(0, r.gadgetCool - dt);
     r.promptT = Math.max(0, r.promptT - dt);
@@ -291,7 +294,17 @@ export class Game {
     if (r.rewardT <= 0) r.reward = null;
 
     // Input ---------------------------------------------------------------
-    if (this.state === 'running' && !p.dead) {
+    // The flourish holds everything still. Any of the action buttons skips it,
+    // because an arcade intro nobody can mash through is a cutscene.
+    const introLock = r.bossPhase === 'intro';
+    if (introLock) {
+      if (this.input.take('jump') || this.input.take('fire') || this.input.take('gadget')
+          || this.input.held.fire) {
+        r.intro.t = Math.max(r.intro.t, BOSS_INTRO.fight);
+      }
+      this.input.take('down');
+    }
+    if (this.state === 'running' && !p.dead && !introLock) {
       if (this.input.take('jump')) p.tryJump(this.audio);
       if (this.input.take('down')) p.tryDown(this.world, this.audio);
       if (this.input.take('gadget')) {
@@ -303,7 +316,8 @@ export class Game {
 
     // Simulation ----------------------------------------------------------
     p.speedMul = this.debugSpeedMul;
-    p.update(dt, this.world, p.dead ? 0 : r.speed, this.input, this.audio, this.particles);
+    p.update(dt, this.world, p.dead || introLock ? 0 : r.speed,
+      introLock ? null : this.input, this.audio, this.particles);
 
     // The camera trails the player and only ever moves forward. That keeps
     // generation and pruning honest, and means backtracking is limited to the
@@ -416,10 +430,45 @@ export class Game {
       return;
     }
 
+    if (r.bossPhase === 'intro') { this._intro(dt); return; }
+
     if (r.bossPhase === 'locked' && !this.boss.active && this.boss.dying <= 0) {
       this._clearArena();
     }
   }
+
+  /* The flourish. Beats come from BOSS_INTRO and each is cued exactly once,
+     so a skip that jumps the clock forward cannot fire the same sound twice
+     or, worse, replay a beat it has already passed. */
+  _intro(dt) {
+    const r = this.run;
+    const io = r.intro;
+    io.t += dt;
+    const cue = (name, at, fn) => {
+      if (io.t >= at && !io.cued[name]) { io.cued[name] = true; fn(); }
+    };
+    cue('riser', BOSS_INTRO.bars, () => this.audio.play('boss.riser'));
+    cue('land1', BOSS_INTRO.land1, () => { this.audio.play('boss.slam', { n: 0 }); this.shake(4); });
+    cue('land2', BOSS_INTRO.land2, () => { this.audio.play('boss.slam', { n: 1 }); this.shake(6); });
+    cue('plate', BOSS_INTRO.plate, () => this.audio.play('boss.plate'));
+    cue('fight', BOSS_INTRO.fight, () => {
+      this.audio.play('boss.fight');
+      this.shake(7);
+      this.audio.startMusic('boss');
+      this.drone.say('threat', true);
+    });
+    if (io.t >= BOSS_INTRO.done) this._beginFight();
+  }
+
+  /* Hand control back and let the boss off its leash. */
+  _beginFight() {
+    const r = this.run;
+    r.bossPhase = 'locked';
+    r.intro = null;
+    this.boss.hold = false;
+  }
+
+  shake(mag) { this.run.shake = Math.max(this.run.shake, mag); }
 
   _lockArena(a) {
     const r = this.run;
@@ -428,15 +477,19 @@ export class Game {
     // backwards — the rest of the engine assumes camX only ever grows.
     const camX = Math.max(r.camX, a.startX - SECTORS.arenaPadCols * WORLD.metre / 2);
     r.arena = { startX: a.startX, endX: a.endX, camX, startCol: a.startCol, endCol: a.endCol };
-    r.bossPhase = 'locked';
+    r.bossPhase = 'intro';
     r.prompt = null;
+    r.reward = null;              // the flourish owns the screen; nothing shares it
+    r.intro = { t: 0, name: def.name.toUpperCase(), subtitle: def.subtitle, cued: {} };
     // Auto-run is suspended for the fight: a fixed arena and a player who
     // cannot stop pressing forward is a player pinned against the far wall.
     this.player.autoRun = false;
+    // The boss is on screen for the flourish but held: it stands, it does not
+    // fight, and it cannot be shot before the bell.
     this.boss.spawn(this._ctx, def, r.arena, pass);
+    this.boss.hold = true;
     r.bossHp = 1;
-    this.audio.startMusic('boss');
-    this.announce(def.name.toUpperCase(), def.subtitle, '#ff3d68');
+    this.audio.stopMusic();       // the riser needs the room
   }
 
   _clearArena() {
@@ -444,6 +497,7 @@ export class Game {
     const { def } = bossForGate(r.gate);
     r.bossPhase = null;
     r.arena = null;
+    r.intro = null;
     r.bossName = null;
     this.world.clearArena();
     this.boss.clear();
@@ -480,6 +534,7 @@ export class Game {
     p.grounded = true;
     const { def, pass } = bossForGate(r.gate);
     this.boss.spawn(this._ctx, def, r.arena, pass);
+    this.boss.hold = false;       // straight back into it, no second flourish
     this.announce(`${r.lives} LIVES LEFT`, 'Again', '#ffb238');
     this.audio.play('powerup');
     return true;

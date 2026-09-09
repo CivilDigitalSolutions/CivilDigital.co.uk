@@ -13,7 +13,7 @@
        that matters to gameplay is
    ========================================================================== */
 
-import { WORLD, PAL } from './data.js';
+import { WORLD, PAL, BOSS_INTRO } from './data.js';
 import { S } from './sprites.js';
 import { makeRng } from './world.js';
 
@@ -92,6 +92,10 @@ const GLYPHS = {
 
 export const GLYPH_W = 4, GLYPH_H = 6;
 
+/* Ease-out cubic. Used by the boss intro for anything that slides into place:
+   fast off the mark, gentle at the end, which is what reads as "arriving". */
+function ease(k) { return 1 - Math.pow(1 - k, 3); }
+
 export function textWidth(str, scale = 1) {
   return str.length * GLYPH_W * scale;
 }
@@ -100,9 +104,11 @@ export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d', { alpha: false });
-    this.ctx.imageSmoothingEnabled = false;
     canvas.width = WORLD.viewW;
     canvas.height = WORLD.viewH;
+    // After the backing store, never before: sizing the canvas resets the 2D
+    // context and would put smoothing straight back on.
+    this.ctx.imageSmoothingEnabled = false;
     this.quality = 1;
     this.hiContrast = false;
     this.textCache = new Map();
@@ -294,6 +300,14 @@ export class Renderer {
     const cam = g.run.camX;
 
     this._sky(x, g);
+    // Shake the world, not the sky behind it: a translate on a layer that does
+    // not reach the canvas edge would show a gap there.
+    const sh = g.run.shake || 0;
+    if (sh > 0.1) {
+      x.save();
+      x.translate(Math.round((Math.random() - 0.5) * 2 * sh),
+                  Math.round((Math.random() - 0.5) * 2 * sh));
+    }
     if (this.quality > 0.34) this._parallax(x, cam, g);
     this._traffic(x, g);
     // Push the city back. Nothing behind this line is gameplay, and the
@@ -317,7 +331,9 @@ export class Renderer {
     this._particles(x, cam, g);
     this._arcs(x, cam, g);
     this._floaters(x, cam, g);
+    if (sh > 0.1) x.restore();
     this._overlay(x, g);
+    this._bossIntro(x, g);
   }
 
   _sky(x, g) {
@@ -787,7 +803,9 @@ export class Renderer {
       this._flash(x, img, dx, dy, '#ffffff', Math.min(0.9, b.flash * 7), def.w, def.h);
     }
 
-    this._bossBar(x, g, b);
+    // The intro carries the boss's name itself; two name plates at once is one
+    // too many.
+    if (!b.hold) this._bossBar(x, g, b);
   }
 
   /* The bar sits under the HUD, full width, with a segment per pass so a
@@ -1188,6 +1206,161 @@ export class Renderer {
       x.fillRect(0, 0, W, WORLD.tierY[2] - 30);
       x.globalAlpha = 1;
     }
+  }
+
+  /* ---- Boss intro --------------------------------------------------------
+     An arcade title card: the world dims behind letterbox bars, BOSS flies in
+     from the left and FIGHT from the right to meet in the middle, the boss is
+     named, and a bell-struck FIGHT! hands control back.
+
+     Everything is driven off one clock (run.intro.t) against the beats in
+     BOSS_INTRO, so the drawing and the sound cannot drift apart. */
+
+  _bossIntro(x, g) {
+    const io = g.run.intro;
+    if (!io) return;
+    const T = BOSS_INTRO;
+    const t = io.t;
+    const fadeOut = Math.max(0, (t - (T.done - 0.3)) / 0.3);
+    const veil = Math.min(1, t / 0.26) * (1 - fadeOut);
+    if (veil <= 0) return;
+
+    // Dim, then close the bars in. The bars are the frame everything else
+    // sits inside, so they arrive first and leave last.
+    x.globalAlpha = 0.72 * veil;
+    x.fillStyle = '#080a12';
+    x.fillRect(0, 0, W, H);
+    x.globalAlpha = 1;
+
+    const barH = Math.round(H * 0.13 * ease(Math.min(1, t / 0.3)) * (1 - fadeOut));
+    if (barH > 0) {
+      x.fillStyle = '#080a12';
+      x.fillRect(0, 0, W, barH);
+      x.fillRect(0, H - barH, W, barH);
+      x.fillStyle = '#ff3d68';
+      x.fillRect(0, barH, W, 1);
+      x.fillRect(0, H - barH - 1, W, 1);
+    }
+
+    // Speed streaks behind the words, so the band across the middle is not a
+    // flat rectangle of nothing.
+    if (t > T.word1 && t < T.clear) {
+      x.globalAlpha = 0.16 * (1 - fadeOut);
+      x.fillStyle = '#8b5cf6';
+      for (let i = 0; i < 7; i++) {
+        const sy = Math.round(H * 0.24 + i * (H * 0.075));
+        const w = 30 + ((i * 53) % 70);
+        const sx = ((t * (90 + i * 34) + i * 97) % (W + 160)) - 80;
+        x.fillRect(Math.round(i % 2 ? W - sx - w : sx), sy, w, 1);
+      }
+      x.globalAlpha = 1;
+    }
+
+    // Measure rather than assume: the outline adds a pixel of padding on every
+    // side, so a width computed from the character count alone runs long and
+    // pushes the second word off the edge.
+    const bossW = this._textCanvas('BOSS', 'Y', true).width;
+    const fightW = this._textCanvas('FIGHT', 'Y', true).width;
+    const gap = 4;
+    const runW = bossW + gap + fightW;
+    const scale = Math.max(2, Math.floor(W * 0.9 / runW));
+    const x0 = Math.round(W / 2 - (runW * scale) / 2);
+    const wordH = (GLYPH_H + 2) * scale;
+    const midY = Math.round(H * 0.30 - wordH / 2);
+
+    if (t < T.clear) {
+      // "BOSS" from the left, "FIGHT" from the right, meeting in the middle.
+      this._slam(x, 'BOSS', x0, midY, scale, t, T.word1, -runW * scale - 20, fadeOut);
+      this._slam(x, 'FIGHT', x0 + (bossW + gap) * scale, midY, scale, t, T.word2, W + 20, fadeOut);
+
+      // Name plate. Rises from under the words and settles.
+      if (t >= T.plate) {
+        const k = ease(Math.min(1, (t - T.plate) / T.plateIn));
+        const nameCv = this._textCanvas(io.name, 'E', true);
+        const ns = Math.max(2, Math.min(6, Math.floor(W * 0.62 / nameCv.width)));
+        const nameH = nameCv.height * ns;
+        const subH = io.subtitle ? (GLYPH_H + 2) : 0;
+        const ph = 5 + 6 + nameH + (subH ? 2 + subH : 0) + 5;
+        const plateW = Math.min(W - 8, Math.max(nameCv.width * ns + 20, 130));
+        const px = Math.round(W / 2 - plateW / 2);
+        const py = Math.round(H * 0.66 - ph / 2 + (1 - k) * 22);
+        x.globalAlpha = k * (1 - fadeOut);
+        x.fillStyle = '#080a12';
+        x.fillRect(px, py, plateW, ph);
+        x.fillStyle = '#ff3d68';
+        x.fillRect(px, py, plateW, 2);
+        x.fillRect(px, py + ph - 2, plateW, 2);
+        // Which sector this is, above the name, the way an arcade round card
+        // tells you where you are before it tells you what you are fighting.
+        this.text('SECTOR ' + (g.run.gate + 1), W / 2, py + 4, 'S', 1, 'center');
+        this.text(io.name, W / 2, py + 5 + 6, 'E', ns, 'center');
+        if (io.subtitle) {
+          this.text(io.subtitle.toUpperCase(), W / 2, py + 5 + 6 + nameH + 1, 'A', 1, 'center');
+        }
+        x.globalAlpha = 1;
+      }
+    }
+
+    // The bell. Stamps in oversized and settles, with a white flash on impact.
+    if (t >= T.fight) {
+      const k = Math.min(1, (t - T.fight) / 0.14);
+      const cv = this._textCanvas('FIGHT!', 'Y', true);
+      // Stamps in a little oversized and settles. The overshoot is small on
+      // purpose: at this size a big one runs off the bottom of the screen.
+      const fs = Math.max(3, Math.floor(W * 0.62 / cv.width)) * (1 + (1 - k) * 0.55);
+      x.globalAlpha = Math.min(1, (t - T.fight) / 0.05) * (1 - fadeOut);
+      this._word(x, 'FIGHT!', W / 2, Math.round(H / 2 - (cv.height * fs) / 2), fs, '#ffe66d', '#8c1533');
+      x.globalAlpha = 1;
+      if (t < T.fight + 0.09) {
+        x.globalAlpha = 0.55 * (1 - (t - T.fight) / 0.09);
+        x.fillStyle = '#ffffff';
+        x.fillRect(0, 0, W, H);
+        x.globalAlpha = 1;
+      }
+    }
+  }
+
+  /* One word flying in to `dx`, with an overshoot on landing and a white
+     flash on the frame it lands. */
+  _slam(x, str, dx, dy, scale, t, start, from, fadeOut) {
+    if (t < start) return;
+    const k = Math.min(1, (t - start) / BOSS_INTRO.travel);
+    const settle = t - (start + BOSS_INTRO.travel);
+    // Fly in fast, then a short recoil so it reads as an impact rather than
+    // a slide that happened to stop.
+    let px = dx;
+    if (k < 1) px = Math.round(from + (dx - from) * (1 - Math.pow(1 - k, 3)));
+    else if (settle < 0.1) px = dx + Math.round(Math.sin(settle / 0.1 * Math.PI) * -4);
+    x.globalAlpha = 1 - fadeOut;
+    this._word(x, str, px, dy, scale, '#ffe66d', '#8c1533', 'left');
+    if (k >= 1 && settle < 0.07) {
+      this._word(x, str, px, dy, scale, '#ffffff', '#ffffff', 'left');
+    }
+    x.globalAlpha = 1;
+  }
+
+  /* Arcade lettering: an extruded shadow under a bright face. The bitmap font
+     already carries its own outline, so two passes is all it takes. */
+  _word(x, str, dx, dy, scale, face, shadow, align = 'center') {
+    const fc = this._textCanvas(str, face, true);
+    // The shadow copy is drawn WITHOUT the outline. A one-pixel outline scaled
+    // up is thicker than the extrude itself and would swallow it, leaving red
+    // only in the corners — which reads as speckle, not as a drop shadow.
+    const sc = this._textCanvas(str, shadow, false);
+    let fx = dx;
+    if (align === 'center') fx = dx - (fc.width * scale) / 2;
+    if (align === 'right') fx = dx - fc.width * scale;
+    // The outlined canvas sets its glyphs one pixel in, so the un-outlined copy
+    // starts a pixel further along just to line up. The extrude itself is one
+    // source pixel deep, laid down in thirds: the font's strokes are a single
+    // pixel wide, so a shadow jumped straight to full depth lands clear of the
+    // stroke it belongs to and reads as speckle instead of as a shadow.
+    const sw = sc.width * scale, shh = sc.height * scale;
+    for (let i = 1; i <= 3; i++) {
+      const d = scale + Math.round((scale * i) / 3);
+      x.drawImage(sc, Math.round(fx + d), Math.round(dy + d), sw, shh);
+    }
+    x.drawImage(fc, Math.round(fx), Math.round(dy), fc.width * scale, fc.height * scale);
   }
 
   /* ---- Menu scene --------------------------------------------------------

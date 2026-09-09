@@ -54,6 +54,7 @@ export class Boss {
     this.waves = [];        // stomp shockwaves
     this.collapsed = [];    // walkway columns already taken away
     this.dying = 0;
+    this.hold = false;      // true during the intro: stands, does not fight
     this.speedMul = 1 + pass * 0.15;
   }
 
@@ -69,7 +70,7 @@ export class Boss {
   /* ---- Damage --------------------------------------------------------- */
 
   hurt(ctx, amount) {
-    if (!this.active || this.dying > 0) return 0;
+    if (!this.active || this.dying > 0 || this.hold) return 0;
     const mul = this.exposed ? 1 : this.def.armour;
     const dealt = amount * mul;
     this.hp = Math.max(0, this.hp - dealt);
@@ -102,6 +103,9 @@ export class Boss {
       if (this.dying <= 0) this.active = false;   // _sector picks the clear up
       return;
     }
+
+    // Held for the intro: it breathes, and nothing else.
+    if (this.hold) return;
 
     this._updateWaves(dt, ctx);
     this._updateShots(dt, ctx);

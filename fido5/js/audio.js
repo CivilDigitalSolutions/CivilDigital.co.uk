@@ -310,6 +310,31 @@ export class Audio {
         this._tone({ freq: 200, to: 140, type: 'square', dur: 0.1, gain: 0.10 });
         break;
 
+      /* Boss intro flourish ---------------------------------------------- */
+      case 'boss.riser':
+        // Everything sweeping upward at once: the sound of a room going quiet.
+        this._burst({ dur: 1.1, gain: 0.16, cut: 200, sweepTo: 5200, type: 'bandpass', q: 1.4 });
+        this._tone({ freq: 90, to: 420, type: 'sawtooth', dur: 1.1, gain: 0.10 });
+        this._tone({ freq: 45, to: 210, type: 'square', dur: 1.1, gain: 0.07 });
+        break;
+      case 'boss.slam':
+        // A word landing. Pitched by `opt.n` so the second hits harder.
+        this._tone({ freq: 150 - (opt.n || 0) * 30, to: 40, type: 'square', dur: 0.34, gain: 0.30 });
+        this._burst({ dur: 0.3, gain: 0.28, cut: 1600, sweepTo: 90 });
+        this._burst({ dur: 0.09, gain: 0.16, cut: 6000, type: 'highpass' });
+        break;
+      case 'boss.plate':
+        this._burst({ dur: 0.28, gain: 0.14, cut: 900, sweepTo: 3000, type: 'bandpass', q: 1.2 });
+        this._tone({ freq: hz('D', 3), type: 'sawtooth', dur: 0.2, gain: 0.12 });
+        break;
+      case 'boss.fight':
+        // The bell at the top of the round.
+        this._tone({ freq: hz('D', 4), type: 'square', dur: 0.5, gain: 0.26 });
+        this._tone({ freq: hz('A', 4), type: 'square', dur: 0.5, gain: 0.22, detune: 8 });
+        this._tone({ freq: hz('D', 5), type: 'triangle', dur: 0.7, gain: 0.18, delay: 0.05 });
+        this._burst({ dur: 0.5, gain: 0.26, cut: 2400, sweepTo: 120 });
+        break;
+
       /* Interface ------------------------------------------------------ */
       case 'ui.move':
         this._tone({ freq: hz('E', 5), type: 'square', dur: 0.04, gain: 0.07 });
@@ -361,16 +386,24 @@ export class Audio {
       pad:   ['A3', null, null, null, null, null, null, null,
               'F3', null, null, null, 'G3', null, null, null],
     },
-    /* Slower and heavier than the run track: a boss is a stand-up fight, not
-       a chase. Minor second in the pad gives it the unease the runner lacks. */
+    /* Faster and harder than the run track — a gate is the loudest thing in a
+       run and it should sound like it. D harmonic minor over a four-on-the-
+       floor kick, a backbeat snare and sixteenth hats, with the bass on a saw
+       instead of a square so it grinds rather than bleeps. */
     boss: {
-      bpm: 104,
-      bass:  ['D2', 'D2', null, 'D2', 'A#1', null, 'D2', null,
-              'C2', 'C2', null, 'C2', 'G1', null, 'A#1', null],
-      arp:   ['D4', null, 'F4', null, 'A4', null, 'F4', null,
-              'C4', null, 'D#4', null, 'G4', null, 'D#4', null],
+      bpm: 172,
+      bassType: 'sawtooth',
+      bassGain: 0.20,
+      arpGain: 0.095,
+      kickEvery: 4,           // four on the floor
+      snareOn: [4, 12],       // backbeat
+      hatEvery: 1,            // sixteenths, not offbeats
+      bass:  ['D2', 'D2', 'D2', null, 'D2', null, 'D2', 'D2',
+              'C2', 'C2', 'C2', null, 'A#1', null, 'A1', 'A1'],
+      arp:   ['D5', 'A4', 'F5', 'A4', 'D5', 'A4', 'F5', 'A4',
+              'C5', 'G4', 'D#5', 'G4', 'A#4', 'F4', 'D5', 'F4'],
       pad:   ['D3', null, null, null, null, null, null, null,
-              'A#2', null, null, null, null, null, null, null],
+              'A#2', null, null, null, 'A2', null, null, null],
     },
   };
 
@@ -393,17 +426,27 @@ export class Audio {
       if (!this.settings.music || !this.ctx) { this.stopMusic(); return; }
       const i = this.step % 16;
       const b = Audio.noteHz(pat.bass[i]);
-      if (b) this._tone({ freq: b, type: 'square', dur: stepDur * 0.85, gain: 0.16, bus: this.musicBus });
+      if (b) this._tone({ freq: b, type: pat.bassType || 'square', dur: stepDur * 0.85, gain: pat.bassGain || 0.16, bus: this.musicBus });
       const a = Audio.noteHz(pat.arp[i]);
-      if (a) this._tone({ freq: a, type: 'triangle', dur: stepDur * 0.6, gain: 0.075, bus: this.musicBus });
+      if (a) this._tone({ freq: a, type: 'triangle', dur: stepDur * 0.6, gain: pat.arpGain || 0.075, bus: this.musicBus });
       const p = Audio.noteHz(pat.pad[i]);
       if (p) {
         this._tone({ freq: p, type: 'sawtooth', dur: stepDur * 7, gain: 0.035, bus: this.musicBus });
         this._tone({ freq: p * 1.5, type: 'sawtooth', dur: stepDur * 7, gain: 0.022, bus: this.musicBus, detune: 6 });
       }
-      // A closed hat on the offbeats keeps the pulse without a drum kit.
-      if (i % 2 === 1) this._burst({ dur: 0.035, gain: 0.05, cut: 8000, type: 'highpass', bus: this.musicBus });
-      if (i % 8 === 0) this._burst({ dur: 0.14, gain: 0.10, cut: 220, sweepTo: 60, bus: this.musicBus });
+      // Drums are per-pattern: the run gets a hat on the offbeats and a kick
+      // every bar, a boss gets a full kit at twice the density.
+      const hatEvery = pat.hatEvery || 2;
+      if (i % hatEvery === (hatEvery > 1 ? 1 : 0)) {
+        this._burst({ dur: 0.035, gain: 0.05, cut: 8000, type: 'highpass', bus: this.musicBus });
+      }
+      if (i % (pat.kickEvery || 8) === 0) {
+        this._burst({ dur: 0.14, gain: 0.10, cut: 220, sweepTo: 60, bus: this.musicBus });
+      }
+      if (pat.snareOn && pat.snareOn.includes(i)) {
+        this._burst({ dur: 0.11, gain: 0.085, cut: 2200, q: 0.8, type: 'bandpass', bus: this.musicBus });
+        this._tone({ freq: 190, to: 120, type: 'triangle', dur: 0.07, gain: 0.05, bus: this.musicBus });
+      }
       this.step++;
     };
     tick();
