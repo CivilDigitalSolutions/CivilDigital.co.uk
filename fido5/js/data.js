@@ -576,9 +576,13 @@ export const VOICE = {
   dir: 'audio/vo/',
   ext: '.mp3',
   manifest: 'audio/vo/manifest.json',
+  volume: 0.95,
+  // Recorded lines only. The browser's own speech synthesis is available as a
+  // stand-in for lines with no recording, but it sounds like a narrator
+  // rather than a drone, so it is off: set this to true to hear it.
+  useSynthesis: false,
   pitch: 0.55,           // synthesis: low, to read as a machine
   rate: 1.12,
-  volume: 0.95,
 };
 
 /* ---- Onboarding -------------------------------------------------------- */

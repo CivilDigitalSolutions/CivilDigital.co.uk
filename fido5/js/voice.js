@@ -4,11 +4,13 @@
    supplied; otherwise the browser's own speech synthesis stands in, pitched
    down so it reads as a machine rather than a narrator.
 
-   Recorded audio is entirely optional. Drop files named after the line ids
-   into fido5/audio/vo/ alongside a manifest.json listing which ids exist, and
-   those lines switch from synthesis to the recording with no code change.
-   Subtitles are drawn regardless of this module, so nothing is lost when the
-   voice is off or unavailable.
+   Drop files named after the line ids into fido5/audio/vo/ alongside a
+   manifest.json listing which ids exist, and those lines start speaking with
+   no code change. Synthesis is currently off (see VOICE.useSynthesis), so a
+   line with no recording is simply silent.
+
+   Subtitles are drawn regardless of this module, so the writing is never lost
+   when the voice is off, unrecorded or unavailable.
    ========================================================================== */
 
 import { VOICE } from './data.js';
@@ -73,6 +75,7 @@ export class Voice {
   }
 
   _synthesise(line) {
+    if (!VOICE.useSynthesis) return;      // recordings only
     if (!this.synth || typeof SpeechSynthesisUtterance === 'undefined') return;
     try {
       const u = new SpeechSynthesisUtterance(line.text);

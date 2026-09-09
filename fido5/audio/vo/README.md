@@ -6,13 +6,17 @@ Every line FiDo-5 speaks, with the filename each recording must use.
 
 1. Record each line and save it as `<id>.mp3` in this folder.
 2. Add the ids you have recorded to `manifest.json`, e.g. `["threat-1", "threat-2"]`.
-3. Anything not listed keeps using the browser voice, so a partial set is fine.
+3. Anything not listed stays silent, so a partial set is fine and can grow over time.
+
+Mono, 44.1kHz, normalised to about -3dB, trimmed tight at both ends. Keep each
+line under two seconds: they play during combat and must not overlap.
 
 ## Direction
 
 FiDo-5 is a compact military drone: loyal, efficient, protective, and dry.
 Clipped delivery, no warmth in the performance, a little radio compression.
-It is a machine, not a narrator, and it never sounds worried.
+It is a machine, not a narrator, and it never sounds worried. The sarcasm is
+flat rather than played for laughs.
 
 ## Lines
 
