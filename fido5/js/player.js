@@ -37,7 +37,10 @@ export class Player {
     this.coyote = 0;
     this.dropIgnore = 0;
     this.slideT = 0;
-    this.nudge = 0;              // screen-space drift the player controls
+    this.vx = 0;                 // horizontal velocity, px/s
+    this.speedMul = 1;           // development speed control
+    this.facing = 1;             // 1 = right, -1 = left
+    this.autoRun = false;        // set from settings at the start of a run
 
     this.maxHealth = stats.operative.maxHealth;
     this.health = this.maxHealth;
@@ -71,10 +74,11 @@ export class Player {
   get bottom() { return this.y; }
   get midY() { return this.y - this.h / 2; }
 
-  /* Where the muzzle sits, for tracers and flashes. */
+  /* Where the muzzle sits, for tracers and flashes. Mirrors with facing. */
   muzzle() {
-    if (this.state === 'slide') return { x: this.x + 9, y: this.y - 5 };
-    return { x: this.x + 7 - this.recoil * 2, y: this.y - 13 };
+    const f = this.facing;
+    if (this.state === 'slide') return { x: this.x + 9 * f, y: this.y - 5 };
+    return { x: this.x + (7 - this.recoil * 2) * f, y: this.y - 13 };
   }
 
   /* ---- Input ---- */
@@ -134,6 +138,8 @@ export class Player {
 
     if (this.dead) {
       this.deathT += dt;
+      this.vx *= Math.max(0, 1 - dt * 4);
+      this.x += this.vx * dt;
       // Keep falling so the body settles rather than freezing mid-air.
       this.vy += WORLD.gravity * dt;
       this.y = Math.min(this.y + this.vy * dt, WORLD.tierY[this.tier]);
@@ -160,14 +166,32 @@ export class Player {
     const regen = this.stats.operative.energyRegen * (this.firing ? 0.75 : 1.25);
     this.energy = Math.min(this.energyMax, this.energy + regen * dt);
 
-    // Horizontal -----------------------------------------------------------
-    let vx = speed;
-    if (input) {
-      if (input.held.forward) this.nudge = Math.min(WORLD.nudgeRange, this.nudge + WORLD.nudge * dt * 2.4);
-      else if (input.held.back) this.nudge = Math.max(-WORLD.nudgeRange, this.nudge - WORLD.nudge * dt * 2.4);
-      else this.nudge += (0 - this.nudge) * Math.min(1, dt * 3.4);
+    // Horizontal -------------------------------------------------------------
+    // Two modes share one velocity model. Under auto-run the target speed is
+    // the run speed and the controls trim it; under manual control the target
+    // is whatever direction is being held, and releasing brings you to a stop.
+    const right = !!(input && input.held.right);
+    const left = !!(input && input.held.left);
+    let target;
+    if (this.autoRun) {
+      target = speed;
+      if (right) target += WORLD.autoBoost;
+      else if (left) target -= WORLD.autoBrake;
+      target = Math.max(30, target);
+    } else {
+      const top = WORLD.moveSpeed * (this.speedMul || 1);
+      target = (right ? top : 0) - (left ? top : 0);
+      // Sliding keeps its momentum rather than stopping dead.
+      if (this.state === 'slide' && target === 0) target = this.vx * 0.6;
     }
-    this.x += vx * dt;
+
+    const authority = (Math.abs(target) < Math.abs(this.vx) ? WORLD.moveBrake : WORLD.moveAccel)
+      * (this.grounded ? 1 : WORLD.airControl);
+    if (this.vx < target) this.vx = Math.min(target, this.vx + authority * dt);
+    else if (this.vx > target) this.vx = Math.max(target, this.vx - authority * dt);
+
+    this.x += this.vx * dt;
+    if (Math.abs(this.vx) > 8) this.facing = this.vx > 0 ? 1 : -1;
 
     // Slide timer ----------------------------------------------------------
     if (this.state === 'slide') {
@@ -234,9 +258,17 @@ export class Player {
     // Obstacles ------------------------------------------------------------
     this._collideObstacles(world, audio, particles);
 
-    // Animation ------------------------------------------------------------
-    this.anim += dt * (this.grounded && this.state === 'run' ? (6 + speed / 40) : 6);
-    this.frame = Math.floor(this.anim) % 4;
+    // Animation --------------------------------------------------------------
+    const moving = Math.abs(this.vx) > 10;
+    if (this.grounded && this.state === 'run' && !moving) {
+      this.anim = 0;              // standing still: settle on the neutral pose
+      this.frame = 1;
+    } else {
+      this.anim += dt * (this.grounded && this.state === 'run'
+        ? (5 + Math.abs(this.vx) / 34)
+        : 6);
+      this.frame = Math.floor(this.anim) % 4;
+    }
   }
 
   _collideObstacles(world, audio, particles) {
@@ -258,9 +290,11 @@ export class Player {
         // Overlap: this is a hit.
         this.hitThisFrame = kind === 1 ? 'block' : 'low';
         this.hurt(kind === 1 ? 16 : 12, audio, particles, 'obstacle');
-        // Push clear so the player is not ground down by the same barrier.
-        this.x = bx - this.w / 2 - 1;
-        this.nudge = Math.max(-WORLD.nudgeRange, this.nudge - 14);
+        // Push clear so the player is not ground down by the same barrier,
+        // on whichever side they ran into it from.
+        if (this.vx >= 0) this.x = bx - this.w / 2 - 1;
+        else this.x = bx + bw + this.w / 2 + 1;
+        this.vx = -this.vx * 0.25;
         return;
       }
     }

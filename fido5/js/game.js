@@ -21,10 +21,11 @@ const MAX_STEPS = 5;
 const STREAK_HOLD = 3.6;      // s of no action before a streak decays
 
 export class Game {
-  constructor({ canvas, sv, audio, input, onEvent }) {
+  constructor({ canvas, sv, audio, input, voice, onEvent }) {
     this.canvas = canvas;
     this.sv = sv;
     this.audio = audio;
+    this.voice = voice || null;
     this.input = input;
     this.onEvent = onEvent || (() => {});
 
@@ -44,11 +45,12 @@ export class Game {
 
     this.stats = resolveStats(sv);
     this.player = new Player(this.stats);
-    this.drone = new Fido(this.stats, sv.loadout.skin);
+    this.drone = new Fido(this.stats, sv.loadout.skin, this.voice);
 
     this.state = 'idle';      // idle | running | paused | over
     this.acc = 0;
     this.debugSpeedMul = 1;
+    this.touchControls = false;   // set by the interface once it knows
     this.debugDiffBonus = 0;
     this.frameCount = 0;
     this.fpsSamples = [];
@@ -83,7 +85,9 @@ export class Game {
     this.run = {
       time: 0,
       distance: 0,
+      maxDistance: 0,
       startX: this.player.x,
+      autoRun: !!this.sv.settings.autoRun,
       score: 0,
       coins: 0,
       parts: 0,
@@ -101,6 +105,8 @@ export class Game {
       diff: 0,
       speed: DIFFICULTY.speed[0],
       camX: 0,
+      reward: null,
+      rewardT: 0,
       weapon: st.weapon,
       drone: st.drone,
       gadget: st.gadget,
@@ -131,6 +137,7 @@ export class Game {
     }
     persist();
 
+    this.player.autoRun = this.run.autoRun;
     this.state = 'running';
     this.acc = 0;
     this.drone.onRunStart();
@@ -157,6 +164,7 @@ export class Game {
       bumpStreak: () => self.bumpStreak(),
       scoreForCrate: (rarity) => SCORE.crate[rarity] || 0,
       openCrate: (crate, drone) => Loot.openCrate(self._ctx, crate, drone),
+      announce: (title, detail, colour) => self.announce(title, detail, colour),
       droneCollect: (o, drone) => self.droneCollect(o, drone),
       collectCoin: (c) => self.collectCoin(c),
       collectPickup: (p) => self.collectPickup(p),
@@ -261,8 +269,12 @@ export class Game {
 
     // Difficulty ----------------------------------------------------------
     r.distance = Math.max(0, (p.x - r.startX) / WORLD.metre);
-    r.diff = clamp(r.distance / DIFFICULTY.rampMetres + this.debugDiffBonus, 0, 1);
+    const gained = Math.max(0, r.distance - r.maxDistance);
+    r.maxDistance = Math.max(r.maxDistance, r.distance);
+    r.diff = clamp(r.maxDistance / DIFFICULTY.rampMetres + this.debugDiffBonus, 0, 1);
     r.speed = pick(DIFFICULTY.speed, r.diff) * this.debugSpeedMul;
+    r.rewardT = Math.max(0, r.rewardT - dt);
+    if (r.rewardT <= 0) r.reward = null;
 
     // Input ---------------------------------------------------------------
     if (this.state === 'running' && !p.dead) {
@@ -276,8 +288,16 @@ export class Game {
     }
 
     // Simulation ----------------------------------------------------------
+    p.speedMul = this.debugSpeedMul;
     p.update(dt, this.world, p.dead ? 0 : r.speed, this.input, this.audio, this.particles);
-    r.camX = Math.max(0, p.x - WORLD.playerScreenX - p.nudge);
+
+    // The camera trails the player and only ever moves forward. That keeps
+    // generation and pruning honest, and means backtracking is limited to the
+    // screen you are on rather than the whole route.
+    const camTarget = Math.max(0, p.x - WORLD.viewW * WORLD.cameraX);
+    r.camX = Math.max(r.camX, camTarget);
+    const leftWall = r.camX + 10;
+    if (p.x < leftWall) { p.x = leftWall; if (p.vx < 0) p.vx = 0; }
 
     this.world.update(p.x, r.diff);
     this._drainSpawns();
@@ -312,7 +332,7 @@ export class Game {
 
     // Score ---------------------------------------------------------------
     if (!p.dead) {
-      r.score += SCORE.perMetre * (r.speed * dt / WORLD.metre) * this.mult();
+      r.score += SCORE.perMetre * gained * this.mult();
       // Streak decay.
       if (r.streak > 0) {
         r.streakT -= dt;
@@ -392,9 +412,18 @@ export class Game {
   }
 
   _drainSpawns() {
+    // A ceiling on how many enemies can share the screen. Without it a slow,
+    // deliberate pass through a dense stretch lets template encounters stack
+    // on top of each other until the field is a wall rather than a fight.
+    const cap = Math.round(pick([7, 14], this.run.diff));
     for (const s of this.world.drainSpawns()) {
       switch (s.kind) {
-        case 'enemy': Combat.spawnEnemy(this._ctx, s); break;
+        case 'enemy': {
+          // Elites are set pieces and get a little headroom over the cap.
+          if (this.pools.enemies.live >= cap + (s.elite ? 3 : 0)) break;
+          Combat.spawnEnemy(this._ctx, s);
+          break;
+        }
         case 'coin': Loot.spawnCoin(this._ctx, s.x, s.y); break;
         case 'crate': Loot.spawnCrate(this._ctx, s.x, s.tier, s.rarity); break;
         case 'power': Loot.spawnPowerUp(this._ctx, s.x, s.tier); break;
@@ -441,7 +470,7 @@ export class Game {
     }
     for (let i = r.traffic.length - 1; i >= 0; i--) {
       const c = r.traffic[i];
-      c.x -= (c.sp + r.speed * 0.10) * dt;
+      c.x -= (c.sp + Math.abs(this.player.vx) * 0.10) * dt;
       if (c.x < -34) r.traffic.splice(i, 1);
     }
   }
@@ -456,10 +485,13 @@ export class Game {
       if (!def || seen[id]) return false;
       seen[id] = true;
       persist();
-      r.prompt = def;
-      r.promptT = 2.6;
+      // Show the controls this device actually has.
+      r.prompt = { text: def.text, sub: (this.touchControls && def.subTouch) || def.sub };
+      r.promptT = 2.8;
       return true;
     };
+
+    if (!seen.move && r.time > 0.8 && show('move')) return;
 
     const world = this.world;
     const col = world.colOfX(this.player.x);
@@ -500,6 +532,13 @@ export class Game {
   breakStreak() {
     this.run.streak = 0;
     this.run.streakT = 0;
+  }
+
+  /* A banner in the HUD naming what a crate held. The in-world label scrolls
+     away with the crate, which is not long enough to read. */
+  announce(title, detail, colour) {
+    this.run.reward = { title, detail, colour };
+    this.run.rewardT = 4;
   }
 
   floater(x, y, text, colour = 'E', size = 1) {

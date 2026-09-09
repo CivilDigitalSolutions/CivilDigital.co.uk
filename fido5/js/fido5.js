@@ -16,11 +16,13 @@ const SAY_GAP = 4.5;        // s minimum between any two lines
 const SAY_KEY_GAP = 22;     // s minimum before the same category repeats
 
 export class Fido {
-  constructor(stats, skinId) {
+  constructor(stats, skinId, voice) {
+    this.voice = voice || null;
     this.reset(stats, skinId);
   }
 
   reset(stats, skinId) {
+    if (this.voice) this.voice.stop();
     this.stats = stats;
     this.skin = skinId || 'standard';
     this.x = 40;
@@ -67,8 +69,11 @@ export class Fido {
     }
     this.saidAt[key] = now;
     this.sayT = SAY_GAP;
-    this.line = lines[Math.floor(Math.random() * lines.length)];
+    const entry = lines[Math.floor(Math.random() * lines.length)];
+    this.line = entry.text;
     this.lineT = 2.6;
+    // The subtitle above is always drawn; the spoken line is additional.
+    if (this.voice) this.voice.speak(entry);
   }
 
   /* ---- Rescue ---- */
@@ -174,7 +179,7 @@ export class Fido {
     let best = null, bestD = d.crateDetect;
     ctx.pools.crates.each((c) => {
       if (c.opened || c.carried) return;
-      if (c.x < ctx.player.x - 60) return;      // already behind us
+      if (c.x < ctx.player.x - 160) return;     // well behind, and off screen
       if (c.rarity === 'vault' && ctx.run.keys <= 0) return;    // no key, no point
       const dist = Math.hypot(c.x - this.x, c.y - this.y);
       if (dist < bestD) { bestD = dist; best = c; }
@@ -265,8 +270,8 @@ export class Fido {
             c.state = 'opening';
             c.scan = c.scanTime / d.efficiency;
             audio.play('crate.scan', { dur: c.scan });
-          } else if (c.x < player.x - 70) {
-            this.crate = null;      // missed it; back to the player
+          } else if (c.x < player.x - 170) {
+            this.crate = null;      // out of reach; back to the player
           }
         } else {
           // Carry it alongside the player and crack it open in transit, so a

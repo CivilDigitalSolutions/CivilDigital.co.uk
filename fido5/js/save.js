@@ -56,7 +56,12 @@ export function defaults() {
       crates: 0, vaults: 0, rescues: 0, bestStreak: 0,
     },
     daily: { day: 0, last: null },
-    settings: { sound: true, music: true, haptics: true, quality: 'auto', sensitivity: 1, hiContrast: false },
+    settings: {
+      sound: true, music: true, voice: true, haptics: true,
+      quality: 'auto', sensitivity: 1, hiContrast: false,
+      buttons: 'auto',
+      autoRun: false,        // manual movement by default; the runner mode is opt-in
+    },
     seen: {},
     pending: [],   // power-ups granted outside a run, applied to the next one
   };

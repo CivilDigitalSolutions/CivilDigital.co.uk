@@ -164,6 +164,9 @@ export function openCrate(ctx, crate, drone) {
   }
 
   ctx.floater(crate.x, crate.y - 20, label, def.accent, 1.15);
+  // Also state it in the HUD: the in-world label goes with the crate, which is
+  // not long enough to actually read what you just found.
+  if (ctx.announce) ctx.announce(def.name, label, def.accent);
   return label;
 }
 

@@ -139,6 +139,19 @@
   border-radius: 6px; padding: .35em .5em; color: var(--ink); white-space: nowrap;
 }
 
+/* A note that qualifies the section above it. */
+.note-strip {
+  margin-top: var(--sp-5);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-300);
+  color: var(--body);
+  max-width: none;
+}
+
 /* ---- Closing strip ------------------------------------------------------ */
 .g-strip { max-width: var(--maxw-prose); }
 .g-strip h2 { margin-bottom: var(--sp-4); }

@@ -17,7 +17,14 @@ import { WORLD, PAL } from './data.js';
 import { S } from './sprites.js';
 import { makeRng } from './world.js';
 
-const W = WORLD.viewW, H = WORLD.viewH;
+// Mutable: the layout picks the render width from the window's aspect ratio
+// so the canvas fills the browser width. Height is fixed.
+let W = WORLD.viewW, H = WORLD.viewH;
+
+export function setViewport(w, h) {
+  W = w;
+  H = h;
+}
 
 /* ---- Pixel font ---------------------------------------------------------
    3x5 glyphs in a 4x6 cell. Used for damage numbers, loot labels, FiDo-5's
@@ -72,6 +79,10 @@ const GLYPHS = {
   '=': ['...', '###', '...', '###', '...'],
   '>': ['#..', '.#.', '..#', '.#.', '#..'],
   '<': ['..#', '.#.', '#..', '.#.', '..#'],
+  '\u2190': ['.#.', '#..', '###', '#..', '.#.'],
+  '\u2192': ['.#.', '..#', '###', '..#', '.#.'],
+  '\u2191': ['.#.', '###', '#.#', '.#.', '.#.'],
+  '\u2193': ['.#.', '.#.', '#.#', '###', '.#.'],
   '(': ['.#.', '#..', '#..', '#..', '.#.'],
   ')': ['.#.', '..#', '..#', '..#', '.#.'],
   '#': ['#.#', '###', '#.#', '###', '#.#'],
@@ -90,15 +101,25 @@ export class Renderer {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d', { alpha: false });
     this.ctx.imageSmoothingEnabled = false;
-    canvas.width = W;
-    canvas.height = H;
+    canvas.width = WORLD.viewW;
+    canvas.height = WORLD.viewH;
     this.quality = 1;
     this.hiContrast = false;
     this.textCache = new Map();
+    this.tintCache = new WeakMap();
     this.buildBackdrop(1337);
   }
 
   setQuality(q) { this.quality = q; }
+
+  /* Re-sizing the backing store resets the 2D context, so the pixel-art
+     settings have to be reapplied. */
+  resize() {
+    this.canvas.width = WORLD.viewW;
+    this.canvas.height = WORLD.viewH;
+    this.ctx.imageSmoothingEnabled = false;
+    this.skyCache = null;
+  }
   setContrast(on) { this.hiContrast = on; }
 
   /* ---- Text ------------------------------------------------------------- */
@@ -598,10 +619,7 @@ export class Renderer {
       x.globalAlpha = 1;
 
       if (e.flash > 0) {
-        x.globalAlpha = Math.min(0.85, e.flash * 8);
-        x.fillStyle = '#ffffff';
-        x.fillRect(dx, dy, w, h);
-        x.globalAlpha = 1;
+        this._flash(x, img, dx, dy, '#ffffff', Math.min(0.85, e.flash * 8), w, h);
       }
       if (e.burnT > 0) {
         x.globalAlpha = 0.5;
@@ -761,10 +779,7 @@ export class Renderer {
     x.drawImage(img.c, sx, sy);
 
     if (d.flash > 0) {
-      x.globalAlpha = Math.min(0.8, d.flash * 4);
-      x.fillStyle = '#ff3d68';
-      x.fillRect(sx, sy, img.w, img.h);
-      x.globalAlpha = 1;
+      this._flash(x, img, sx, sy, '#ff3d68', Math.min(0.8, d.flash * 4));
     }
 
     // Rescue readiness pip, so its availability is never a mystery.
@@ -815,26 +830,28 @@ export class Renderer {
     const flashing = p.hurtFlash > 0 && ((p.hurtFlash * 22) | 0) % 2 === 0;
     const invulnBlink = p.invuln > 0 && !p.dead && ((p.invuln * 14) | 0) % 2 === 0;
 
+    const set = p.facing < 0 ? S.flip : S;
+
     if (p.dead) {
-      const img = S.dead;
+      const img = set.dead;
       x.drawImage(img.c, Math.round(sx - img.w / 2), baseY - img.h + 1);
       return;
     }
 
     if (p.state === 'slide') {
-      const img = S.slide;
+      const img = set.slide;
+      const off = p.facing < 0 ? -2 : 2;
       if (invulnBlink) x.globalAlpha = 0.55;
-      x.drawImage(img.c, Math.round(sx - img.w / 2 + 2), baseY - img.h);
+      x.drawImage(img.c, Math.round(sx - img.w / 2 + off), baseY - img.h);
       x.globalAlpha = 1;
-      if (flashing) this._tint(x, Math.round(sx - img.w / 2 + 2), baseY - img.h, img.w, img.h);
-      // Friction sparks.
+      if (flashing) this._flash(x, img, Math.round(sx - img.w / 2 + off), baseY - img.h, '#ff3d68', 0.55);
       return;
     }
 
-    const body = flashing ? S.bodyHurt : S.body;
+    const body = flashing ? set.bodyHurt : set.body;
     let legs;
-    if (!p.grounded) legs = p.vy < 0 ? S.legsJump : S.legsFall;
-    else legs = S.legs[p.frame];
+    if (!p.grounded) legs = p.vy < 0 ? set.legsJump : set.legsFall;
+    else legs = set.legs[p.frame];
 
     const bx = Math.round(sx - body.w / 2);
     const legY = baseY - legs.h;
@@ -848,16 +865,20 @@ export class Renderer {
     // Muzzle flash, drawn procedurally so it can animate with the recoil.
     if (p.recoil > 0.45) {
       const m = p.muzzle();
+      const f = p.facing;
       const mx = Math.round(m.x - cam), my = Math.round(m.y);
       x.fillStyle = '#ffffff';
-      x.fillRect(mx, my - 1, 4, 3);
+      x.fillRect(f > 0 ? mx : mx - 4, my - 1, 4, 3);
       x.fillStyle = '#ffe66d';
-      x.fillRect(mx + 3, my, 3, 1);
-      x.fillRect(mx + 1, my - 2, 1, 1);
-      x.fillRect(mx + 1, my + 2, 1, 1);
+      x.fillRect(mx + 3 * f, my, 3, 1);
+      x.fillRect(mx + 1 * f, my - 2, 1, 1);
+      x.fillRect(mx + 1 * f, my + 2, 1, 1);
     }
 
-    if (flashing) this._tint(x, bx, bodyY, body.w, legs.h + body.h);
+    if (flashing) {
+      this._flash(x, body, bx, bodyY, '#ff3d68', 0.55);
+      this._flash(x, legs, bx, legY, '#ff3d68', 0.55);
+    }
 
     // Personal shield bubble.
     if (p.shield > 0 || p.powerInvuln) {
@@ -870,10 +891,31 @@ export class Renderer {
     }
   }
 
-  _tint(x, dx, dy, w, h) {
-    x.globalAlpha = 0.45;
-    x.fillStyle = '#ff3d68';
-    x.fillRect(dx, dy, w, h);
+  /* A solid rectangle over a sprite's bounding box reads as a coloured box,
+     not a flash. This returns the sprite's own silhouette in a flat colour,
+     cached, so the flash follows the artwork. */
+  _silhouette(img, colour) {
+    let byColour = this.tintCache.get(img.c);
+    if (!byColour) { byColour = new Map(); this.tintCache.set(img.c, byColour); }
+    let cv = byColour.get(colour);
+    if (!cv) {
+      cv = document.createElement('canvas');
+      cv.width = img.w;
+      cv.height = img.h;
+      const cx = cv.getContext('2d');
+      cx.imageSmoothingEnabled = false;
+      cx.drawImage(img.c, 0, 0);
+      cx.globalCompositeOperation = 'source-in';
+      cx.fillStyle = colour;
+      cx.fillRect(0, 0, img.w, img.h);
+      byColour.set(colour, cv);
+    }
+    return cv;
+  }
+
+  _flash(x, img, dx, dy, colour, alpha, w, h) {
+    x.globalAlpha = alpha;
+    x.drawImage(this._silhouette(img, colour), dx, dy, w || img.w, h || img.h);
     x.globalAlpha = 1;
   }
 

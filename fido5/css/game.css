@@ -188,7 +188,14 @@ body {
 .ico-key  { background: var(--amber); clip-path: polygon(0 35%,62% 35%,62% 20%,100% 20%,100% 80%,62% 80%,62% 65%,0 65%); }
 
 /* ---- HUD --------------------------------------------------------------- */
-#hud { pointer-events: none; z-index: 15; }
+/* Anchored to the canvas, not the window, so it stays on the play surface at
+   any window shape. */
+#hud {
+  pointer-events: none; z-index: 15;
+  left: var(--stage-l, 0); top: var(--stage-t, 0);
+  width: var(--stage-w, 100%); height: var(--stage-h, 100%);
+  right: auto; bottom: auto;
+}
 #hud button { pointer-events: auto; }
 
 .hud-top {
@@ -207,9 +214,11 @@ body {
 }
 .stat--score .stat__val { color: #fff; }
 
+/* Under the score, because the bottom-left corner belongs to the movement
+   buttons now that the operative is driven rather than automatic. */
 .hud-bars {
-  position: absolute; left: calc(var(--safe-l) + .5rem); bottom: calc(var(--safe-b) + .5rem);
-  display: flex; flex-direction: column; gap: .26rem; width: min(44vw, 230px);
+  position: absolute; left: calc(var(--safe-l) + .5rem); top: calc(var(--safe-t) + 3.1rem);
+  display: flex; flex-direction: column; gap: .24rem; width: min(46vw, 220px);
 }
 .bar { display: flex; align-items: center; gap: .35rem; }
 .bar__glyph {
@@ -255,7 +264,28 @@ body {
 }
 .hud-powers .t { font-variant-numeric: tabular-nums; color: var(--dim); }
 
-/* Touch pad. Buttons sit in the corners so they never cover the deck. */
+/* What the last crate held. Bottom centre: clear of both button clusters on a
+   phone, and clear of everything on a desktop. */
+.hud-reward {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--safe-b) + .55rem);
+  display: flex; align-items: baseline; gap: .55em;
+  max-width: min(88%, 30rem);
+  background: rgba(8,10,18,.88); border: 1px solid var(--line);
+  border-bottom: 2px solid var(--yellow);
+  border-radius: 9px; padding: .34rem .85rem;
+  animation: reward-in .18s ease-out;
+}
+.hud-reward__what {
+  font: 800 .58rem/1 var(--ui); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--yellow); flex: none; white-space: nowrap;
+}
+.hud-reward__got { font: 700 .88rem/1.2 var(--ui); color: #fff; }
+@keyframes reward-in { from { opacity: 0; transform: translate(-50%, 6px); } }
+@media (prefers-reduced-motion: reduce) { .hud-reward { animation: none; } }
+
+/* Touch pad. Movement on the left, actions on the right, and neither cluster
+   covers the deck the player has to read. */
 .pad { position: absolute; inset: 0; pointer-events: none; }
 .pad__btn {
   position: absolute; pointer-events: auto;
@@ -270,25 +300,29 @@ body {
 .pad__btn svg { width: 46%; height: 46%; fill: currentColor; stroke: currentColor; stroke-width: 1.6; }
 .pad__btn.is-down { background: rgba(139,92,246,.55); border-color: var(--purple-l); transform: scale(.94); }
 .pad__btn:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
-.pad__btn--jump   { right: calc(var(--safe-r) + 5.6rem); bottom: calc(var(--safe-b) + 4.4rem); }
-.pad__btn--slide  { right: calc(var(--safe-r) + 5.6rem); bottom: calc(var(--safe-b) + .6rem); }
-.pad__btn--fire   { left: calc(var(--safe-l) + .7rem); bottom: calc(var(--safe-b) + 3.6rem); }
-.pad__btn--gadget { right: calc(var(--safe-r) + .7rem); bottom: calc(var(--safe-b) + 2.3rem); }
+.pad__btn--left   { left: calc(var(--safe-l) + .6rem); bottom: calc(var(--safe-b) + .6rem); }
+.pad__btn--right  { left: calc(var(--safe-l) + 5.2rem); bottom: calc(var(--safe-b) + .6rem); }
+.pad__btn--jump   { right: calc(var(--safe-r) + 5.4rem); bottom: calc(var(--safe-b) + 4.9rem); }
+.pad__btn--slide  { right: calc(var(--safe-r) + 5.4rem); bottom: calc(var(--safe-b) + .6rem); }
+.pad__btn--fire   { right: calc(var(--safe-r) + .7rem); bottom: calc(var(--safe-b) + 3.1rem); }
+.pad__btn--gadget { right: calc(var(--safe-r) + 9.9rem); bottom: calc(var(--safe-b) + 3.1rem); }
 .pad__btn--gadget canvas { width: 30px; height: 30px; image-rendering: pixelated; }
 .pad__cool {
   position: absolute; inset: -2px; border-radius: 50%;
   background: conic-gradient(rgba(8,10,18,.78) var(--p, 0deg), transparent 0deg);
   pointer-events: none;
 }
-.pad.is-hidden .pad__btn--jump,
-.pad.is-hidden .pad__btn--slide,
-.pad.is-hidden .pad__btn--fire { display: none; }
+.pad.is-hidden .pad__btn { display: none; }
 
 /* Health bars sit low-left, so on very short screens shrink the pad instead. */
-@media (max-height: 380px) {
+@media (max-height: 400px) {
   .pad__btn { width: 46px; height: 46px; }
-  .pad__btn--jump { bottom: calc(var(--safe-b) + 3.4rem); right: calc(var(--safe-r) + 4.4rem); }
-  .pad__btn--slide { right: calc(var(--safe-r) + 4.4rem); }
+  .pad__btn--right  { left: calc(var(--safe-l) + 4.2rem); }
+  .pad__btn--jump   { right: calc(var(--safe-r) + 4.3rem); bottom: calc(var(--safe-b) + 3.9rem); }
+  .pad__btn--slide  { right: calc(var(--safe-r) + 4.3rem); }
+  .pad__btn--fire   { bottom: calc(var(--safe-b) + 2.6rem); }
+  .pad__btn--gadget { right: calc(var(--safe-r) + 8rem); bottom: calc(var(--safe-b) + 2.6rem); }
+  .hud-reward { bottom: calc(var(--safe-b) + 6.4rem); font-size: .9em; }
 }
 
 /* ---- Panels ------------------------------------------------------------ */
@@ -460,6 +494,9 @@ body {
   padding: .6rem 0; border-bottom: 1px solid var(--line);
 }
 .setrow--col { flex-direction: column; align-items: stretch; gap: .4rem; }
+.setrow--stack { align-items: flex-start; }
+.setrow__text { display: flex; flex-direction: column; gap: .2rem; }
+.setrow__hint { font-size: .74rem; color: var(--dim); line-height: 1.45; max-width: 34rem; }
 .setrow label, .setrow__label { font-size: .86rem; font-weight: 600; }
 .toggle {
   width: 54px; height: 30px; flex: none; border-radius: 999px; cursor: pointer;

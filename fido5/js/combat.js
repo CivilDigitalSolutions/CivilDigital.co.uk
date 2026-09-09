@@ -96,11 +96,14 @@ export function updateEnemies(dt, ctx) {
     const dist = Math.hypot(dx, dy);
     const onScreen = e.x < camX + WORLD.viewW + 30;
 
-    // Elites and tanks back away at just under the player's speed while their
-    // pacing budget lasts, so the fight lasts long enough to be a fight.
-    if (e.paceT > 0 && onScreen && e.x - player.x < 210) {
-      e.x += run.speed * 0.74 * dt;
-      e.paceT -= dt;
+    // Elites and tanks hold a standoff while their pacing budget lasts, so
+    // closing on one is a fight rather than something you walk past.
+    if (e.paceT > 0 && onScreen) {
+      const gap = e.x - player.x;
+      if (gap < 135 && gap > -50) {
+        e.x += 58 * dt;
+        e.paceT -= dt;
+      }
     }
 
     if (onScreen && !e.seen) {
@@ -251,7 +254,7 @@ export function tryPlayerFire(ctx, dt, wantFire) {
   if (b) {
     b.x = m.x; b.y = m.y;
     const spread = (Math.random() - 0.5) * w.spread * 2;
-    b.vx = w.speed;
+    b.vx = w.speed * player.facing;
     b.vy = spread * w.speed;
     b.dmg = w.damage * dmgMul * (crit ? 2 : 1);
     b.crit = crit;

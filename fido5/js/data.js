@@ -7,17 +7,28 @@
 /* ---- World / tuning ----------------------------------------------------- */
 
 export const WORLD = {
-  viewW: 320,            // internal render width  (px, integer-scaled to fit)
-  viewH: 180,            // internal render height
+  // The render width is set at layout time from the window's aspect ratio so
+  // the canvas fills the browser width; the height is fixed, which keeps the
+  // three levels and every jump arc identical on any screen.
+  viewW: 320,            // internal render width (dynamic — see layout())
+  viewH: 180,            // internal render height (fixed)
+  minViewW: 240,         // narrow windows stop shrinking the visible track
+  maxViewW: 720,         // very wide ones stop widening it
   metre: 12,             // world px per metre — also the column width
   tierCount: 3,
   tierY: [148, 100, 52], // ground line (feet) for street / walkway / rooftop
   gravity: 800,          // px/s^2
   jumpVel: -320,         // px/s — apex 64px, clears one 48px tier with margin
   slideTime: 0.55,       // s
-  playerScreenX: 88,     // player's fixed x on screen
-  nudge: 32,             // px/s of forward/back player-controlled drift
-  nudgeRange: 30,        // px the player may drift from playerScreenX
+
+  cameraX: 0.30,         // where the player sits on screen, as a fraction
+  moveSpeed: 152,        // px/s under manual control
+  moveAccel: 1000,       // px/s^2 getting up to speed
+  moveBrake: 1500,       // px/s^2 stopping
+  airControl: 0.62,      // how much of that authority applies in mid-air
+  autoBoost: 46,         // extra px/s while pushing forward during auto-run
+  autoBrake: 56,         // px/s shed while easing back during auto-run
+
   chunkAhead: 3,         // chunks kept generated ahead of the player
   despawnBehind: 110,    // px behind camera before entities recycle
 };
@@ -471,35 +482,115 @@ export const DAILY = [
 
 /* ---- FiDo-5 dialogue ---------------------------------------------------- */
 /* Kept short, rate-limited in fido5.js so it never becomes noise. */
+/* Every line carries a stable id. The voice layer plays a recorded clip named
+   after that id when one exists and falls back to browser speech synthesis
+   otherwise, so a voiceover can be dropped in later without touching code.
+   Ids are permanent: change the text freely, never the id. */
 export const DRONE_LINES = {
-  runStart:   ['Systems green. Let’s work.', 'Neo City. Again.', 'I’m right behind you.'],
-  threat:     ['Threat detected.', 'Contacts ahead.', 'Company.'],
-  target:     ['Target acquired.', 'Locked.', 'Mine.'],
-  playerKill: ['Nice shot.', 'Clean.', 'Efficient.'],
-  droneKill:  ['You’re welcome.', 'Got it.', 'Handled.'],
-  elite:      ['Heavy signature. Careful.', 'That one’s reinforced.', 'Priority target.'],
-  crate:      ['Crate detected.', 'Something worth taking.', 'Scanning.'],
-  crateOpen:  ['Open. Help yourself.', 'Cracked it.', 'All yours.'],
-  vault:      ['Vault. You have a key.', 'That needs a key. You have one.'],
-  hurt:       ['That was close.', 'Watch the health.', 'Take less damage. Please.'],
-  rescue:     ['I recommend avoiding the explosion.', 'Not today.', 'Hold still.', 'I’ve got you.'],
-  rescueDown: ['Shield spent. Recharging.', 'Can’t do that again yet.'],
-  low:        ['You’re in the red.', 'Health critical.'],
-  bomb:       ['Move.', 'Blast incoming.'],
-  turret:     ['Sniper. Change level.', 'Turret sighted on you.'],
-  death:      ['…Run’s over. Reset.', 'We’ll do better.'],
-  streak:     ['Streak’s building.', 'Keep it going.'],
+  runStart: [
+    { id: 'run-start-1', text: 'Systems green. Let\u2019s work.' },
+    { id: 'run-start-2', text: 'Neo City. Again.' },
+    { id: 'run-start-3', text: 'I\u2019m right behind you.' },
+  ],
+  threat: [
+    { id: 'threat-1', text: 'Threat detected.' },
+    { id: 'threat-2', text: 'Contacts ahead.' },
+    { id: 'threat-3', text: 'Company.' },
+  ],
+  target: [
+    { id: 'target-1', text: 'Target acquired.' },
+    { id: 'target-2', text: 'Locked.' },
+    { id: 'target-3', text: 'Mine.' },
+  ],
+  playerKill: [
+    { id: 'player-kill-1', text: 'Nice shot.' },
+    { id: 'player-kill-2', text: 'Clean.' },
+    { id: 'player-kill-3', text: 'Efficient.' },
+  ],
+  droneKill: [
+    { id: 'drone-kill-1', text: 'You\u2019re welcome.' },
+    { id: 'drone-kill-2', text: 'Got it.' },
+    { id: 'drone-kill-3', text: 'Handled.' },
+  ],
+  elite: [
+    { id: 'elite-1', text: 'Heavy signature. Careful.' },
+    { id: 'elite-2', text: 'That one\u2019s reinforced.' },
+    { id: 'elite-3', text: 'Priority target.' },
+  ],
+  crate: [
+    { id: 'crate-1', text: 'Crate detected.' },
+    { id: 'crate-2', text: 'Something worth taking.' },
+    { id: 'crate-3', text: 'Scanning.' },
+  ],
+  crateOpen: [
+    { id: 'crate-open-1', text: 'Open. Help yourself.' },
+    { id: 'crate-open-2', text: 'Cracked it.' },
+    { id: 'crate-open-3', text: 'All yours.' },
+  ],
+  vault: [
+    { id: 'vault-1', text: 'Vault. You have a key.' },
+    { id: 'vault-2', text: 'That needs a key. You have one.' },
+  ],
+  hurt: [
+    { id: 'hurt-1', text: 'That was close.' },
+    { id: 'hurt-2', text: 'Watch the health.' },
+    { id: 'hurt-3', text: 'Take less damage. Please.' },
+  ],
+  rescue: [
+    { id: 'rescue-1', text: 'I recommend avoiding the explosion.' },
+    { id: 'rescue-2', text: 'Not today.' },
+    { id: 'rescue-3', text: 'Hold still.' },
+    { id: 'rescue-4', text: 'I\u2019ve got you.' },
+  ],
+  rescueDown: [
+    { id: 'rescue-down-1', text: 'Shield spent. Recharging.' },
+    { id: 'rescue-down-2', text: 'Can\u2019t do that again yet.' },
+  ],
+  low: [
+    { id: 'low-1', text: 'You\u2019re in the red.' },
+    { id: 'low-2', text: 'Health critical.' },
+  ],
+  bomb: [
+    { id: 'bomb-1', text: 'Move.' },
+    { id: 'bomb-2', text: 'Blast incoming.' },
+  ],
+  turret: [
+    { id: 'turret-1', text: 'Sniper. Change level.' },
+    { id: 'turret-2', text: 'Turret sighted on you.' },
+  ],
+  death: [
+    { id: 'death-1', text: '\u2026Run\u2019s over. Reset.' },
+    { id: 'death-2', text: 'We\u2019ll do better.' },
+  ],
+  streak: [
+    { id: 'streak-1', text: 'Streak\u2019s building.' },
+    { id: 'streak-2', text: 'Keep it going.' },
+  ],
+};
+
+/* Where recorded voiceover lives, if any is supplied. The manifest is a JSON
+   array of the line ids that have a recording; anything not listed falls back
+   to speech synthesis. A missing manifest is the normal case and is not an
+   error. */
+export const VOICE = {
+  dir: 'audio/vo/',
+  ext: '.mp3',
+  manifest: 'audio/vo/manifest.json',
+  pitch: 0.55,           // synthesis: low, to read as a machine
+  rate: 1.12,
+  volume: 0.95,
 };
 
 /* ---- Onboarding -------------------------------------------------------- */
 /* Contextual prompts, each shown once ever. Order is the teaching order. */
 export const ONBOARDING = [
-  { id: 'jump',   trigger: 'firstObstacle', text: 'Jump',                sub: 'Swipe up  /  Space' },
-  { id: 'slide',  trigger: 'firstLow',      text: 'Slide under',         sub: 'Swipe down  /  S' },
-  { id: 'shoot',  trigger: 'firstEnemy',    text: 'Fire',                sub: 'Tap  /  J' },
+  { id: 'move',   trigger: 'start',         text: 'Move',                  sub: 'A  D   or  \u2190  \u2192', subTouch: 'The \u2190 \u2192 buttons' },
+  { id: 'jump',   trigger: 'firstObstacle', text: 'Jump',                  sub: 'W  /  Space  /  \u2191',      subTouch: 'The \u2191 button' },
+  { id: 'low',    trigger: 'firstLow',      text: 'Slide under',           sub: 'S  /  \u2193',                subTouch: 'The \u2193 button' },
+  { id: 'shoot',  trigger: 'firstEnemy',    text: 'Fire',                  sub: 'J  /  click',                subTouch: 'Hold the fire button' },
   { id: 'tier',   trigger: 'firstTier',     text: 'Jump to climb a level', sub: 'Higher up pays better' },
-  { id: 'crate',  trigger: 'firstCrate',    text: 'FiDo-5 will open it',  sub: 'Get close and stay alive' },
-  { id: 'gadget', trigger: 'firstGadget',   text: 'Gadget ready',         sub: 'Tap the icon  /  K' },
+  { id: 'crate',  trigger: 'firstCrate',    text: 'FiDo-5 will fetch it',  sub: 'Stay near it while it scans' },
+  { id: 'gadget', trigger: 'firstGadget',   text: 'Gadget ready',          sub: 'K  /  tap the icon',         subTouch: 'Tap the gadget button' },
 ];
 
 /* ---- Score -------------------------------------------------------------- */

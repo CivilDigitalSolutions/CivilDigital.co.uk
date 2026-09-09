@@ -7,8 +7,10 @@
 import { load as loadSave, save as persist, flush } from './save.js';
 import { buildSprites } from './sprites.js';
 import { Audio } from './audio.js';
+import { Voice } from './voice.js';
 import { Input } from './input.js';
 import { Game } from './game.js';
+import { setViewport } from './render.js';
 import { UI } from './ui.js';
 import { commitRun, syncMissions, resolveStats } from './progression.js';
 import { spawnCrate, spawnPowerUp } from './loot.js';
@@ -17,19 +19,57 @@ import { ENEMIES, WORLD, POWERUPS } from './data.js';
 
 const stage = document.getElementById('stage');
 const rotateHint = document.getElementById('rotate');
+let booted = false;   // true once the game and interface are constructed
 
 /* ---- Layout -------------------------------------------------------------
-   The canvas keeps its 480x270 backing store and is scaled to the largest
-   size that fits, centred, with the page background as the letterbox. */
+   The canvas fills the browser width at every window size. Rather than
+   letterboxing a fixed 16:9 frame, the internal render width is derived from
+   the window's aspect ratio while the height stays at 180, so the three
+   levels, the jump arc and every sprite keep exactly the same proportions —
+   a wider window simply shows more of the track ahead. */
 function layout() {
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const scale = Math.min(vw / WORLD.viewW, vh / WORLD.viewH);
-  const w = Math.round(WORLD.viewW * scale);
+  const vw = Math.max(1, window.innerWidth);
+  const vh = Math.max(1, window.innerHeight);
+
+  let iw = Math.round(WORLD.viewH * (vw / vh));
+  iw = Math.max(WORLD.minViewW, Math.min(WORLD.maxViewW, iw));
+  if (iw % 2) iw += 1;                       // even, so halves land on pixels
+
+  // Scale from the width, unless the clamp would then overflow vertically
+  // (only reachable at extreme aspect ratios).
+  let scale = vw / iw;
+  if (WORLD.viewH * scale > vh) scale = vh / WORLD.viewH;
+
+  const w = Math.round(iw * scale);
   const h = Math.round(WORLD.viewH * scale);
+  const left = Math.round((vw - w) / 2);
+  const top = Math.round((vh - h) / 2);
+
+  if (iw !== WORLD.viewW) {
+    WORLD.viewW = iw;
+    setViewport(iw, WORLD.viewH);
+    // layout() also runs once before the game and interface exist, to size the
+    // canvas at construction. `booted` gates the parts that need them; a
+    // typeof check would not, because a const in its temporal dead zone throws
+    // rather than reporting undefined.
+    if (booted) {
+      game.renderer.resize();
+      if (ui.menuRenderer) ui.menuRenderer.resize();
+    }
+  }
+
   stage.style.width = w + 'px';
   stage.style.height = h + 'px';
-  stage.style.left = Math.round((vw - w) / 2) + 'px';
-  stage.style.top = Math.round((vh - h) / 2) + 'px';
+  stage.style.left = left + 'px';
+  stage.style.top = top + 'px';
+
+  // The HUD tracks the play surface rather than the window, so it stays put
+  // even when an extreme window shape leaves a margin.
+  const root = document.getElementById('app').style;
+  root.setProperty('--stage-l', left + 'px');
+  root.setProperty('--stage-t', top + 'px');
+  root.setProperty('--stage-w', w + 'px');
+  root.setProperty('--stage-h', h + 'px');
 
   // Portrait on a touch device is genuinely hard to play, so ask rather than
   // silently offering a cramped view. Desktop windows are never blocked.
@@ -50,6 +90,7 @@ buildSprites();
 layout();
 
 const audio = new Audio(sv.settings);
+const voice = new Voice(sv.settings, audio);
 
 const input = new Input(stage, {
   sensitivity: sv.settings.sensitivity ?? 1,
@@ -62,7 +103,7 @@ const input = new Input(stage, {
     if (game.state === 'running') doPause();
     ui.enableDebug();
   },
-  onAnyInput: () => audio.init(),
+  onAnyInput: () => { audio.init(); voice.init(); },
 });
 
 const game = new Game({
@@ -70,6 +111,7 @@ const game = new Game({
   sv,
   audio,
   input,
+  voice,
   onEvent: onGameEvent,
 });
 
@@ -77,6 +119,7 @@ const ui = new UI({
   sv,
   audio,
   input,
+  voice,
   hooks: {
     startRun: doStart,
     pause: doPause,
@@ -84,6 +127,7 @@ const ui = new UI({
     restart: doRestart,
     quit: doQuit,
     applySettings: applySettings,
+    setTouchControls: (on) => { game.touchControls = on; },
     debug: makeDebugHooks(),
   },
 });
@@ -93,9 +137,14 @@ const ui = new UI({
    Normal play exposes nothing on window. */
 if (ui.debugOn) window.__fido5 = { game, ui, sv };
 
+booted = true;
+layout();   // re-apply now that the renderers exist and can be resized
+
 /* Bind the on-screen buttons to the same actions as the keys. */
+input.bindButton(document.getElementById('btn-left'), 'left', 'hold');
+input.bindButton(document.getElementById('btn-right'), 'right', 'hold');
 input.bindButton(document.getElementById('btn-jump'), 'jump');
-input.bindButton(document.getElementById('btn-slide'), 'down');
+input.bindButton(document.getElementById('btn-slide'), 'down', 'hold');
 input.bindButton(document.getElementById('btn-fire'), 'fire', 'hold');
 input.bindButton(document.getElementById('btn-gadget'), 'gadget');
 
@@ -103,6 +152,12 @@ input.bindButton(document.getElementById('btn-gadget'), 'gadget');
 
 function applySettings() {
   audio.applySettings();
+  if (!sv.settings.voice) voice.stop();
+  // Switching auto-run mid-run applies immediately rather than next run.
+  if (game.run) {
+    game.run.autoRun = !!sv.settings.autoRun;
+    game.player.autoRun = game.run.autoRun;
+  }
   game.applyQuality();
   input.setSensitivity(sv.settings.sensitivity ?? 1);
   ui.applyButtonMode();
@@ -247,6 +302,7 @@ requestAnimationFrame(frame);
 // Music waits for a gesture, as the autoplay rules require.
 const kick = () => {
   audio.init();
+  voice.init();
   if (sv.settings.music && game.state !== 'running') audio.startMusic('menu');
   window.removeEventListener('pointerdown', kick);
   window.removeEventListener('keydown', kick);
@@ -259,6 +315,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     if (game.state === 'running') doPause();
     audio.suspend();
+    voice.stop();
     flush();
   }
 });

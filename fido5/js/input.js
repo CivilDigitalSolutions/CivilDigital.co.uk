@@ -23,7 +23,7 @@ export class Input {
     // Discrete actions: name -> seconds of life remaining.
     this.buffered = Object.create(null);
     // Held states.
-    this.held = { fire: false, forward: false, back: false, down: false };
+    this.held = { fire: false, right: false, left: false, down: false, jump: false };
     this.enabled = true;
 
     this._touches = new Map();
@@ -55,7 +55,7 @@ export class Input {
 
   clear() {
     this.buffered = Object.create(null);
-    this.held.fire = this.held.forward = this.held.back = this.held.down = false;
+    this.held.fire = this.held.right = this.held.left = this.held.down = this.held.jump = false;
     this._touches.clear();
     this._keys.clear();
   }
@@ -78,13 +78,13 @@ export class Input {
 
       switch (k) {
         case ' ': case 'w': case 'arrowup':
-          this.press('jump'); break;
+          this.press('jump'); this.held.jump = true; break;
         case 's': case 'arrowdown':
           this.press('down'); this.held.down = true; break;
         case 'a': case 'arrowleft':
-          this.held.back = true; this.press('back'); break;
+          this.held.left = true; this.press('left'); break;
         case 'd': case 'arrowright':
-          this.held.forward = true; this.press('forward'); break;
+          this.held.right = true; this.press('right'); break;
         case 'j': case 'enter':
           this.held.fire = true; this.press('fire'); break;
         case 'k': case 'e': case 'shift':
@@ -99,9 +99,10 @@ export class Input {
       const k = e.key.toLowerCase();
       this._keys.delete(k);
       switch (k) {
+        case ' ': case 'w': case 'arrowup': this.held.jump = false; break;
         case 's': case 'arrowdown':  this.held.down = false; break;
-        case 'a': case 'arrowleft':  this.held.back = false; break;
-        case 'd': case 'arrowright': this.held.forward = false; break;
+        case 'a': case 'arrowleft':  this.held.left = false; break;
+        case 'd': case 'arrowright': this.held.right = false; break;
         case 'j': case 'enter':      this.held.fire = false; break;
       }
     };
@@ -146,9 +147,10 @@ export class Input {
         st.fired = true;
         this.held.fire = false;         // a swipe is not a shot
       } else if (Math.abs(dx) >= min && Math.abs(dx) > Math.abs(dy) * 1.1) {
-        this.press(dx > 0 ? 'forward' : 'back');
-        if (dx > 0) { this.held.forward = true; this.held.back = false; }
-        else { this.held.back = true; this.held.forward = false; }
+        // A horizontal swipe holds that direction until the finger lifts.
+        this.press(dx > 0 ? 'right' : 'left');
+        if (dx > 0) { this.held.right = true; this.held.left = false; }
+        else { this.held.left = true; this.held.right = false; }
         st.fired = true;
         this.held.fire = false;
       }
@@ -160,8 +162,8 @@ export class Input {
       const st = this._touches.get(id);
       this._touches.delete(id);
       this.held.down = false;
-      this.held.forward = false;
-      this.held.back = false;
+      this.held.right = false;
+      this.held.left = false;
       if (this._touches.size === 0) this.held.fire = false;
       if (st && !st.fired && st.moved <= TAP_MAX && performance.now() / 1000 - st.t <= TAP_TIME) {
         this.press('fire');             // deliberate single tap

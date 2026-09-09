@@ -511,6 +511,18 @@ export function buildSprites() {
   S.slide = fromRows(SLIDE);
   S.dead = fromRows(DEAD);
 
+  // Left-facing copies. Mirrored once at boot rather than with a canvas
+  // transform every frame.
+  S.flip = {
+    body: flip(S.body),
+    bodyHurt: flip(S.bodyHurt),
+    legs: S.legs.map(flip),
+    legsJump: flip(S.legsJump),
+    legsFall: flip(S.legsFall),
+    slide: flip(S.slide),
+    dead: flip(S.dead),
+  };
+
   // Drone: one set of canvases per skin, per pose.
   S.drone = {};
   for (const skin of DRONE_SKINS) {

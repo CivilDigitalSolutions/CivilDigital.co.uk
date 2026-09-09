@@ -62,13 +62,26 @@
 
     <ul class="hud-powers" id="hud-powers"></ul>
 
+    <!-- What the last crate contained. Sits in the HUD because the in-world
+         label travels with the crate and is gone before it can be read. -->
+    <div class="hud-reward" id="hud-reward" hidden role="status" aria-live="polite">
+      <span class="hud-reward__what" id="hud-reward-what"></span>
+      <span class="hud-reward__got" id="hud-reward-got"></span>
+    </div>
+
     <!-- Touch controls. Large targets, and they never overlap the play area
          the player needs to read. -->
     <div class="pad" id="pad">
-      <button class="pad__btn pad__btn--jump" id="btn-jump" aria-label="Jump">
+      <button class="pad__btn pad__btn--left" id="btn-left" aria-label="Move left">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4l-8 8 8 8z"/></svg>
+      </button>
+      <button class="pad__btn pad__btn--right" id="btn-right" aria-label="Move right">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4l8 8-8 8z"/></svg>
+      </button>
+      <button class="pad__btn pad__btn--jump" id="btn-jump" aria-label="Jump, or climb to the level above">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l7 8h-4v8h-6v-8H5z"/></svg>
       </button>
-      <button class="pad__btn pad__btn--slide" id="btn-slide" aria-label="Slide or drop down">
+      <button class="pad__btn pad__btn--slide" id="btn-slide" aria-label="Slide, or drop to the level below">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20l-7-8h4V4h6v8h4z"/></svg>
       </button>
       <button class="pad__btn pad__btn--fire" id="btn-fire" aria-label="Fire">
@@ -223,6 +236,21 @@
       <div class="setrow">
         <span class="setrow__label" id="lbl-music">Music</span>
         <button class="toggle" id="set-music" role="switch" aria-checked="true" aria-labelledby="lbl-music"><span></span></button>
+      </div>
+      <div class="setrow setrow--stack">
+        <div class="setrow__text">
+          <span class="setrow__label" id="lbl-autorun">Auto-run</span>
+          <span class="setrow__hint">On, the operative runs forward by themselves and you steer.
+            Off, you move with A and D or the arrow keys.</span>
+        </div>
+        <button class="toggle" id="set-autorun" role="switch" aria-checked="false" aria-labelledby="lbl-autorun"><span></span></button>
+      </div>
+      <div class="setrow setrow--stack">
+        <div class="setrow__text">
+          <span class="setrow__label" id="lbl-voice">FiDo-5 voice</span>
+          <span class="setrow__hint">Speaks the drone's lines aloud. Subtitles show either way.</span>
+        </div>
+        <button class="toggle" id="set-voice" role="switch" aria-checked="true" aria-labelledby="lbl-voice"><span></span></button>
       </div>
       <div class="setrow">
         <span class="setrow__label" id="lbl-haptics">Vibration</span>

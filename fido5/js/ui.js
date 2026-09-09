@@ -121,6 +121,8 @@ export class UI {
     // Settings
     this._toggle('set-sound', 'sound');
     this._toggle('set-music', 'music');
+    this._toggle('set-autorun', 'autoRun');
+    this._toggle('set-voice', 'voice');
     this._toggle('set-haptics', 'haptics');
     this._toggle('set-contrast', 'hiContrast');
     $('set-quality').addEventListener('change', (e) => {
@@ -189,6 +191,8 @@ export class UI {
     const s = this.sv.settings;
     $('set-sound').setAttribute('aria-checked', s.sound ? 'true' : 'false');
     $('set-music').setAttribute('aria-checked', s.music ? 'true' : 'false');
+    $('set-autorun').setAttribute('aria-checked', s.autoRun ? 'true' : 'false');
+    $('set-voice').setAttribute('aria-checked', s.voice ? 'true' : 'false');
     $('set-haptics').setAttribute('aria-checked', s.haptics ? 'true' : 'false');
     $('set-contrast').setAttribute('aria-checked', s.hiContrast ? 'true' : 'false');
     $('set-quality').value = s.quality || 'auto';
@@ -205,6 +209,7 @@ export class UI {
                   navigator.maxTouchPoints > 0;
     const show = mode === 'on' || (mode === 'auto' && touch);
     $('pad').classList.toggle('is-hidden', !show);
+    if (this.hooks.setTouchControls) this.hooks.setTouchControls(show);
   }
 
   /* ---- Menu ------------------------------------------------------------- */
@@ -836,6 +841,20 @@ export class UI {
     const pct = r.gadgetCool > 0 ? r.gadgetCool / gd.cooldown : 0;
     cool.style.setProperty('--p', (pct * 360) + 'deg');
     $('btn-gadget').classList.toggle('is-down', r.gadgetShield > 0);
+
+    // What the last crate held, for as long as the run keeps it up.
+    const rw = $('hud-reward');
+    if (r.reward) {
+      if (rw.dataset.k !== r.reward.title + r.reward.detail) {
+        rw.dataset.k = r.reward.title + r.reward.detail;
+        $('hud-reward-what').textContent = r.reward.title;
+        $('hud-reward-got').textContent = r.reward.detail;
+      }
+      rw.hidden = false;
+    } else {
+      rw.hidden = true;
+      rw.dataset.k = '';
+    }
 
     // Active power-ups with their remaining time.
     const pw = $('hud-powers');

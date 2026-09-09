@@ -30,6 +30,8 @@ const ASSETS = [
   'js/audio.js',
   'js/input.js',
   'js/ui.js',
+  'js/voice.js',
+  'audio/vo/manifest.json',
   '../assets/css/styles.css',
   '../assets/js/main.js',
   '../images/favicon.svg',
