@@ -326,6 +326,23 @@ export function updateBullets(dt, ctx) {
     // is checked first and takes the shot before anything else can.
     const boss = ctx.boss;
     if (boss && boss.active && boss.dying <= 0 && !boss.hold) {
+      // Parts first. They orbit in front of the body they protect, and a shot
+      // that reaches one should take it rather than pass through to a boss it
+      // cannot hurt anyway.
+      if (boss.parts.length) {
+        const pd = boss.def.parts;
+        const phw = pd.w / 2, phh = pd.h / 2;
+        for (const q of boss.parts) {
+          if (!q.alive) continue;
+          if (b.x < q.x - phw || b.x > q.x + phw) continue;
+          if (b.y + 2 < q.y - phh || b.y - 2 > q.y + phh) continue;
+          const dealt = boss.hurtPart(ctx, q, b.dmg);
+          particles.impact(b.x, b.y, b.crit ? 'Y' : 'p');
+          ctx.audio.play('hit');
+          if (dealt > 0) ctx.floater(b.x, b.y - 6, Math.round(dealt), 'p', 1);
+          return false;
+        }
+      }
       const hw = boss.def.w / 2, hh = boss.def.h / 2;
       if (b.x > boss.x - hw && b.x < boss.x + hw &&
           b.y + 2 > boss.y - hh && b.y - 2 < boss.y + hh) {

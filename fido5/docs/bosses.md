@@ -3,9 +3,9 @@
 Reference for the boss system: why it exists, the rules every boss obeys, the
 planned roster, and the technical notes for building the rest of it.
 
-Status: **the Warden is built.** Bosses 2–6 are designed here and not yet
-implemented. Until they are, the roster loops on the Warden, hardened on each
-pass, so the system is complete and playable with one entry in it.
+Status: **the Warden and Hexcell are built.** Bosses 3–6 are designed here and
+not yet implemented. Until they are, the roster loops on the two that exist,
+hardened on each pass.
 
 ---
 
@@ -106,11 +106,20 @@ after each one.
 
 Teaches: telegraphs, the armour window, and that height is an answer.
 
-### 2. Hexcell — *designed*
-**Static arena. One against many.** A control node on the rooftop tier,
-invulnerable while any of its three relay drones is alive, respawning them on a
-timer. The fight is a race to clear all three inside the window and get damage
-onto the node before they come back.
+### 2. Hexcell — *built*
+**Static arena. One against many.** A hovering control node, **immune while any
+of its three relay drones is alive** — not merely armoured, immune. Each relay
+comes back ten seconds after its own death, so the three have to go down inside
+one respawn window or the shield never drops. A tether runs from the node to
+every living relay, and a countdown ring marks each one that is down.
+
+- **Beam** — a line across the whole arena at the node's own height. The answer
+  is to not be at that height, which is also how you reach the relays.
+- **Volley** — every living relay fires at the player. Kill them and the reply
+  is weaker, which is the reward for going after them first.
+
+The node tracks the player's height as it drifts, so it cannot be parked on one
+tier and ignored.
 
 Teaches: target priority, and that the biggest thing on screen is not always
 the thing to shoot.
@@ -207,6 +216,15 @@ twice and the fight cannot stall on it.
 3. Add the attack cases to `Boss._strike` and any per-attack update.
 4. Nothing else. The gate machinery, lives, arena, camera, HUD and rewards are
    boss-agnostic and pick the new entry up from the roster order.
+
+**Parts.** A boss with a `parts` block in its definition gets orbiting pieces
+that are killed separately, and is *exposed only when all of them are down* —
+which is how Hexcell's shield works and how The Choir's pods and Null Prime's
+second phase will. Bullets test parts before the body, each part carries its own
+health strip and respawn ring, and the health bar's label counts the survivors.
+A boss without a `parts` block falls back to the Warden's rule: exposed in the
+moment after it attacks. Set `float: true` and the boss hovers and tracks the
+player's height instead of walking.
 
 A moving fight (The Convoy, The Ripper) is the one case that needs more: it
 skips `requestArena`/`_lockArena` entirely and instead suppresses the gate

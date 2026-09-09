@@ -588,9 +588,9 @@ export const VOICE = {
 /* ---- Onboarding -------------------------------------------------------- */
 /* Contextual prompts, each shown once ever. Order is the teaching order. */
 export const ONBOARDING = [
-  { id: 'move',   trigger: 'start',         text: 'Move',                  sub: 'A  D   or  \u2190  \u2192', subTouch: 'The \u2190 \u2192 buttons' },
-  { id: 'jump',   trigger: 'firstObstacle', text: 'Jump',                  sub: 'W  /  Space  /  \u2191',      subTouch: 'The \u2191 button' },
-  { id: 'low',    trigger: 'firstLow',      text: 'Slide under',           sub: 'S  /  \u2193',                subTouch: 'The \u2193 button' },
+  { id: 'move',   trigger: 'start',         text: 'Move',                  sub: 'A  D   or  \u2190  \u2192', subTouch: 'Push the stick left or right' },
+  { id: 'jump',   trigger: 'firstObstacle', text: 'Jump',                  sub: 'W  /  Space  /  \u2191',      subTouch: 'Push the stick up' },
+  { id: 'low',    trigger: 'firstLow',      text: 'Slide under',           sub: 'S  /  \u2193',                subTouch: 'Push the stick down' },
   { id: 'shoot',  trigger: 'firstEnemy',    text: 'Fire',                  sub: 'J  /  click',                subTouch: 'Hold the fire button' },
   { id: 'tier',   trigger: 'firstTier',     text: 'Jump to climb a level', sub: 'Higher up pays better' },
   { id: 'crate',  trigger: 'firstCrate',    text: 'FiDo-5 will fetch it',  sub: 'Stay near it while it scans' },
@@ -668,11 +668,50 @@ export const BOSSES = [
     recover: 1.25,         // seconds of exposed core afterwards
     walkSpeed: 26,
     attacks: ['stomp', 'flak', 'charge'],
+    armourLabel: 'ARMOURED',
+  },
+  {
+    id: 'hexcell',
+    name: 'Hexcell',
+    subtitle: 'Relay node',
+    arena: 'static',
+    health: 620,
+    contact: 14,
+    score: 3200,
+    coins: 120,
+    w: 30, h: 30,
+    core: { x: 15, y: 15 },
+    tier: 1,               // hovers at walkway height, reachable from either side
+    float: true,           // no legs, so it drifts and bobs instead of walking
+    /* Armour is beside the point here: the node cannot be hurt at all while a
+       relay is alive, and takes full damage the moment the last one dies. The
+       fight is a race to clear all three inside one relay's respawn timer. */
+    armour: 0,
+    armourLabel: 'SHIELDED',
+    telegraph: 0.9,
+    recover: 0.9,
+    walkSpeed: 20,
+    attacks: ['beam', 'volley'],
+    parts: {
+      kind: 'relay',
+      count: 3,
+      health: 70,
+      w: 12, h: 12,
+      orbit: 40,           // px from the node
+      rise: 22,            // how far above and below the node they swing
+      spin: 0.75,          // radians per second
+      respawn: 10,         // seconds before a downed relay comes back
+    },
   },
 ];
 
 /* Per-attack tuning, kept out of the behaviour code. */
 export const BOSS_ATTACKS = {
+  /* Hexcell. The beam is a full-width line at the node's own height, so the
+     answer is to be at a different height — which is also how you reach the
+     relays, and is the whole lesson of the fight. */
+  beam:  { damage: 22, life: 0.55, halfHeight: 9 },
+  volley: { damage: 12, speed: 165, spread: 0.4, perRelay: 2 },
   /* Slams a leg down. A shockwave runs both ways along the street, so the
      answer is to be in the air — the first thing the game ever taught. */
   stomp: { damage: 18, waveSpeed: 190, waveLife: 1.6, collapse: true },

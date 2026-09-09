@@ -729,6 +729,39 @@ export class Renderer {
       x.fillRect(sx - 1, sy - 1, 2, 2);
     }
 
+    // The beam: a full-width line at the node's height. Drawn under the body
+    // so the node reads as its source rather than as something standing on it.
+    for (const bm of b.beams) {
+      const y = Math.round(bm.y);
+      const a = Math.min(1, bm.life * 4);
+      x.globalAlpha = a * 0.85;
+      x.fillStyle = '#35d0ff';
+      x.fillRect(0, y - 2, W, 4);
+      x.globalAlpha = a;
+      x.fillStyle = '#ffffff';
+      x.fillRect(0, y - 1, W, 2);
+      x.globalAlpha = a * 0.3;
+      x.fillStyle = '#35d0ff';
+      x.fillRect(0, y - 6, W, 12);
+      x.globalAlpha = 1;
+    }
+
+    // Shield tethers: one line from the node to each living relay. Cutting
+    // them is the fight, so they have to be the most obvious thing on screen.
+    if (b.parts.length && !b.exposed) {
+      x.strokeStyle = '#b794ff';
+      x.lineWidth = 1;
+      for (const q of b.parts) {
+        if (!q.alive) continue;
+        x.globalAlpha = 0.45 + 0.25 * Math.abs(Math.sin(b.t * 6 + q.i));
+        x.beginPath();
+        x.moveTo(Math.round(b.x - cam) + 0.5, Math.round(b.y) + 0.5);
+        x.lineTo(Math.round(q.x - cam) + 0.5, Math.round(q.y) + 0.5);
+        x.stroke();
+      }
+      x.globalAlpha = 1;
+    }
+
     const img = (b.dir < 0 ? S.boss : S.bossFlip)[def.id];
     if (!img) return;
     const dx = Math.round(b.x - cam - def.w / 2);
@@ -803,9 +836,47 @@ export class Renderer {
       this._flash(x, img, dx, dy, '#ffffff', Math.min(0.9, b.flash * 7), def.w, def.h);
     }
 
+    this._bossParts(x, cam, b);
+
     // The intro carries the boss's name itself; two name plates at once is one
     // too many.
     if (!b.hold) this._bossBar(x, g, b);
+  }
+
+  /* Relays and other boss parts. A downed one leaves a countdown ring where it
+     was, because the respawn timer is the clock the whole fight runs on and a
+     player who cannot see it is guessing. */
+  _bossParts(x, cam, b) {
+    if (!b.parts.length) return;
+    const pd = b.def.parts;
+    const img = S.bossPart[pd.kind];
+    for (const q of b.parts) {
+      const sx = Math.round(q.x - cam - pd.w / 2);
+      const sy = Math.round(q.y - pd.h / 2);
+      if (!q.alive) {
+        // Countdown ring: a full circle means it is about to come back.
+        const k = 1 - Math.max(0, q.respawnT) / pd.respawn;
+        const cx = sx + pd.w / 2, cy = sy + pd.h / 2;
+        x.globalAlpha = 0.35 + 0.3 * k;
+        x.strokeStyle = k > 0.75 ? '#ff3d68' : '#5a659c';
+        x.lineWidth = 1;
+        x.beginPath();
+        x.arc(cx, cy, 7, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2);
+        x.stroke();
+        x.globalAlpha = 1;
+        continue;
+      }
+      if (img) x.drawImage(img.c, sx, sy, pd.w, pd.h);
+      if (q.flash > 0 && img) {
+        this._flash(x, img, sx, sy, '#ffffff', Math.min(0.9, q.flash * 7), pd.w, pd.h);
+      }
+      // A two-pixel health strip under each one: three relays at a glance.
+      const frac = Math.max(0, q.hp / q.maxHp);
+      x.fillStyle = '#080a12';
+      x.fillRect(sx, sy + pd.h + 1, pd.w, 2);
+      x.fillStyle = frac > 0.4 ? '#b794ff' : '#ff3d68';
+      x.fillRect(sx, sy + pd.h + 1, Math.max(1, Math.round(pd.w * frac)), 2);
+    }
   }
 
   /* The bar sits under the HUD, full width, with a segment per pass so a
@@ -827,7 +898,10 @@ export class Renderer {
     x.fillStyle = '#161b33';
     for (let i = 1; i < 5; i++) x.fillRect(bx + Math.round(bw * i / 5), by, 1, 5);
     this.text(b.def.name.toUpperCase(), bx, by - 8, 'W', 1, 'left');
-    this.text(b.exposed ? 'CORE EXPOSED' : 'ARMOURED', bx + bw, by - 8,
+    const shielded = b.parts.length
+      ? `${b.def.armourLabel || 'SHIELDED'}  ${b.liveParts}`
+      : (b.def.armourLabel || 'ARMOURED');
+    this.text(b.exposed ? 'CORE EXPOSED' : shielded, bx + bw, by - 8,
       b.exposed ? 'Y' : 'S', 1, 'right');
   }
 

@@ -25,8 +25,10 @@ export class Boss {
     this.active = false;
     this.def = null;
     this.dying = 0;
-    this.shots = [];        // arcing flak in flight
+    this.shots = [];        // arcing flak and relay fire in flight
     this.waves = [];        // stomp shockwaves in flight
+    this.beams = [];        // sweep beams in flight
+    this.parts = [];        // relays and the like, each killed separately
   }
 
   /* `pass` is how many times the roster has looped; each pass hardens it. */
@@ -39,8 +41,9 @@ export class Boss {
     this.maxHp = Math.round(def.health * hpMul);
     this.hp = this.maxHp;
     this.tier = def.tier;
-    // Enters from the far end of the arena, facing the player.
-    this.x = arena.endX - def.w;
+    // Enters from the far end of the arena, facing the player — but never so
+    // close to the wall that its relays swing off the screen.
+    this.x = arena.endX - def.w / 2 - (def.parts ? def.parts.orbit : def.w / 2);
     this.y = WORLD.tierY[def.tier] - def.h / 2;
     this.vx = 0;
     this.dir = -1;
@@ -50,9 +53,23 @@ export class Boss {
     this.attack = null;
     this.flash = 0;
     this.hitT = 0;
-    this.shots = [];        // arcing flak
+    this.shots = [];        // arcing flak and relay fire
     this.waves = [];        // stomp shockwaves
+    this.beams = [];        // Hexcell's sweep
     this.collapsed = [];    // walkway columns already taken away
+    this.homeY = this.y;
+    this.parts = [];
+    if (def.parts) {
+      // Relays start evenly spaced around the node so the opening read is
+      // "three of them", not "a cluster".
+      for (let i = 0; i < def.parts.count; i++) {
+        this.parts.push({
+          i, a: (i / def.parts.count) * Math.PI * 2,
+          alive: true, hp: def.parts.health, maxHp: def.parts.health,
+          x: this.x, y: this.y, flash: 0, respawnT: 0,
+        });
+      }
+    }
     this.dying = 0;
     this.hold = false;      // true during the intro: stands, does not fight
     this.speedMul = 1 + pass * 0.15;
@@ -62,9 +79,25 @@ export class Boss {
     this.active = false;
     this.shots.length = 0;
     this.waves.length = 0;
+    this.beams.length = 0;
+    this.parts.length = 0;
   }
 
-  get exposed() { return this.phase === 'recover'; }
+  /* A boss with parts is exposed when every one of them is down; a boss
+     without them is exposed in the moment after it attacks. Two different
+     fights, one word for "hit it now". */
+  get exposed() {
+    if (this.parts.length) return this.parts.every((q) => !q.alive);
+    return this.phase === 'recover';
+  }
+  get liveParts() { return this.parts.reduce((n, q) => n + (q.alive ? 1 : 0), 0); }
+
+  /* How far from a wall the body has to stay. A boss with orbiting parts needs
+     room for them too, or a relay spends the fight outside the arena where it
+     cannot be shot. */
+  get margin() {
+    return this.def.w / 2 + (this.def.parts ? this.def.parts.orbit : 0);
+  }
   get hpFrac() { return this.maxHp > 0 ? clamp(this.hp / this.maxHp, 0, 1) : 0; }
 
   /* ---- Damage --------------------------------------------------------- */
@@ -80,11 +113,30 @@ export class Boss {
     return dealt;
   }
 
+  /* A relay taking a hit. Returns the damage dealt, or 0 if it was already
+     down — the caller uses that to decide whether the shot was consumed. */
+  hurtPart(ctx, part, amount) {
+    if (!part.alive || this.hold || this.dying > 0) return 0;
+    part.hp -= amount;
+    part.flash = 0.12;
+    if (part.hp <= 0) {
+      part.alive = false;
+      part.respawnT = this.def.parts.respawn;
+      ctx.audio.play('explosion');
+      ctx.particles.explode(part.x, part.y, 0.7, 'P');
+      // Say what just changed, because the shield state is the whole fight.
+      if (this.exposed) ctx.floater && ctx.floater(this.x, this.y - this.def.h / 2 - 8, 'SHIELD DOWN', 'Y', 1);
+    }
+    return amount;
+  }
+
   _die(ctx) {
     this.dying = 1.6;
     this.phase = 'dying';
     this.shots.length = 0;
     this.waves.length = 0;
+    this.beams.length = 0;
+    for (const q of this.parts) q.alive = false;
     ctx.audio.play('explosion');
   }
 
@@ -109,6 +161,8 @@ export class Boss {
 
     this._updateWaves(dt, ctx);
     this._updateShots(dt, ctx);
+    this._updateBeams(dt, ctx);
+    this._updateParts(dt, ctx);
 
     this.phaseT -= dt;
     switch (this.phase) {
@@ -140,8 +194,8 @@ export class Boss {
       this.chargeHit = true;
       ctx.onPlayerHit && ctx.onPlayerHit(a.damage * this._dmgMul());
     }
-    const min = this.arena.startX + this.def.w / 2;
-    const max = this.arena.endX - this.def.w / 2;
+    const min = this.arena.startX + this.margin;
+    const max = this.arena.endX - this.margin;
     if (this.x <= min || this.x >= max) {
       this.x = clamp(this.x, min, max);
       ctx.audio.play('explosion');
@@ -151,13 +205,59 @@ export class Boss {
     }
   }
 
+  /* Relays orbit the node, and come back on their own timer once downed. The
+     timer is the fight: three relays killed one at a time is three relays
+     still alive, so they have to go down inside one respawn window. */
+  _updateParts(dt, ctx) {
+    if (!this.parts.length) return;
+    const d = this.def.parts;
+    for (const q of this.parts) {
+      q.a += d.spin * this.speedMul * dt;
+      q.x = this.x + Math.cos(q.a) * d.orbit;
+      q.y = this.y + Math.sin(q.a) * d.rise;
+      q.flash = Math.max(0, q.flash - dt);
+      if (!q.alive) {
+        q.respawnT -= dt;
+        if (q.respawnT <= 0) {
+          q.alive = true;
+          q.hp = q.maxHp;
+          ctx.audio.play('powerup');
+          ctx.particles.sparkle && ctx.particles.sparkle(q.x, q.y, 'P');
+        }
+      }
+    }
+  }
+
+  /* A line across the arena at the node's own height, held for a moment. The
+     answer is to not be at that height. */
+  _updateBeams(dt, ctx) {
+    if (!this.beams.length) return;
+    const a = BOSS_ATTACKS.beam;
+    const p = ctx.player;
+    for (let i = this.beams.length - 1; i >= 0; i--) {
+      const bm = this.beams[i];
+      bm.life -= dt;
+      if (!bm.hit && Math.abs(p.midY - bm.y) < a.halfHeight) {
+        bm.hit = true;
+        ctx.onPlayerHit && ctx.onPlayerHit(a.damage * this._dmgMul());
+      }
+      if (bm.life <= 0) this.beams.splice(i, 1);
+    }
+  }
+
   _wait(dt, ctx, p) {
     // Drift towards the player so the fight does not stall at opposite ends.
     const want = p.x + (p.x < this.x ? 60 : -60);
     const step = this.def.walkSpeed * this.speedMul * dt;
     if (Math.abs(want - this.x) > 4) this.x += Math.sign(want - this.x) * step;
+    // A hovering boss also tracks the player's height, slowly, so it cannot be
+    // parked on one tier and ignored.
+    if (this.def.float) {
+      const wantY = clamp(p.midY, WORLD.tierY[2] - 4, WORLD.tierY[0] - 26);
+      this.y += Math.sign(wantY - this.y) * Math.min(Math.abs(wantY - this.y), 16 * dt);
+    }
     this.dir = p.x < this.x ? -1 : 1;
-    this.x = clamp(this.x, this.arena.startX + this.def.w / 2, this.arena.endX - this.def.w / 2);
+    this.x = clamp(this.x, this.arena.startX + this.margin, this.arena.endX - this.margin);
 
     if (this.phaseT <= 0) {
       const pool = this.def.attacks;
@@ -199,6 +299,32 @@ export class Boss {
         this.chargeHit = false;
         this.dir = p.x < this.x ? -1 : 1;
         this._enter('strike', a.duration);
+        break;
+      }
+      case 'beam': {
+        ctx.audio.play('boss.beam');
+        this.beams.push({ y: this.y, life: a.life, hit: false });
+        this._enter('strike', a.life);
+        break;
+      }
+      case 'volley': {
+        // Every living relay fires. Kill them and the node's own answer is
+        // weaker, which is the reward for going after them first.
+        ctx.audio.play('enemy.fire');
+        const from = this.parts.filter((q) => q.alive);
+        const guns = from.length ? from : [{ x: this.x, y: this.y }];
+        for (const q of guns) {
+          for (let i = 0; i < a.perRelay; i++) {
+            const ang = Math.atan2(p.midY - q.y, p.x - q.x)
+              + (i - (a.perRelay - 1) / 2) * a.spread;
+            this.shots.push({
+              x: q.x, y: q.y,
+              vx: Math.cos(ang) * a.speed, vy: Math.sin(ang) * a.speed,
+              grav: 0, life: 2.4,
+            });
+          }
+        }
+        this._enter('strike', 0.3);
         break;
       }
     }
@@ -253,7 +379,7 @@ export class Boss {
     const p = ctx.player;
     for (let i = this.shots.length - 1; i >= 0; i--) {
       const s = this.shots[i];
-      s.vy += WORLD.gravity * 0.55 * dt;
+      s.vy += WORLD.gravity * (s.grav === undefined ? 0.55 : s.grav) * dt;
       s.x += s.vx * dt;
       s.y += s.vy * dt;
       s.life -= dt;

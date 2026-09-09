@@ -141,10 +141,8 @@ booted = true;
 layout();   // re-apply now that the renderers exist and can be resized
 
 /* Bind the on-screen buttons to the same actions as the keys. */
-input.bindButton(document.getElementById('btn-left'), 'left', 'hold');
-input.bindButton(document.getElementById('btn-right'), 'right', 'hold');
-input.bindButton(document.getElementById('btn-jump'), 'jump');
-input.bindButton(document.getElementById('btn-slide'), 'down', 'hold');
+input.bindStick(document.getElementById('stick'),
+  document.getElementById('stick-base'), document.getElementById('stick-knob'));
 input.bindButton(document.getElementById('btn-fire'), 'fire', 'hold');
 input.bindButton(document.getElementById('btn-gadget'), 'gadget');
 

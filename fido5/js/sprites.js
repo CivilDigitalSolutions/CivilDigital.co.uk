@@ -368,6 +368,54 @@ const B_WARDEN = rows('warden', [
   '.........KKKKKKKKK....KKKKKKKKK.........',
 ]);
 
+const B_HEXCELL = rows('hexcell', [
+  '..............................',
+  '.............KKK..............',
+  '.........KKKKPPPKKKKK.........',
+  '........KMMMMFFFMMMMMK........',
+  '........KMMMMMMMMMMMMK........',
+  '.......KMMSSSSSSSSSSMMK.......',
+  '......KMMNSSSSSSSSSSNMMK......',
+  '......KMMNSSSSSSSSSSNMMK......',
+  '....KKMMSNSSSSSSSSSSNSMMKK....',
+  '...KNNNNNNNNNNNNNNNNNNNNNNK...',
+  '....KMMSSNSSSSSSSSSSNSSMMK....',
+  '...KMMSSSNSSCCCCCCSSNSSSMMK...',
+  '...KMMSSSNSCCccccCCSNSSSMMK...',
+  '..KMMSSSSNCCccccccCCNSSSSMMK..',
+  '.KMMSSSSSNCEEEEEEEECNSSSSSMMK.',
+  '.KMMSSSSSNCCWWWWWWCCNSSSSSMMK.',
+  '..KMMSSSSNCCccccccCCNSSSSMMK..',
+  '...KMMSSSNSCCccccCCSNSSSMMK...',
+  '...KMMSSSNSSCCCCCCSSNSSSMMK...',
+  '....KMMSSNSSSSSSSSSSNSSMMK....',
+  '..KKNNNNNNNNNNNNNNNNNNNNNNKK..',
+  '.KPPPKMMSNSSSSSSSSSSNSMMKPPPK.',
+  '.KFFFKKMMNSSSSSSSSSSNMMKKFFFK.',
+  '..KKK.KMMNSSSSSSSSSSNMMK.KKK..',
+  '.......KMMSSSSSSSSSSMMK.......',
+  '........KMMMMMMMMMMMMK........',
+  '........KMMMMMMMMMMMMK........',
+  '.........KKKKKKKKKKKK.........',
+  '..............................',
+  '..............................',
+]);
+
+const B_RELAY = rows('relay', [
+  '............',
+  '...KKKKKK...',
+  '.KKMSSSSMKK.',
+  'KFKMSSSSMKFK',
+  '.KMSSSSSSMK.',
+  '.KMSPEPPSMK.',
+  '.KMSppEpSMK.',
+  '.KMSSSSSSMK.',
+  'KFKMSSSSMKFK',
+  '.KKMSSSSMKK.',
+  '...KKKKKK...',
+  '............',
+]);
+
 const E_TANK = rows('tank', [
   '.........KKKKKK...........',
   '........KMRRRRMK..........',
@@ -585,8 +633,10 @@ export function buildSprites() {
   };
 
   // Bosses. Mirrored once at boot, the same way the player is.
-  S.boss = { warden: fromRows(B_WARDEN) };
-  S.bossFlip = { warden: flip(S.boss.warden) };
+  S.boss = { warden: fromRows(B_WARDEN), hexcell: fromRows(B_HEXCELL) };
+  S.bossFlip = { warden: flip(S.boss.warden), hexcell: flip(S.boss.hexcell) };
+  // Boss parts — relays, pods, anything that orbits a boss and dies separately.
+  S.bossPart = { relay: fromRows(B_RELAY) };
   // Turrets and tanks are ground-mounted and face left already; flying enemies
   // get a mirrored copy for the rare case they are drawn retreating.
   S.enemyFlip = {};

@@ -334,12 +334,68 @@ body {
 .pad__btn svg { width: 46%; height: 46%; fill: currentColor; stroke: currentColor; stroke-width: 1.6; }
 .pad__btn.is-down { background: rgba(139,92,246,.55); border-color: var(--purple-l); transform: scale(.94); }
 .pad__btn:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
-.pad__btn--left   { left: calc(var(--safe-l) + .6rem); bottom: calc(var(--safe-b) + .6rem); }
-.pad__btn--right  { left: calc(var(--safe-l) + 5.2rem); bottom: calc(var(--safe-b) + .6rem); }
-.pad__btn--jump   { right: calc(var(--safe-r) + 5.4rem); bottom: calc(var(--safe-b) + 4.9rem); }
-.pad__btn--slide  { right: calc(var(--safe-r) + 5.4rem); bottom: calc(var(--safe-b) + .6rem); }
-.pad__btn--fire   { right: calc(var(--safe-r) + .7rem); bottom: calc(var(--safe-b) + 3.1rem); }
-.pad__btn--gadget { right: calc(var(--safe-r) + 9.9rem); bottom: calc(var(--safe-b) + 3.1rem); }
+/* Fire is the button held for most of a run, so it gets the corner and the
+   size. The gadget sits up and inboard of it, on the arc the same thumb
+   sweeps, far enough out that the two cannot be hit together. */
+.pad__btn--fire   { right: calc(var(--safe-r) + .7rem); bottom: calc(var(--safe-b) + 1.1rem);
+                    width: clamp(58px, 12vh, 80px); height: clamp(58px, 12vh, 80px); }
+.pad__btn--gadget { right: calc(var(--safe-r) + 6.4rem); bottom: calc(var(--safe-b) + 4.6rem); }
+
+/* ---- Movement stick -------------------------------------------------------
+   One thumb, four directions. Left and right run, up jumps or climbs a level,
+   down slides or drops one — the same vocabulary the keyboard has, which the
+   four separate buttons split across both sides of the screen.
+
+   The zone is invisible and much larger than the ring: a thumb that lands
+   anywhere in the lower-left corner takes the stick with it, so nothing has to
+   be aimed at. */
+.stick {
+  position: absolute; pointer-events: auto;
+  left: 0; bottom: 0;
+  width: min(46%, 300px); height: min(62%, 340px);
+  touch-action: none;
+}
+.stick__base {
+  position: absolute;
+  left: calc(var(--safe-l) + 4.6rem); bottom: calc(var(--safe-b) + 4.2rem);
+  width: 116px; height: 116px; margin: -58px 0 0 -58px;
+  border-radius: 50%;
+  border: 2px solid rgba(143,154,210,.34);
+  background: radial-gradient(circle at 50% 50%, rgba(18,24,58,.5), rgba(18,24,58,.22) 70%, transparent 72%);
+  display: grid; place-items: center;
+  opacity: .5;
+  transition: opacity .16s ease;
+}
+.stick.is-live .stick__base { opacity: 1; transition: none; }
+.stick__knob {
+  position: absolute; left: 50%; top: 50%;
+  width: 52px; height: 52px; margin: -26px 0 0 -26px;
+  border-radius: 50%;
+  background: rgba(139,92,246,.5);
+  border: 2px solid rgba(183,148,255,.85);
+  box-shadow: 0 0 12px rgba(139,92,246,.4);
+  will-change: transform;
+}
+.stick.is-live .stick__knob { background: rgba(139,92,246,.8); }
+/* Chevrons on the rim, lit by whichever way the stick is pushed: the stick
+   teaches that up is jump and down is slide without a tutorial line. */
+.stick__dir {
+  position: absolute; width: 0; height: 0; opacity: .3;
+  border: 7px solid transparent;
+  transition: opacity .1s linear;
+}
+.stick__dir--up    { top: 2px;    border-bottom-color: var(--dim); border-top-width: 0; }
+.stick__dir--down  { bottom: 2px; border-top-color: var(--dim); border-bottom-width: 0; }
+.stick__dir--left  { left: 2px;   border-right-color: var(--dim); border-left-width: 0; }
+.stick__dir--right { right: 2px;  border-left-color: var(--dim); border-right-width: 0; }
+.stick__base.on-up    .stick__dir--up    { opacity: 1; border-bottom-color: var(--purple-l); }
+.stick__base.on-down  .stick__dir--down  { opacity: 1; border-top-color: var(--purple-l); }
+.stick__base.on-left  .stick__dir--left  { opacity: 1; border-right-color: var(--purple-l); }
+.stick__base.on-right .stick__dir--right { opacity: 1; border-left-color: var(--purple-l); }
+.pad.is-hidden .stick { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .stick__base, .stick__dir { transition: none; }
+}
 .pad__btn--gadget canvas { width: 30px; height: 30px; image-rendering: pixelated; }
 .pad__cool {
   position: absolute; inset: -2px; border-radius: 50%;
@@ -351,11 +407,11 @@ body {
 /* Health bars sit low-left, so on very short screens shrink the pad instead. */
 @media (max-height: 400px) {
   .pad__btn { width: 46px; height: 46px; }
-  .pad__btn--right  { left: calc(var(--safe-l) + 4.2rem); }
-  .pad__btn--jump   { right: calc(var(--safe-r) + 4.3rem); bottom: calc(var(--safe-b) + 3.9rem); }
-  .pad__btn--slide  { right: calc(var(--safe-r) + 4.3rem); }
-  .pad__btn--fire   { bottom: calc(var(--safe-b) + 2.6rem); }
-  .pad__btn--gadget { right: calc(var(--safe-r) + 8rem); bottom: calc(var(--safe-b) + 2.6rem); }
+  .pad__btn--fire   { width: 60px; height: 60px; bottom: calc(var(--safe-b) + .8rem); }
+  .pad__btn--gadget { right: calc(var(--safe-r) + 4.9rem); bottom: calc(var(--safe-b) + 3.4rem); }
+  .stick__base { width: 92px; height: 92px; margin: -46px 0 0 -46px;
+                 left: calc(var(--safe-l) + 3.6rem); bottom: calc(var(--safe-b) + 3.2rem); }
+  .stick__knob { width: 42px; height: 42px; margin: -21px 0 0 -21px; }
   .hud-reward { bottom: calc(var(--safe-b) + 6.4rem); font-size: .9em; }
 }
 

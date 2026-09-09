@@ -323,6 +323,12 @@ export class Audio {
         this._burst({ dur: 0.3, gain: 0.28, cut: 1600, sweepTo: 90 });
         this._burst({ dur: 0.09, gain: 0.16, cut: 6000, type: 'highpass' });
         break;
+      case 'boss.beam':
+        // A charged line, not a shot: a sustained tone with a downward sweep.
+        this._tone({ freq: 1400, to: 300, type: 'sawtooth', dur: 0.55, gain: 0.20 });
+        this._tone({ freq: 700, to: 150, type: 'square', dur: 0.55, gain: 0.14, detune: -10 });
+        this._burst({ dur: 0.5, gain: 0.14, cut: 3400, sweepTo: 700, type: 'bandpass', q: 2 });
+        break;
       case 'boss.plate':
         this._burst({ dur: 0.28, gain: 0.14, cut: 900, sweepTo: 3000, type: 'bandpass', q: 1.2 });
         this._tone({ freq: hz('D', 3), type: 'sawtooth', dur: 0.2, gain: 0.12 });

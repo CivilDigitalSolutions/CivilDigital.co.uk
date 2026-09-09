@@ -90,6 +90,7 @@ export class Input {
     }
     this._touches.clear();
     this._keys.clear();
+    if (this._stickReset) this._stickReset();
   }
 
   setSensitivity(v) { this.sensitivity = v; }
@@ -219,6 +220,105 @@ export class Input {
     t.addEventListener('touchstart', (e) => { if (this.enabled) e.preventDefault(); }, { passive: false });
     t.addEventListener('touchmove', (e) => { if (this.enabled) e.preventDefault(); }, { passive: false });
     t.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  /* The movement stick.
+
+     `zone` is the invisible region a thumb may land in, `base` the ring that
+     moves to meet it, `knob` the part that follows the thumb. The ring is
+     repositioned on touchdown rather than fixed, because a fixed stick has to
+     be aimed at and a thumb on a phone is already somewhere.
+
+     Left and right are held while pushed. Up and down are discrete — one jump
+     or one slide per push, re-armed only once the stick comes back towards
+     centre — so resting a thumb on the rim does not machine-gun the action.
+     Down is also held, because a slide continues while it is. */
+  bindStick(zone, base, knob) {
+    if (!zone || !base || !knob) return;
+    const DEAD = 0.34;       // how far before a direction counts at all
+    const FIRE = 0.55;       // ...and before up or down triggers
+    const REARM = 0.32;      // ...and back inside before it can trigger again
+    let id = null, cx = 0, cy = 0, radius = 52;
+    let upArmed = true, downArmed = true;
+
+    const reset = () => {
+      this.pointerHeld.left = false;
+      this.pointerHeld.right = false;
+      this.pointerHeld.down = false;
+      upArmed = downArmed = true;
+      knob.style.transform = 'translate(0px, 0px)';
+      base.classList.remove('on-up', 'on-down', 'on-left', 'on-right');
+      zone.classList.remove('is-live');
+      base.style.left = '';
+      base.style.bottom = '';
+      base.style.top = '';
+    };
+
+    const place = (e) => {
+      const zr = zone.getBoundingClientRect();
+      const br = base.getBoundingClientRect();
+      radius = Math.max(28, br.width / 2);
+      // Keep the ring wholly inside the zone, so a thumb near an edge still
+      // gets its full range of travel rather than half of it.
+      cx = Math.min(Math.max(e.clientX, zr.left + radius), zr.right - radius);
+      cy = Math.min(Math.max(e.clientY, zr.top + radius), zr.bottom - radius);
+      base.style.left = (cx - zr.left) + 'px';
+      base.style.top = (cy - zr.top) + 'px';
+      base.style.bottom = 'auto';
+    };
+
+    const apply = (e) => {
+      let dx = e.clientX - cx, dy = e.clientY - cy;
+      const len = Math.hypot(dx, dy);
+      if (len > radius) { dx = dx / len * radius; dy = dy / len * radius; }
+      knob.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`;
+      const nx = dx / radius, ny = dy / radius;
+
+      const right = nx > DEAD, left = nx < -DEAD;
+      if (right && !this.pointerHeld.right) this.press('right');
+      if (left && !this.pointerHeld.left) this.press('left');
+      this.pointerHeld.right = right;
+      this.pointerHeld.left = left;
+
+      if (ny < -FIRE && upArmed) { this.press('jump'); upArmed = false; }
+      if (ny > -REARM) upArmed = true;
+
+      if (ny > FIRE && downArmed) { this.press('down'); downArmed = false; }
+      if (ny < REARM) downArmed = true;
+      this.pointerHeld.down = ny > DEAD;
+
+      base.classList.toggle('on-right', right);
+      base.classList.toggle('on-left', left);
+      base.classList.toggle('on-up', ny < -DEAD);
+      base.classList.toggle('on-down', ny > DEAD);
+    };
+
+    zone.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!this.enabled || id !== null) return;
+      id = e.pointerId ?? 0;
+      zone.classList.add('is-live');
+      try { zone.setPointerCapture(id); } catch (_) { /* not captured, fine */ }
+      place(e);
+      apply(e);
+      this.onAnyInput();
+    });
+    zone.addEventListener('pointermove', (e) => {
+      if (id === null || (e.pointerId ?? 0) !== id) return;
+      e.preventDefault();
+      e.stopPropagation();
+      apply(e);
+    });
+    const release = (e) => {
+      if (id === null || (e.pointerId ?? 0) !== id) return;
+      id = null;
+      reset();
+    };
+    zone.addEventListener('pointerup', release);
+    zone.addEventListener('pointercancel', release);
+    zone.addEventListener('lostpointercapture', release);
+    this._stickReset = reset;
   }
 
   /* On-screen buttons register themselves; each is a large touch target. */
