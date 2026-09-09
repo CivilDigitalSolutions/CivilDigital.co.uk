@@ -324,8 +324,22 @@ document.addEventListener('visibilitychange', () => {
    the rest of the site. */
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {
+    navigator.serviceWorker.register('sw.js', { scope: './', updateViaCache: 'none' }).catch(() => {
       /* Offline support is a bonus; the game plays fine without it. */
     });
+  });
+
+  /* A new worker takes over one visit after it is fetched, so without this the
+     first load of a release still runs the previous one — which looks exactly
+     like the update never shipped. Reload once when control changes so a
+     release lands on the visit it arrives, not the one after.
+
+     Guarded, because a worker calling skipWaiting() during an ongoing load can
+     otherwise change control repeatedly and reload in a loop. */
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return;
+    reloading = true;
+    window.location.reload();
   });
 }

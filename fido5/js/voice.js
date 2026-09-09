@@ -53,10 +53,12 @@ export class Voice {
     this.voice = pool.find((v) => v.localService) || pool[0] || null;
   }
 
-  /* A missing manifest is the normal case: it just means no recordings yet. */
+  /* A missing manifest is the normal case: it just means no recordings yet.
+     Never force-cache this: it is the list of which lines can speak, so a
+     stale copy leaves FiDo-5 silent long after the recordings have shipped. */
   _loadManifest() {
     if (this.recorded) return;
-    fetch(VOICE.manifest, { cache: 'force-cache' })
+    fetch(VOICE.manifest, { cache: 'no-cache' })
       .then((r) => (r.ok ? r.json() : null))
       .then((list) => {
         this.recorded = new Set(Array.isArray(list) ? list : []);

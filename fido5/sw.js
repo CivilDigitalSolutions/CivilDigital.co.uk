@@ -1,11 +1,23 @@
 /* ==========================================================================
    FiDo-5 — Offline worker.
    Scoped to /fido5/ so it can never serve or cache anything else on the site.
-   Cache-first for the game's own files, because they are versioned by name in
-   the cache key: bump VERSION on release and the old cache is dropped.
+
+   Code and data are network-first: a release must never wait for a second
+   visit to appear, and a stale script is indistinguishable from a reverted
+   one. The cache is the offline fallback, not the first choice.
+
+   Bulk assets — audio, images — are cache-first, because that is where
+   cache-first actually pays and their content is fixed for a given release.
+   Bump VERSION on release and every old cache is dropped.
    ========================================================================== */
 
-const VERSION = 'fido5-v1';
+const VERSION = 'fido5-v3';
+
+/* Fetched fresh whenever the network allows. Anything the game's behaviour
+   depends on belongs here, including the voice manifest: it decides whether
+   FiDo-5 speaks, so serving yesterday's copy silences him. */
+const LIVE = /\.(?:html|js|css|json|webmanifest)$|\/$/;
+
 const ASSETS = [
   './',
   'play.html',
@@ -41,7 +53,11 @@ self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(VERSION)
       // addAll fails the whole install if one entry 404s, so add individually.
-      .then((c) => Promise.all(ASSETS.map((a) => c.add(a).catch(() => null))))
+      // reload skips the HTTP cache, so a fresh install cannot seed itself
+      // with the very files it is meant to replace.
+      .then((c) => Promise.all(
+        ASSETS.map((a) => c.add(new Request(a, { cache: 'reload' })).catch(() => null))
+      ))
       .then(() => self.skipWaiting())
   );
 });
@@ -60,22 +76,36 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
 
+  const live = req.mode === 'navigate' || LIVE.test(url.pathname);
+
   e.respondWith(
-    caches.match(req).then((hit) => {
-      if (hit) {
-        // Refresh in the background so a new release is picked up next visit.
-        fetch(req).then((res) => {
-          if (res && res.ok) caches.open(VERSION).then((c) => c.put(req, res.clone()));
-        }).catch(() => {});
-        return hit;
-      }
-      return fetch(req).then((res) => {
-        if (res && res.ok && res.type === 'basic') {
-          const copy = res.clone();
-          caches.open(VERSION).then((c) => c.put(req, copy));
-        }
-        return res;
-      }).catch(() => caches.match('play.html'));
-    })
+    live
+      /* Network-first: the newest release wins, the cache covers being offline. */
+      ? fetch(req)
+          .then((res) => {
+            if (res && res.ok && res.type === 'basic') {
+              const copy = res.clone();
+              caches.open(VERSION).then((c) => c.put(req, copy));
+            }
+            return res;
+          })
+          .catch(() => caches.match(req).then((hit) => hit || caches.match('play.html')))
+
+      /* Cache-first for audio and images, refreshed quietly for next time. */
+      : caches.match(req).then((hit) => {
+          if (hit) {
+            fetch(req).then((res) => {
+              if (res && res.ok) caches.open(VERSION).then((c) => c.put(req, res.clone()));
+            }).catch(() => {});
+            return hit;
+          }
+          return fetch(req).then((res) => {
+            if (res && res.ok && res.type === 'basic') {
+              const copy = res.clone();
+              caches.open(VERSION).then((c) => c.put(req, copy));
+            }
+            return res;
+          }).catch(() => caches.match('play.html'));
+        })
   );
 });
