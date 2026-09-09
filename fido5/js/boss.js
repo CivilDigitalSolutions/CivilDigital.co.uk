@@ -72,6 +72,13 @@ export class Boss {
     }
     this.dying = 0;
     this.hold = false;      // true during the intro: stands, does not fight
+    // Animation: how far the body is lifted (negative is up), how hard it is
+    // squashed, and how far it has recoiled from its own shot. The renderer
+    // reads these; nothing here needs to know how it is drawn.
+    this.lift = 0;
+    this.squash = 0;
+    this.recoil = 0;
+    this.step = 0;          // walk cycle phase
     this.speedMul = 1 + pass * 0.15;
   }
 
@@ -159,6 +166,7 @@ export class Boss {
     // Held for the intro: it breathes, and nothing else.
     if (this.hold) return;
 
+    this._updateAnim(dt);
     this._updateWaves(dt, ctx);
     this._updateShots(dt, ctx);
     this._updateBeams(dt, ctx);
@@ -175,8 +183,36 @@ export class Boss {
       case 'recover':   if (this.phaseT <= 0) this._enter('wait', 0.5 + Math.random() * 0.7); break;
     }
 
-    // Walking into it hurts, so it cannot be simply stood on top of.
-    if (this._overlaps(p)) ctx.onPlayerHit && ctx.onPlayerHit(this.def.contact * dt * 2);
+    // Walking into it hurts, so it cannot be simply stood on top of. This is a
+    // real hit rather than a per-frame trickle: the invulnerability window the
+    // hit opens is what stops it landing again on the very next frame.
+    if (this._overlaps(p)) this._hit(ctx, this.def.contact);
+  }
+
+  /* The body's own movement, kept out of the attack code so a new attack does
+     not have to remember to animate itself.
+
+     A stomp reads as a stomp because the thing rears up first: the wind-up is
+     the animation, and without it the shockwave appears out of a boss standing
+     perfectly still. */
+  _updateAnim(dt) {
+    const ease = (v, to, rate) => v + (to - v) * Math.min(1, rate * dt);
+    let wantLift = 0;
+    if (this.phase === 'telegraph' && this.attack === 'stomp') {
+      // Rear up over the wind-up, all the way to the moment it lands.
+      const k = 1 - Math.max(0, this.phaseT) / this.def.telegraph;
+      wantLift = -7 * k;
+      this.squash = ease(this.squash, -0.12 * k, 14);   // stretched tall
+    } else if (this.phase === 'strike' && this.attack === 'stomp') {
+      wantLift = 2;
+      this.squash = ease(this.squash, 0.22, 40);        // slammed flat
+    } else {
+      this.squash = ease(this.squash, 0, 9);
+    }
+    this.lift = ease(this.lift, wantLift, this.phase === 'strike' ? 42 : 12);
+    this.recoil = Math.max(0, this.recoil - dt * 9);
+    // A slow plod while it walks, so a boss crossing the arena is not sliding.
+    if (!this.def.float && this.phase === 'wait') this.step += dt * 5;
   }
 
   _enter(phase, time) { this.phase = phase; this.phaseT = time; }
@@ -192,7 +228,7 @@ export class Boss {
     ctx.particles.dust(this.x - this.dir * this.def.w / 2, WORLD.tierY[0]);
     if (this._overlaps(p) && !this.chargeHit) {
       this.chargeHit = true;
-      ctx.onPlayerHit && ctx.onPlayerHit(a.damage * this._dmgMul());
+      this._hit(ctx, a.damage);
     }
     const min = this.arena.startX + this.margin;
     const max = this.arena.endX - this.margin;
@@ -239,7 +275,7 @@ export class Boss {
       bm.life -= dt;
       if (!bm.hit && Math.abs(p.midY - bm.y) < a.halfHeight) {
         bm.hit = true;
-        ctx.onPlayerHit && ctx.onPlayerHit(a.damage * this._dmgMul());
+        this._hit(ctx, a.damage);
       }
       if (bm.life <= 0) this.beams.splice(i, 1);
     }
@@ -272,7 +308,15 @@ export class Boss {
     switch (this.attack) {
       case 'stomp': {
         ctx.audio.play('explosion');
-        ctx.particles.dust(this.x, WORLD.tierY[0]);
+        this.lift = 2;              // land now, do not ease into it
+        this.squash = 0.22;
+        ctx.shake && ctx.shake(5);
+        // Dust kicked out from under both feet rather than one puff in the
+        // middle, so the slam reads as coming from the legs.
+        for (const off of [-this.def.w * 0.28, this.def.w * 0.28]) {
+          ctx.particles.dust(this.x + off, WORLD.tierY[0]);
+          ctx.particles.debris(this.x + off, WORLD.tierY[0] - 2, 'S');
+        }
         for (const dir of [-1, 1]) {
           this.waves.push({ x: this.x, dir, life: a.waveLife, hit: false });
         }
@@ -282,6 +326,7 @@ export class Boss {
       }
       case 'flak': {
         ctx.audio.play('enemy.fire');
+        this.recoil = 4;
         for (let i = 0; i < a.shots; i++) {
           const spread = (i / (a.shots - 1) - 0.5) * 2 * a.spread;
           this.shots.push({
@@ -366,7 +411,7 @@ export class Boss {
       // Only catches a player on the ground: being airborne is the answer.
       if (!wv.hit && p.tier === 0 && p.grounded && Math.abs(p.x - wv.x) < 12) {
         wv.hit = true;
-        ctx.onPlayerHit && ctx.onPlayerHit(a.damage * this._dmgMul());
+        this._hit(ctx, a.damage);
       }
       if (wv.life <= 0 || wv.x < this.arena.startX - 20 || wv.x > this.arena.endX + 20) {
         this.waves.splice(i, 1);
@@ -384,7 +429,7 @@ export class Boss {
       s.y += s.vy * dt;
       s.life -= dt;
       if (Math.abs(s.x - p.x) < 9 && Math.abs(s.y - p.midY) < 11) {
-        ctx.onPlayerHit && ctx.onPlayerHit(a.damage * this._dmgMul());
+        this._hit(ctx, a.damage);
         this.shots.splice(i, 1);
         continue;
       }
@@ -396,6 +441,15 @@ export class Boss {
   }
 
   _dmgMul() { return 1 + this.pass * 0.2; }
+
+  /* Every point of damage a boss deals goes through here.
+
+     It has to be ctx.hurtPlayer and not ctx.onPlayerHit: the latter is only
+     the notification that a hit happened, so calling it alone left every one
+     of these attacks dealing exactly nothing. */
+  _hit(ctx, amount) {
+    return ctx.hurtPlayer ? ctx.hurtPlayer(amount * this._dmgMul(), 'boss') : 0;
+  }
 
   _overlaps(p) {
     return Math.abs(p.x - this.x) < (this.def.w / 2 + 6)

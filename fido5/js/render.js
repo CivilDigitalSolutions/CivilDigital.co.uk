@@ -764,17 +764,24 @@ export class Renderer {
 
     const img = (b.dir < 0 ? S.boss : S.bossFlip)[def.id];
     if (!img) return;
-    const dx = Math.round(b.x - cam - def.w / 2);
-    const dy = Math.round(b.y - def.h / 2);
+    // The body is drawn from its feet up, so a squash flattens it into the
+    // ground instead of sliding it through the floor. lift, squash and recoil
+    // come from the boss's own animation state.
+    const sq = b.squash || 0;
+    const dw = Math.max(4, Math.round(def.w * (1 + sq * 0.35)));
+    const dh = Math.max(4, Math.round(def.h * (1 - sq)));
+    const bob = (!def.float && b.phase === 'wait') ? Math.round(Math.sin(b.step) * 1) : 0;
+    const dx = Math.round(b.x - cam - dw / 2 - (b.recoil || 0) * b.dir);
+    const dy = Math.round(b.y + def.h / 2 - dh + (b.lift || 0) + bob);
 
     if (b.dying > 0) {
       // Comes apart in stages rather than simply fading.
       const f = b.dying / 1.6;
       x.globalAlpha = Math.max(0, f);
-      x.drawImage(img.c, dx, dy + Math.round((1 - f) * 4), def.w, def.h);
+      x.drawImage(img.c, dx, dy + Math.round((1 - f) * 4), dw, dh);
       x.globalAlpha = 1;
       if (((b.t * 12) | 0) % 2 === 0) {
-        this._flash(x, img, dx, dy, '#ffffff', 0.8, def.w, def.h);
+        this._flash(x, img, dx, dy, '#ffffff', 0.8, dw, dh);
       }
       return;
     }
@@ -787,12 +794,13 @@ export class Renderer {
       x.strokeStyle = '#ff3d68';
       x.lineWidth = 1;
       x.beginPath();
-      x.arc(dx + def.w / 2, dy + def.h / 2, def.w * (1.1 - f * 0.55), 0, Math.PI * 2);
+      x.arc(dx + dw / 2, dy + dh / 2, def.w * (1.1 - f * 0.55), 0, Math.PI * 2);
       x.stroke();
       x.globalAlpha = 1;
       // Name the attack. A boss you can learn beats a boss you can only dodge.
-      const label = { stomp: 'STOMP', flak: 'FLAK', charge: 'CHARGE' }[b.attack];
-      if (label) this.text(label, dx + def.w / 2, dy - 16, 'R', 1, 'center');
+      const label = { stomp: 'STOMP', flak: 'FLAK', charge: 'CHARGE',
+                      beam: 'BEAM', volley: 'VOLLEY' }[b.attack];
+      if (label) this.text(label, dx + dw / 2, dy - 16, 'R', 1, 'center');
     }
 
     // Mid-charge: speed lines behind it, so a boss crossing the arena reads as
@@ -801,29 +809,29 @@ export class Renderer {
       x.globalAlpha = 0.45;
       x.fillStyle = '#ff3d68';
       for (let i = 1; i <= 3; i++) {
-        x.fillRect(dx - b.dir * i * 5 + (b.dir < 0 ? def.w : 0), dy + 6 + i * 7, 6, 1);
+        x.fillRect(dx - b.dir * i * 5 + (b.dir < 0 ? dw : 0), dy + 6 + i * 7, 6, 1);
       }
       x.globalAlpha = 1;
     }
 
-    x.drawImage(img.c, dx, dy, def.w, def.h);
+    x.drawImage(img.c, dx, dy, dw, dh);
 
     if (b.phase === 'strike' && b.attack === 'charge') {
-      this._flash(x, img, dx, dy, '#ff3d68', 0.22, def.w, def.h);
+      this._flash(x, img, dx, dy, '#ff3d68', 0.22, dw, dh);
     }
     if (b.phase === 'telegraph') {
       const f = 1 - Math.max(0, b.phaseT) / def.telegraph;
-      this._flash(x, img, dx, dy, '#ff3d68', 0.2 + 0.4 * f, def.w, def.h);
+      this._flash(x, img, dx, dy, '#ff3d68', 0.2 + 0.4 * f, dw, dh);
     }
     // Exposed: armour is off, so the core glows and the outline pulses. This
     // is the damage window and it is the single most important read here.
     if (b.exposed) {
       const pulse = 0.35 + 0.3 * Math.abs(Math.sin(b.t * 12));
-      this._flash(x, img, dx, dy, '#ffe66d', pulse * 0.5, def.w, def.h);
+      this._flash(x, img, dx, dy, '#ffe66d', pulse * 0.5, dw, dh);
       // Mirror the core with the sprite: it is off-centre by design.
       const core = def.core || { x: def.w / 2, y: def.h / 2 };
-      const cxp = dx + Math.round(b.dir < 0 ? core.x : def.w - 1 - core.x);
-      const cyp = dy + Math.round(core.y);
+      const cxp = dx + Math.round((b.dir < 0 ? core.x : def.w - 1 - core.x) * (dw / def.w));
+      const cyp = dy + Math.round(core.y * (dh / def.h));
       x.globalAlpha = 0.6 + 0.4 * Math.abs(Math.sin(b.t * 14));
       x.strokeStyle = '#ffe66d';
       x.lineWidth = 1;
@@ -833,7 +841,7 @@ export class Renderer {
       x.globalAlpha = 1;
     }
     if (b.flash > 0) {
-      this._flash(x, img, dx, dy, '#ffffff', Math.min(0.9, b.flash * 7), def.w, def.h);
+      this._flash(x, img, dx, dy, '#ffffff', Math.min(0.9, b.flash * 7), dw, dh);
     }
 
     this._bossParts(x, cam, b);

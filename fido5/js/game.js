@@ -188,6 +188,8 @@ export class Game {
       onEnemyKilled: (e, source) => self.onEnemyKilled(e, source),
       onEnemySeen: (e) => self.onEnemySeen(e),
       onPlayerHit: (dmg) => self.onPlayerHit(dmg),
+      hurtPlayer: (dmg, source) => self.hurtPlayer(dmg, source),
+      shake: (mag) => self.shake(mag),
       onTurretCharge: () => self.drone.onTurret(),
       onBombArmed: () => self.drone.onBomb(),
       onRescueStart: () => self.onRescueStart(),
@@ -792,6 +794,22 @@ export class Game {
     } else if (this.pools.enemies.live >= 3) {
       this.drone.onThreat();
     }
+  }
+
+  /* Actually take the damage, then tell everything that cares.
+
+     onPlayerHit below is only the notification half — it breaks the streak and
+     buzzes the phone. Anything that wants to hurt the player has to go through
+     here, or the hit is silently free: no health lost, no shield spent, no
+     invulnerability window, no flash. */
+  hurtPlayer(dmg, source = 'boss') {
+    const took = this.player.hurt(dmg, this.audio, this.particles, source);
+    if (took > 0) {
+      this.onPlayerHit(dmg);
+      // A boss landing a hit is worth feeling, not just seeing.
+      if (source === 'boss') this.shake(3.5);
+    }
+    return took;
   }
 
   onPlayerHit(dmg) {
