@@ -13,6 +13,9 @@ line under two seconds: they play during combat and must not overlap.
 
 ## Direction
 
+Per-line delivery notes, a voice prompt and settings are in `elevenlabs.md`,
+and `lines.csv` carries the same list for a spreadsheet.
+
 FiDo-5 is a compact military drone: loyal, efficient, protective, and dry.
 Clipped delivery, no warmth in the performance, a little radio compression.
 It is a machine, not a narrator, and it never sounds worried. The sarcasm is
