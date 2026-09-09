@@ -84,6 +84,10 @@ export class Game {
     this.particles.clear();
     this.applyQuality();
 
+    // Start at or ahead of the left wall: being shoved off it on frame one
+    // would read as distance the player never ran.
+    this.player.x = Math.max(this.player.x, this.leftMargin);
+
     const st = this.stats;
     this.run = {
       time: 0,
@@ -331,7 +335,9 @@ export class Game {
       // arena are solid. This is the whole trick behind a non-scrolling
       // fight in a game built around a camera that only moves forward.
       r.camX = r.arena.camX;
-      const leftWall = r.arena.startX + 6;
+      // The thumb rule applies here too, and matters more: an arena fight is
+      // where the player most needs to see exactly where they are standing.
+      const leftWall = Math.max(r.arena.startX + 6, r.camX + this.leftMargin);
       let rightWall = r.arena.endX - 6;
       /* A boss standing between the player and the far wall is solid. Without
          this the player can run into the few pixels behind it, where there is
@@ -346,9 +352,9 @@ export class Game {
       if (p.x < leftWall) { p.x = leftWall; if (p.vx < 0) p.vx = 0; }
       if (p.x > rightWall) { p.x = rightWall; if (p.vx > 0) p.vx = 0; }
     } else {
-      const camTarget = Math.max(0, p.x - WORLD.viewW * WORLD.cameraX);
+      const camTarget = Math.max(0, p.x - WORLD.viewW * this.cameraAnchor);
       r.camX = Math.max(r.camX, camTarget);
-      const leftWall = r.camX + 10;
+      const leftWall = r.camX + this.leftMargin;
       if (p.x < leftWall) { p.x = leftWall; if (p.vx < 0) p.vx = 0; }
     }
 
@@ -493,6 +499,16 @@ export class Game {
   }
 
   shake(mag) { this.run.shake = Math.max(this.run.shake, mag); }
+
+  /* Where the player rests on screen, and how far in the left wall sits. Both
+     move when the on-screen pad is showing, to keep the character out from
+     under the thumb driving it — see the note on WORLD.touchLeftWall. */
+  get cameraAnchor() {
+    return this.touchControls ? WORLD.touchCameraX : WORLD.cameraX;
+  }
+  get leftMargin() {
+    return this.touchControls ? Math.round(WORLD.touchLeftWall * WORLD.viewW) : 10;
+  }
 
   /* True from the moment a gate locks until it clears, whether or not the
      fight has walls. Lives, the lives HUD and the onboarding prompts key off

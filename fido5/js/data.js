@@ -35,6 +35,19 @@ export const WORLD = {
   slideTime: 0.55,       // s
 
   cameraX: 0.30,         // where the player sits on screen, as a fraction
+  /* Touch controls change where the player can usefully stand. The thumb on
+     the movement stick covers the bottom-left corner — measured, it reaches
+     about 18% across the screen — so a character that can back up to the left
+     edge backs up underneath the hand holding the phone and cannot be seen.
+
+     The left wall moves in to keep the character clear of that thumb, and the
+     camera anchor moves right by the same amount, so backing up covers exactly
+     the distance it always did — about 70px — just further from the hand. The
+     cost is look-ahead: 57% of the screen ahead instead of 70%, roughly 0.8s
+     of warning at top speed against 1.0s. Both only apply while the on-screen
+     pad is showing; a keyboard player is untouched. */
+  touchCameraX: 0.43,    // ...and where they sit with the pad on screen
+  touchLeftWall: 0.25,   // how far in the left wall comes, as a fraction
   moveSpeed: 152,        // px/s under manual control
   moveAccel: 1000,       // px/s^2 getting up to speed
   moveBrake: 1500,       // px/s^2 stopping
