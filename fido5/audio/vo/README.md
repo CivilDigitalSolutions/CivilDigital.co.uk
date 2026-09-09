@@ -2,7 +2,10 @@
 
 Every line FiDo-5 speaks, with the filename each recording must use.
 
-## How to add recordings
+All 45 lines are recorded and listed in `manifest.json`, so FiDo-5 speaks
+throughout. What follows is how to replace a take or add a line later.
+
+## How to add or replace a recording
 
 1. Record each line and save it as `<id>.mp3` in this folder.
 2. Add the ids you have recorded to `manifest.json`, e.g. `["threat-1", "threat-2"]`.
