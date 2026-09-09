@@ -750,10 +750,120 @@ export const BOSSES = [
     cycleAttacks: true,
     attacks: ['strafe', 'salvo', 'strafe', 'mines'],
   },
+  {
+    id: 'choir',
+    name: 'The Choir',
+    subtitle: 'Rotating battery',
+    arena: 'static',
+    health: 640,
+    contact: 14,
+    score: 4800,
+    coins: 180,
+    w: 16, h: 96,          // a mast from the street to the rooftop line
+    core: { x: 8, y: 46 },
+    tier: 0,
+    /* Three pods, one per tier, and they do not come back. The mast is always
+       worth shooting but heavily plated; every pod silenced strips a third of
+       that plating away. So the player chooses: clear the pods and soften the
+       mast, or race the mast down while all three are still singing. */
+    armour: 0.18,
+    armourLabel: 'PLATED',
+    telegraph: 0.75,
+    recover: 1.0,
+    walkSpeed: 0,          // it is bolted to the street
+    attacks: ['chorus', 'chorus', 'sweep'],
+    parts: {
+      kind: 'pod',
+      count: 3,
+      health: 90,
+      w: 16, h: 15,
+      layout: 'tiers',     // mounted one per level rather than orbiting
+      spread: 78,          // px between the outermost pods
+      respawn: 0,          // silenced for good
+      gates: false,        // the mast is hittable throughout
+      softens: true,       // ...but every pod lost thins its armour
+    },
+  },
+  {
+    id: 'ripper',
+    name: 'The Ripper',
+    subtitle: 'Pursuit form',
+    /* The inverse of every other fight: it comes from behind, and a player who
+       can only shoot forwards cannot answer it until it overshoots. */
+    arena: 'moving',
+    station: -120,         // it hunts from behind, not ahead
+    health: 600,
+    contact: 20,
+    score: 5600,
+    coins: 210,
+    w: 40, h: 19,
+    core: { x: 34, y: 10 },
+    tier: 0,
+    float: true,
+    hugGround: true,       // it crawls the street rather than cruising
+    armour: 0.1,
+    armourLabel: 'BEHIND YOU',
+    telegraph: 0.7,
+    recover: 1.5,
+    walkSpeed: 44,
+    cycleAttacks: true,
+    attacks: ['lunge', 'spit', 'lunge', 'shockwave'],
+  },
+  {
+    id: 'prime',
+    name: 'Null Prime',
+    subtitle: 'Final form',
+    arena: 'static',
+    health: 900,
+    contact: 20,
+    score: 7500,
+    coins: 300,
+    w: 38, h: 39,
+    core: { x: 19, y: 17 },
+    tier: 0,
+    armour: 0.22,
+    armourLabel: 'PLATED',
+    telegraph: 0.8,
+    recover: 1.15,
+    walkSpeed: 30,
+    attacks: ['stomp', 'flak', 'charge', 'beam'],
+    /* At half health it throws its plating off and keeps going without it:
+       faster, no longer armoured at all, and no longer alone. Phase one is the
+       Warden's rhythm; phase two is Hexcell's priority problem. */
+    phase2: {
+      at: 0.5,
+      armour: 1,           // nothing left to hide behind
+      speedMul: 1.4,
+      telegraph: 0.6,
+      attacks: ['charge', 'beam', 'flak', 'charge'],
+      announce: 'ARMOUR SHED',
+      parts: {
+        kind: 'shard',
+        count: 4,
+        health: 80,
+        w: 14, h: 11,
+        layout: 'orbit',
+        orbit: 46,
+        rise: 26,
+        spin: 1.05,
+        respawn: 0,
+        gates: false,      // they harry, they do not shield
+      },
+    },
+  },
 ];
 
 /* Per-attack tuning, kept out of the behaviour code. */
 export const BOSS_ATTACKS = {
+  /* The Choir. Every living pod fires in turn down one line, with a gap at the
+     end of the rotation. Fewer pods means a shorter rotation, so silencing one
+     buys softer armour at the cost of a faster song. */
+  chorus: { damage: 14, speed: 210, gap: 0.26 },
+  sweep:  { damage: 16, speed: 150, shots: 7, arc: 1.5 },
+  /* The Ripper. A lunge overshoots on purpose — that is the whole fight. */
+  lunge:  { damage: 24, speed: 260, duration: 0.75 },
+  spit:   { damage: 13, shots: 3, speed: 200, spread: 0.26 },
+  shockwave: { damage: 18, waveSpeed: 210, waveLife: 1.4, collapse: false },
   /* The Convoy. A strafing run is the whole fight: it is the only time the
      gunship is at a height the player can shoot, and it costs the most to be
      hit by, so both sides are committing to the same moment. */

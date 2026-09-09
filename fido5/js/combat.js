@@ -330,7 +330,7 @@ export function updateBullets(dt, ctx) {
       // that reaches one should take it rather than pass through to a boss it
       // cannot hurt anyway.
       if (boss.parts.length) {
-        const pd = boss.def.parts;
+        const pd = boss.partDef;
         const phw = pd.w / 2, phh = pd.h / 2;
         for (const q of boss.parts) {
           if (!q.alive) continue;

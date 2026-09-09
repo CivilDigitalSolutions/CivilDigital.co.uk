@@ -44,11 +44,23 @@ export class Boss {
     /* A moving boss has no arena to enter. It keeps station on the camera
        instead, and cruises above everything the player can shoot at. */
     this.moving = def.arena === 'moving';
-    this.cruiseY = WORLD.tierY[2] - 26;
-    this.lastCam = arena.startX;    // for carrying a flying boss with the world
+    // A gunship cruises above the firing line; a crawler keeps to the street
+    // and is unreachable for a different reason — it is behind you.
+    this.cruiseY = def.hugGround ? WORLD.tierY[0] - def.h / 2 : WORLD.tierY[2] - 26;
+    // Where the camera was when it spawned, so the first frame's carry is zero
+    // rather than the distance between the camera and the arena's near edge.
+    this.lastCam = ctx && ctx.run ? ctx.run.camX : arena.startX;
     // Enters from the far end of the arena, facing the player — but never so
-    // close to the wall that its relays swing off the screen.
-    this.x = arena.endX - def.w / 2 - (def.parts ? def.parts.orbit : def.w / 2);
+    // close to the wall that whatever it carries hangs off the screen.
+    this.phase2 = false;
+    this.armourOverride = null;
+    this.attacksOverride = null;
+    this.telegraphOverride = null;
+    // A boss that hunts from behind has to arrive from behind, or it spends the
+    // opening of the fight flying backwards past the player to take station.
+    this.x = (def.station || 0) < 0
+      ? arena.startX + this.margin + def.w / 2
+      : arena.endX - this.margin - def.w / 2;
     this.y = this.moving ? this.cruiseY : WORLD.tierY[def.tier] - def.h / 2;
     this.vx = 0;
     this.dir = -1;
@@ -64,17 +76,7 @@ export class Boss {
     this.collapsed = [];    // walkway columns already taken away
     this.homeY = this.y;
     this.parts = [];
-    if (def.parts) {
-      // Relays start evenly spaced around the node so the opening read is
-      // "three of them", not "a cluster".
-      for (let i = 0; i < def.parts.count; i++) {
-        this.parts.push({
-          i, a: (i / def.parts.count) * Math.PI * 2,
-          alive: true, hp: def.parts.health, maxHp: def.parts.health,
-          x: this.x, y: this.y, flash: 0, respawnT: 0,
-        });
-      }
-    }
+    if (def.parts) this._buildParts(def.parts);
     this.dying = 0;
     this.hold = false;      // true during the intro: stands, does not fight
     // Animation: how far the body is lifted (negative is up), how hard it is
@@ -86,6 +88,26 @@ export class Boss {
     this.recoil = 0;
     this.step = 0;          // walk cycle phase
     this.speedMul = 1 + pass * 0.15;
+  }
+
+  /* Parts come in two layouts. Orbiting ones ring the body and start evenly
+     spaced, so the opening read is "three of them" and not "a cluster";
+     mounted ones sit one per tier, which is what makes a fight about moving
+     between tiers rather than around a circle. */
+  _buildParts(pd) {
+    this.parts.length = 0;
+    for (let i = 0; i < pd.count; i++) {
+      const q = {
+        i, alive: true, hp: pd.health, maxHp: pd.health, flash: 0, respawnT: 0,
+        a: (i / pd.count) * Math.PI * 2,
+        tier: pd.layout === 'tiers' ? i % WORLD.tierCount : 0,
+        off: pd.layout === 'tiers' && pd.count > 1
+          ? -(i / (pd.count - 1)) * pd.spread : 0,
+      };
+      q.x = this.x + q.off;
+      q.y = pd.layout === 'tiers' ? WORLD.tierY[q.tier] - pd.h / 2 : this.y;
+      this.parts.push(q);
+    }
   }
 
   clear() {
@@ -100,30 +122,87 @@ export class Boss {
      without them is exposed in the moment after it attacks. Two different
      fights, one word for "hit it now". */
   get exposed() {
-    if (this.parts.length) return this.parts.every((q) => !q.alive);
+    const pd = this.partDef;
+    // Parts only gate exposure where the design says they do: Hexcell's relays
+    // are a shield, the Choir's pods are plating and Null Prime's drones are
+    // just company.
+    if (this.parts.length && pd && pd.gates !== false) return this.parts.every((q) => !q.alive);
     return this.phase === 'recover';
   }
   get liveParts() { return this.parts.reduce((n, q) => n + (q.alive ? 1 : 0), 0); }
+  get partDef() { return this.phase2 && this.def.phase2.parts ? this.def.phase2.parts : this.def.parts; }
+
+  /* A boss that changes form part-way through overrides these three rather
+     than being a second definition: same body, same bar, different rules. */
+  get armourVal() { return this.armourOverride == null ? this.def.armour : this.armourOverride; }
+  get attackPool() { return this.attacksOverride || this.def.attacks; }
+  get telegraphT() { return this.telegraphOverride == null ? this.def.telegraph : this.telegraphOverride; }
 
   /* How far from a wall the body has to stay. A boss with orbiting parts needs
      room for them too, or a relay spends the fight outside the arena where it
      cannot be shot. */
+  /* How far from a wall the body has to stay. Orbiting parts need room on
+     both sides; mounted ones trail back towards the player, so they need none
+     on the far side — which is what lets an immobile boss stand against the
+     far wall with nothing behind it for the player to hide in. */
   get margin() {
-    return this.def.w / 2 + (this.def.parts ? this.def.parts.orbit : 0);
+    const pd = this.def.parts;
+    if (!pd) return this.def.w / 2;
+    return this.def.w / 2 + (pd.layout === 'tiers' ? pd.w / 2 : pd.orbit);
   }
   get hpFrac() { return this.maxHp > 0 ? clamp(this.hp / this.maxHp, 0, 1) : 0; }
 
   /* ---- Damage --------------------------------------------------------- */
 
+  /* The damage multiplier a hit would actually get right now. One place, so
+     the bar can never claim a boss is protected while the maths says it is
+     taking everything. */
+  get armourNow() {
+    if (this.exposed) return 1;
+    const pd = this.partDef;
+    // Plating that comes off a piece at a time: each part silenced is a third
+    // (or a quarter) of the armour gone, so clearing them is worth doing even
+    // where they are not a shield in their own right.
+    if (pd && pd.softens && this.parts.length) {
+      const gone = this.parts.length - this.liveParts;
+      return this.armourVal + (1 - this.armourVal) * (gone / this.parts.length);
+    }
+    return this.armourVal;
+  }
+
   hurt(ctx, amount) {
     if (!this.active || this.dying > 0 || this.hold) return 0;
-    const mul = this.exposed ? 1 : this.def.armour;
-    const dealt = amount * mul;
+    const dealt = amount * this.armourNow;
     this.hp = Math.max(0, this.hp - dealt);
     this.flash = 0.12;
     this.hitT = 0.2;
     if (this.hp <= 0) this._die(ctx);
+    else if (this.def.phase2 && !this.phase2 && this.hp <= this.maxHp * this.def.phase2.at) {
+      this._shed(ctx);
+    }
     return dealt;
+  }
+
+  /* Half health, and it throws the armour away. Everything about it changes at
+     once — that is the point of a second phase, and it has to be loud. */
+  _shed(ctx) {
+    const p2 = this.def.phase2;
+    this.phase2 = true;
+    this.armourOverride = p2.armour;
+    this.attacksOverride = p2.attacks;
+    this.telegraphOverride = p2.telegraph;
+    this.speedMul *= p2.speedMul || 1;
+    this.atkIdx = 0;
+    if (p2.parts) this._buildParts(p2.parts);
+    this._enter('recover', this.def.recover);
+    ctx.audio.play('explosion');
+    ctx.shake && ctx.shake(8);
+    ctx.particles.explode(this.x, this.y, 1.6, 'P');
+    for (let i = 0; i < 5; i++) {
+      ctx.particles.debris(this.x + (Math.random() - 0.5) * this.def.w,
+        this.y + (Math.random() - 0.5) * this.def.h, 'M');
+    }
+    ctx.announce && ctx.announce(p2.announce || 'SECOND FORM', this.def.name, '#8b5cf6');
   }
 
   /* A relay taking a hit. Returns the damage dealt, or 0 if it was already
@@ -134,7 +213,7 @@ export class Boss {
     part.flash = 0.12;
     if (part.hp <= 0) {
       part.alive = false;
-      part.respawnT = this.def.parts.respawn;
+      part.respawnT = this.partDef.respawn;
       ctx.audio.play('explosion');
       ctx.particles.explode(part.x, part.y, 0.7, 'P');
       // Say what just changed, because the shield state is the whole fight.
@@ -192,7 +271,7 @@ export class Boss {
       case 'telegraph': if (this.phaseT <= 0) this._strike(ctx, p); break;
       case 'strike':
         if (this.attack === 'charge') this._charge(dt, ctx, p);
-        if (this.attack === 'strafe') this._strafe(dt, ctx, p);
+        if (this.attack === 'strafe' || this.attack === 'lunge') this._strafe(dt, ctx, p);
         if (this.phaseT <= 0) this._enter('recover', this.def.recover);
         break;
       case 'recover':   if (this.phaseT <= 0) this._enter('wait', 0.5 + Math.random() * 0.7); break;
@@ -250,8 +329,8 @@ export class Boss {
        arc to reset keeps the idea (it has to come down to be hurt) without the
        dead time. A strafe additionally comes down for the wind-up and the run,
        which is why it is still the attack that costs it the most. */
-    const low = this.phase === 'recover'
-      || (this.attack === 'strafe' && (this.phase === 'telegraph' || this.phase === 'strike'));
+    const low = !this.def.hugGround && (this.phase === 'recover'
+      || (this.attack === 'strafe' && (this.phase === 'telegraph' || this.phase === 'strike')));
     const want = low ? ctx.player.midY : this.cruiseY;
     const rate = low ? 150 : 70;
     this.y += Math.sign(want - this.y) * Math.min(Math.abs(want - this.y), rate * dt);
@@ -263,7 +342,13 @@ export class Boss {
        and a damage window you cannot point a gun at is not a damage window.
        Coming back to station brings it back in front, still low. */
     if (this.phase !== 'strike') {
-      const home = ctx.player.x + 90;
+      /* Where "station" is depends on the boss. A gunship escorts from ahead;
+         the Ripper hunts from behind, where a player who can only shoot
+         forwards cannot answer it. Either way the recovery is spent in front,
+         because that is the half of the fight the player is owed. */
+      const behind = (this.def.station || 90) < 0;
+      const off = (behind && this.phase === 'recover') ? 86 : (this.def.station || 90);
+      const home = ctx.player.x + off;
       const step = this.def.walkSpeed * this.speedMul * (this.phase === 'recover' ? 3.4 : 1) * dt;
       if (Math.abs(home - this.x) > 4) this.x += Math.sign(home - this.x) * step;
     }
@@ -279,7 +364,7 @@ export class Boss {
      which is the same bargain the Warden's charge offers: the attack that
      hurts most is the attack that leaves it where you can reach it. */
   _strafe(dt, ctx, p) {
-    const a = BOSS_ATTACKS.strafe;
+    const a = BOSS_ATTACKS[this.attack];
     this.x += this.dir * a.speed * this.speedMul * dt;
     if (Math.random() < 0.6) {
       ctx.particles.thruster(this.x + this.def.w / 2 * -this.dir, this.y, 'A');
@@ -320,13 +405,19 @@ export class Boss {
      still alive, so they have to go down inside one respawn window. */
   _updateParts(dt, ctx) {
     if (!this.parts.length) return;
-    const d = this.def.parts;
+    const d = this.partDef;
     for (const q of this.parts) {
-      q.a += d.spin * this.speedMul * dt;
-      q.x = this.x + Math.cos(q.a) * d.orbit;
-      q.y = this.y + Math.sin(q.a) * d.rise;
+      if (d.layout === 'tiers') {
+        q.x = this.x + q.off;
+        q.y = WORLD.tierY[q.tier] - d.h / 2;
+      } else {
+        q.a += d.spin * this.speedMul * dt;
+        q.x = this.x + Math.cos(q.a) * d.orbit;
+        q.y = this.y + Math.sin(q.a) * d.rise;
+      }
       q.flash = Math.max(0, q.flash - dt);
-      if (!q.alive) {
+      // A respawn of zero means gone for good, not back next frame.
+      if (!q.alive && d.respawn > 0) {
         q.respawnT -= dt;
         if (q.respawnT <= 0) {
           q.alive = true;
@@ -356,10 +447,18 @@ export class Boss {
   }
 
   _wait(dt, ctx, p) {
-    // Drift towards the player so the fight does not stall at opposite ends —
-    // except for a gunship, which keeps station ahead of the player because it
-    // is escorting the route rather than duelling on it.
-    const want = this.moving ? p.x + 90 : p.x + (p.x < this.x ? 60 : -60);
+    /* A boss in a sealed arena holds the far side of the player, always.
+
+       It used to keep to whichever side it happened to be on, which soft-locked
+       the fight: run to the far wall and it settles sixty pixels behind you,
+       and a player who can only shoot the way they are facing — which under
+       auto-run is always forwards — can never touch it again. It stood there
+       and the fight stopped. Holding the far side means a forward-facing
+       player can always reach it; the attacks that cross the player, like the
+       charge, still cross it and then come back round.
+
+       A gunship keeps station for its own reasons, handled in _updateFlight. */
+    const want = this.moving ? p.x + 90 : p.x + 60;
     const step = this.def.walkSpeed * this.speedMul * dt;
     if (Math.abs(want - this.x) > 4) this.x += Math.sign(want - this.x) * step;
     // A hovering boss also tracks the player's height, slowly, so it cannot be
@@ -375,7 +474,7 @@ export class Boss {
     this.x = clamp(this.x, this.arena.startX + this.margin, this.arena.endX - this.margin);
 
     if (this.phaseT <= 0) {
-      const pool = this.def.attacks;
+      const pool = this.attackPool;
       /* Most bosses roll their next attack, which keeps a stand-up fight from
          becoming a memorised sequence. A boss whose damage window belongs to
          one particular attack cycles instead: leaving that to chance means the
@@ -384,7 +483,7 @@ export class Boss {
       this.attack = this.def.cycleAttacks
         ? pool[this.atkIdx++ % pool.length]
         : pool[Math.floor(Math.random() * pool.length)];
-      this._enter('telegraph', this.def.telegraph);
+      this._enter('telegraph', this.telegraphT);
       ctx.audio.play('turret.charge');
     }
   }
@@ -404,7 +503,8 @@ export class Boss {
           ctx.particles.debris(this.x + off, WORLD.tierY[0] - 2, 'S');
         }
         for (const dir of [-1, 1]) {
-          this.waves.push({ x: this.x, dir, life: a.waveLife, hit: false });
+          this.waves.push({ x: this.x, dir, life: a.waveLife, hit: false,
+                            dmg: a.damage, speed: a.waveSpeed });
         }
         if (a.collapse) this._collapse(ctx);
         this._enter('strike', 0.25);
@@ -430,6 +530,73 @@ export class Boss {
         this.chargeHit = false;
         this.dir = p.x < this.x ? -1 : 1;
         this._enter('strike', a.duration);
+        break;
+      }
+      case 'chorus': {
+        /* Each living pod fires down its own tier in turn. Silence one and the
+           rotation is shorter, so the survivors come round faster — the fight
+           speeds up as it gets smaller, which is the bargain. */
+        ctx.audio.play('turret.charge');
+        const live = this.parts.filter((q) => q.alive);
+        const guns = live.length ? live : [{ x: this.x, y: this.y }];
+        guns.forEach((q, i) => {
+          this.shots.push({
+            x: q.x, y: q.y,
+            vx: (p.x < q.x ? -1 : 1) * a.speed, vy: 0,
+            grav: 0, life: 2.4, dmg: a.damage, delay: i * a.gap,
+          });
+        });
+        this._enter('strike', 0.2 + guns.length * a.gap);
+        break;
+      }
+      case 'sweep': {
+        // From the resonator, across everything at once.
+        ctx.audio.play('enemy.fire');
+        for (let i = 0; i < a.shots; i++) {
+          const base = Math.atan2(p.midY - this.y, p.x - this.x);
+          const ang = base + (i / (a.shots - 1) - 0.5) * a.arc;
+          this.shots.push({
+            x: this.x, y: this.y,
+            vx: Math.cos(ang) * a.speed, vy: Math.sin(ang) * a.speed,
+            grav: 0, life: 2.6, dmg: a.damage,
+          });
+        }
+        this._enter('strike', 0.3);
+        break;
+      }
+      case 'lunge': {
+        /* It always overshoots. That is not a flaw in the attack, it is the
+           attack: a player who can only shoot forwards has no answer to a
+           thing behind them until it puts itself in front. */
+        ctx.audio.play('enemy.die');
+        this.chargeHit = false;
+        this.dir = 1;
+        this._enter('strike', a.duration);
+        break;
+      }
+      case 'spit': {
+        ctx.audio.play('enemy.fire');
+        for (let i = 0; i < a.shots; i++) {
+          const ang = Math.atan2(p.midY - this.y, p.x - this.x)
+            + (i - (a.shots - 1) / 2) * a.spread;
+          this.shots.push({
+            x: this.x, y: this.y,
+            vx: Math.cos(ang) * a.speed, vy: Math.sin(ang) * a.speed,
+            grav: 0, life: 2.4, dmg: a.damage,
+          });
+        }
+        this._enter('strike', 0.25);
+        break;
+      }
+      case 'shockwave': {
+        ctx.audio.play('explosion');
+        ctx.shake && ctx.shake(4);
+        for (const dir of [-1, 1]) {
+          this.waves.push({ x: this.x, dir, life: a.waveLife, hit: false,
+                            dmg: a.damage, speed: a.waveSpeed });
+        }
+        ctx.particles.dust(this.x, WORLD.tierY[0]);
+        this._enter('strike', 0.25);
         break;
       }
       case 'strafe': {
@@ -526,16 +693,15 @@ export class Boss {
   }
 
   _updateWaves(dt, ctx) {
-    const a = BOSS_ATTACKS.stomp;
     const p = ctx.player;
     for (let i = this.waves.length - 1; i >= 0; i--) {
       const wv = this.waves[i];
-      wv.x += wv.dir * a.waveSpeed * dt;
+      wv.x += wv.dir * wv.speed * dt;
       wv.life -= dt;
       // Only catches a player on the ground: being airborne is the answer.
       if (!wv.hit && p.tier === 0 && p.grounded && Math.abs(p.x - wv.x) < 12) {
         wv.hit = true;
-        this._hit(ctx, a.damage);
+        this._hit(ctx, wv.dmg);
       }
       if (wv.life <= 0 || wv.x < this.arena.startX - 20 || wv.x > this.arena.endX + 20) {
         this.waves.splice(i, 1);
@@ -551,6 +717,9 @@ export class Boss {
     const street = WORLD.tierY[0];
     for (let i = this.shots.length - 1; i >= 0; i--) {
       const s = this.shots[i];
+      // Staggered fire: the Choir's pods take it in turns down one line, which
+      // is what gives the rotation a gap to run through.
+      if (s.delay > 0) { s.delay -= dt; continue; }
       s.vy += WORLD.gravity * (s.grav === undefined ? 0.55 : s.grav) * dt;
       s.x += s.vx * dt;
       s.y += s.vy * dt;

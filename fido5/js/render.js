@@ -718,6 +718,7 @@ export class Renderer {
     // to the street: it is the ground it is going to hit that matters, and the
     // player needs to read that while it is still falling.
     for (const s of b.shots) {
+      if (s.delay > 0) continue;          // still waiting its turn to fire
       const sx = Math.round(s.x - cam);
       const sy = Math.round(s.y);
       if (sx < -8 || sx > W + 8) continue;
@@ -763,9 +764,10 @@ export class Renderer {
       x.globalAlpha = 1;
     }
 
-    // Shield tethers: one line from the node to each living relay. Cutting
-    // them is the fight, so they have to be the most obvious thing on screen.
-    if (b.parts.length && !b.exposed) {
+    // Shield tethers: one line from the body to each living part. Only where
+    // the parts actually are a shield — drawn on the Choir's pods or Null
+    // Prime's drones they would promise a protection that is not there.
+    if (b.parts.length && !b.exposed && b.partDef && b.partDef.gates !== false) {
       x.strokeStyle = '#b794ff';
       x.lineWidth = 1;
       for (const q of b.parts) {
@@ -806,7 +808,7 @@ export class Renderer {
     // Telegraph: the whole body washes red and a ring closes on it, which is
     // the only warning the player gets and so has to be impossible to miss.
     if (b.phase === 'telegraph') {
-      const f = 1 - Math.max(0, b.phaseT) / def.telegraph;
+      const f = 1 - Math.max(0, b.phaseT) / b.telegraphT;
       x.globalAlpha = 0.25 + 0.35 * f;
       x.strokeStyle = '#ff3d68';
       x.lineWidth = 1;
@@ -817,13 +819,15 @@ export class Renderer {
       // Name the attack. A boss you can learn beats a boss you can only dodge.
       const label = { stomp: 'STOMP', flak: 'FLAK', charge: 'CHARGE',
                       beam: 'BEAM', volley: 'VOLLEY',
-                      strafe: 'STRAFING RUN', salvo: 'SALVO', mines: 'MINES' }[b.attack];
+                      strafe: 'STRAFING RUN', salvo: 'SALVO', mines: 'MINES',
+                      chorus: 'CHORUS', sweep: 'SWEEP',
+                      lunge: 'LUNGE', spit: 'SPIT', shockwave: 'SHOCKWAVE' }[b.attack];
       if (label) this.text(label, dx + dw / 2, dy - 16, 'R', 1, 'center');
     }
 
     // Mid-charge: speed lines behind it, so a boss crossing the arena reads as
     // moving rather than as teleporting between frames.
-    if (b.phase === 'strike' && (b.attack === 'charge' || b.attack === 'strafe')) {
+    if (b.phase === 'strike' && (b.attack === 'charge' || b.attack === 'strafe' || b.attack === 'lunge')) {
       x.globalAlpha = 0.45;
       x.fillStyle = '#ff3d68';
       for (let i = 1; i <= 3; i++) {
@@ -834,11 +838,11 @@ export class Renderer {
 
     x.drawImage(img.c, dx, dy, dw, dh);
 
-    if (b.phase === 'strike' && (b.attack === 'charge' || b.attack === 'strafe')) {
+    if (b.phase === 'strike' && (b.attack === 'charge' || b.attack === 'strafe' || b.attack === 'lunge')) {
       this._flash(x, img, dx, dy, '#ff3d68', 0.22, dw, dh);
     }
     if (b.phase === 'telegraph') {
-      const f = 1 - Math.max(0, b.phaseT) / def.telegraph;
+      const f = 1 - Math.max(0, b.phaseT) / b.telegraphT;
       this._flash(x, img, dx, dy, '#ff3d68', 0.2 + 0.4 * f, dw, dh);
     }
     // Exposed: armour is off, so the core glows and the outline pulses. This
@@ -874,7 +878,7 @@ export class Renderer {
      player who cannot see it is guessing. */
   _bossParts(x, cam, b) {
     if (!b.parts.length) return;
-    const pd = b.def.parts;
+    const pd = b.partDef;
     const img = S.bossPart[pd.kind];
     for (const q of b.parts) {
       const sx = Math.round(q.x - cam - pd.w / 2);
@@ -917,18 +921,28 @@ export class Renderer {
     x.globalAlpha = 1;
     x.fillStyle = '#8c1533';
     x.fillRect(bx, by, bw, 5);
-    x.fillStyle = b.exposed ? '#ffe66d' : '#ff3d68';
+    x.fillStyle = b.armourNow >= 0.95 ? '#ffe66d' : '#ff3d68';
     x.fillRect(bx, by, Math.max(0, Math.round(bw * b.hpFrac)), 5);
     // Armour state, spelled out: a bar that will not move is otherwise read
     // as a bug rather than as "you are hitting the plating".
     x.fillStyle = '#161b33';
     for (let i = 1; i < 5; i++) x.fillRect(bx + Math.round(bw * i / 5), by, 1, 5);
     this.text(b.def.name.toUpperCase(), bx, by - 8, 'W', 1, 'left');
-    const shielded = b.parts.length
+    // The count belongs on the label only where the parts are what the label
+    // is talking about — a shield to break through or plating to strip. Drones
+    // that merely harry the boss are not part of its defence and counting them
+    // there would say they were.
+    const pd = b.partDef;
+    const counts = b.parts.length && pd && (pd.gates !== false || pd.softens);
+    const shielded = counts
       ? `${b.def.armourLabel || 'SHIELDED'}  ${b.liveParts}`
       : (b.def.armourLabel || 'ARMOURED');
-    this.text(b.exposed ? 'CORE EXPOSED' : shielded, bx + bw, by - 8,
-      b.exposed ? 'Y' : 'S', 1, 'right');
+    // Driven off the multiplier a hit would actually get, not off the phase:
+    // a boss whose plating has been stripped a piece at a time, or thrown off
+    // wholesale, is taking full damage and the bar has to say so.
+    const open = b.armourNow >= 0.95;
+    this.text(open ? 'CORE EXPOSED' : shielded, bx + bw, by - 8,
+      open ? 'Y' : 'S', 1, 'right');
   }
 
   _blasts(x, cam, g) {

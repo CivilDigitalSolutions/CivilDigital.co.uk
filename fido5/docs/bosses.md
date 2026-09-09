@@ -3,9 +3,8 @@
 Reference for the boss system: why it exists, the rules every boss obeys, the
 planned roster, and the technical notes for building the rest of it.
 
-Status: **the Warden, Hexcell and the Convoy are built.** Bosses 4–6 are
-designed here and not yet implemented. Until they are, the roster loops on the
-three that exist, hardened on each pass.
+Status: **all six are built.** The roster is complete and loops, hardened on
+each pass.
 
 ---
 
@@ -79,15 +78,26 @@ stomp collapses a run of walkway each time it lands. A fight that starts with
 four safe places and ends with one has an arc; a fight where the numbers go up
 does not.
 
+**A boss in a sealed arena holds the far side, and is solid.** Both halves
+matter, and the fight silently broke without them. A boss that kept to whichever
+side it happened to be on would settle behind a player who had run to the far
+wall, where a forward-facing player could never touch it again — and there was
+no room for it to come back round. It now holds station on the far side of the
+player, and while it is ahead of them it is solid: they cannot run past it into
+the few pixels behind. An attack that crosses the player, like the Warden's
+charge, still crosses; the wall only exists while the boss is in front.
+
 **Lives are a boss mechanic and nothing else.** A death inside an arena costs
 one of three lives and restarts the fight with the boss at full health. A
 death anywhere else on the track ends the run exactly as it always has. Lives
 never carry over between gates — they are the budget for *this* fight — and
 the count is shown in the HUD only while a fight is running.
 
-**Auto-run is off for the duration.** A fixed arena and a player who cannot
-stop pressing forward is a player pinned against the far wall. The player's
-own auto-run setting is restored the moment the gate clears.
+**Auto-run is off for a walled fight, and on for a running one.** A fixed arena
+and a player who cannot stop pressing forward is a player pinned against the far
+wall, so a gate with walls suspends it and restores the player's own setting the
+moment it clears. The two moving fights leave it alone: taking the run away from
+a running fight is the wrong shape.
 
 **FiDo-5 keeps talking.** The drone announces the threat on approach and calls
 the clear. Its rescue is still available, which means the real cost of a bad
@@ -162,29 +172,60 @@ from twenty-four to forty-five seconds depending on the dice.
 Teaches: that a boss does not have to mean a stop, and that the track itself is
 the second opponent.
 
-### 4. The Choir — *designed*
-**Static arena. One against many.** Three turret pods, one on each tier,
-firing in a rotating pattern that has a gap in it. Killing one shortens the
-rotation for the survivors, so the fight gets faster as it gets smaller and the
-player has to choose between a safe kill order and a fast one.
+### 4. The Choir — *built*
+**Static arena. One against many.** A conductor mast standing from the street
+to the rooftop line, with three turret pods mounted one per tier and trailing
+back towards the player. The pods do not come back.
 
-Teaches: tier movement under fire.
+The mast is worth shooting from the first second but heavily plated. Every pod
+silenced strips a third of that plating away — measured, 100 damage lands as 18
+with all three singing, then 45, then 73, then 100. So the player chooses:
+clear the pods and soften the mast, or race the mast down while all three are
+still firing. Silencing them is not free, either — a shorter rotation is a
+faster one.
 
-### 5. The Ripper — *designed*
-**Moving fight. Pursuit.** A wall-crawler chasing from behind through a
-gauntlet, forcing forward progress. It is untouchable except during its
-lunges, which overshoot and leave it briefly beside the player instead of
-behind them.
+- **Chorus** — every living pod fires down its own tier in turn, staggered, so
+  the rotation has a gap to run through.
+- **Sweep** — a seven-shot arc from the resonator at the mast's midpoint.
+
+Teaches: tier movement under fire, and that a defence can be taken apart a
+piece at a time rather than switched off.
+
+### 5. The Ripper — *built*
+**Moving fight. Pursuit.** A wall-crawler that keeps station 120px *behind* the
+player and hugs the street. It is not armoured so much as unreachable: a player
+who can only shoot the way they are facing — which under auto-run is always
+forwards — cannot answer a thing behind them at all.
+
+Its lunge overshoots on purpose. That is not a flaw in the attack, it is the
+attack: it crosses the player, ends up in front of them, and stays there
+through its recovery. That window is the entire fight, and it is the only
+sustained thing the player is given.
+
+- **Lunge** — commits forward, damages on the way through, ends ahead.
+- **Spit** — a three-shot fan up the street.
+- **Shockwave** — two ground waves, jumped rather than dodged.
+
+Its attacks cycle, alternating lunges with the other two, so the window arrives
+on a rhythm rather than on the dice.
 
 Teaches: forward pressure — the inverse of every other fight, where the player
 chooses the pace.
 
-### 6. Null Prime — *designed*
-**Static arena. Two phases.** A mech that fights conventionally until half
-health, then sheds its armour into four autonomous drones and continues
-without it: faster, fragile, and no longer alone. The finale of the loop, and a
-deliberate recap — phase one is the Warden's rhythm, phase two is Hexcell's
-priority problem.
+### 6. Null Prime — *built*
+**Static arena. Two phases.** A mech that fights the Warden's fight — stomp,
+flak, charge, and a beam borrowed from Hexcell — until half health. Then it
+throws the plating off and continues without it.
+
+Everything changes at once, because that is the point of a second phase and it
+has to be loud: the armour goes entirely (full damage from then on), it speeds
+up by 40%, its repertoire changes to the faster half of its attacks, and four
+drones come off its shoulders. The drones harry rather than shield — no tether
+is drawn to them and they are not counted on the bar, because both of those
+would promise a protection that is not there.
+
+The finale of the loop, and a deliberate recap: phase one is the Warden's
+rhythm, phase two is Hexcell's priority problem with no shield to hide behind.
 
 ---
 
@@ -229,6 +270,8 @@ twice and the fight cannot stall on it.
 | Gate timings, lives, heal, arena widths | `SECTORS` in `data.js` |
 | Per-boss health, armour, telegraph, recovery, attacks | `BOSSES` in `data.js` |
 | Per-attack damage, speed, spread, counts | `BOSS_ATTACKS` in `data.js` |
+| Per-boss parts (relays, pods, drones) | `parts` block in the definition |
+| Second phases | `phase2` block in the definition |
 | Behaviour and the phase machine | `boss.js` |
 | Arena template | `ARENA` in `chunks.js` |
 | Gate states and rewards | `Game._sector`, `_startFight`, `_clearFight`, `_bossDeath` |
@@ -245,21 +288,43 @@ twice and the fight cannot stall on it.
 4. Nothing else. The gate machinery, lives, arena, camera, HUD and rewards are
    boss-agnostic and pick the new entry up from the roster order.
 
-**Parts.** A boss with a `parts` block in its definition gets orbiting pieces
-that are killed separately, and is *exposed only when all of them are down* —
-which is how Hexcell's shield works and how The Choir's pods and Null Prime's
-second phase will. Bullets test parts before the body, each part carries its own
-health strip and respawn ring, and the health bar's label counts the survivors.
-A boss without a `parts` block falls back to the Warden's rule: exposed in the
-moment after it attacks. Set `float: true` and the boss hovers and tracks the
-player's height instead of walking.
+**Parts.** A `parts` block gives a boss pieces that are killed separately. Three
+flags decide what they mean, and all three are in use:
 
-A moving fight needs one more thing: `arena: 'moving'` on the definition, which
-routes it past the arena request and gives it the viewport to fly in. Set
-`float: true` alongside it and the boss is carried with the camera every frame,
-so its `walkSpeed` is the relative speed it trims its station by rather than an
-absolute one a sprinting player leaves behind inside a second. The Ripper will
-want exactly this, plus a station offset behind the player instead of ahead.
+| | `layout` | `gates` | `softens` | `respawn` |
+|---|---|---|---|---|
+| Hexcell's relays | orbit | **true** — a shield | – | 10 s |
+| The Choir's pods | tiers | false | **true** — plating | 0, gone for good |
+| Null Prime's drones | orbit | false | – | 0 |
+
+`gates` makes the boss untouchable until every part is down. `softens` makes
+each part lost strip a share of the armour. Neither, and the parts are just
+company. Bullets test parts before the body; each carries its own health strip
+and a respawn ring when it has a timer; the shield tethers and the bar's part
+count appear only where `gates` or `softens` says they mean something.
+
+The bar's armoured/exposed state is driven off `Boss.armourNow` — the multiplier
+a hit would actually get — rather than off the phase, so a boss whose plating has
+been stripped a piece at a time cannot claim to be protected while taking full
+damage.
+
+**Second phases.** A `phase2` block fires once, at a health fraction, and
+overrides the armour, speed, wind-up and attack list, and can bring parts with
+it. One `_shed` call does the lot; the body, the bar and the arena are untouched.
+
+**Flight.** `float: true` hovers and tracks the player's height. Add
+`arena: 'moving'` and the boss is carried with the camera every frame, so its
+`walkSpeed` is the relative trim it keeps station by rather than an absolute
+speed a sprinting player leaves behind. `station` is where it sits relative to
+the player — positive ahead (the Convoy), negative behind (the Ripper), and a
+boss that hunts from behind spawns behind. `hugGround: true` keeps it on the
+street instead of cruising above the firing line.
 
 `cycleAttacks: true` steps the attack list in order instead of rolling it. Use
-it wherever one particular attack carries the fight's damage window.
+it wherever one particular attack carries the fight's damage window — without it
+the same fight ran anywhere from twenty-four to forty-five seconds.
+
+Measured fight lengths, holding the trigger with the starting weapon:
+seventeen to twenty-eight seconds across the roster. Hexcell is the outlier and
+stays one deliberately — it cannot be beaten by holding the trigger at all,
+because the relays have to be picked off on purpose.

@@ -332,7 +332,17 @@ export class Game {
       // fight in a game built around a camera that only moves forward.
       r.camX = r.arena.camX;
       const leftWall = r.arena.startX + 6;
-      const rightWall = r.arena.endX - 6;
+      let rightWall = r.arena.endX - 6;
+      /* A boss standing between the player and the far wall is solid. Without
+         this the player can run into the few pixels behind it, where there is
+         no room for it to come back round in front — and a player who can only
+         shoot the way they are facing then cannot touch it at all. The fight
+         simply stopped. The boss is only solid while it is ahead: an attack
+         that crosses the player, like the Warden's charge, has to be able to. */
+      const bo = this.boss;
+      if (bo.active && bo.dying <= 0 && !bo.moving && bo.x > p.x) {
+        rightWall = Math.min(rightWall, bo.x - bo.def.w / 2 - 4);
+      }
       if (p.x < leftWall) { p.x = leftWall; if (p.vx < 0) p.vx = 0; }
       if (p.x > rightWall) { p.x = rightWall; if (p.vx > 0) p.vx = 0; }
     } else {
