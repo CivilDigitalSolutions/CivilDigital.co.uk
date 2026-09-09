@@ -126,15 +126,20 @@ export class Voice {
     band.type = 'bandpass';
     band.frequency.value = 1650;
     band.Q.value = 0.7;
+    // Dry and wet are summed, so they must add up to about one: at 0.55 and
+    // 0.75 they came to 1.3 and the chain amplified the line before any trim
+    // was applied. Same ratio, unit gain.
     const dry = ctx.createGain();
-    dry.gain.value = 0.55;
+    dry.gain.value = 0.42;
     const wet = ctx.createGain();
-    wet.gain.value = 0.75;
+    wet.gain.value = 0.58;
     const out = ctx.createGain();
     out.gain.value = VOICE.volume;
     src.connect(band).connect(wet).connect(out);
     src.connect(dry).connect(out);
-    out.connect(this.audio.master || ctx.destination);
+    // Through the voice bus, not straight to master: that bypassed both the
+    // limiter and the level every other sound in the game is mixed against.
+    out.connect(this.audio.voiceBus || this.audio.master || ctx.destination);
     src.start();
     this.current = src;
   }

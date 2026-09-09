@@ -1,3 +1,15 @@
+
+/* Trim for recorded voice lines. Measured against the effects through the same
+   limiter, rather than guessed: the recordings arrive normalised near -3 dBFS
+   while a gunshot peaks at -30 and an explosion at -21, so untrimmed a line
+   sat about 17 dB over the loudest thing in the game.
+
+   At this level the median line peaks ~3 dB above an explosion and ~12 dB above
+   a gunshot: speech still cuts through a firefight, but the explosion is once
+   again the loudest thing on screen. Raise toward 0.28 for a more prominent
+   FiDo-5, drop toward 0.14 to bury him further in the mix. */
+const VOICE_LEVEL = 0.18;
+
 /* ==========================================================================
    FiDo-5 — Audio.
    Every sound is synthesised at runtime with the Web Audio API, so the game
@@ -55,6 +67,14 @@ export class Audio {
     this.musicBus.gain.value = this.settings.music ? 0.20 : 0;
     this.musicBus.connect(this.master);
 
+    // FiDo-5's recorded lines. They arrive normalised near full scale, so they
+    // need far more trim than the synthesised effects to sit in the same mix.
+    // Through the limiter with the effects, so a line during a firefight ducks
+    // with everything else instead of stacking on top of it.
+    this.voiceBus = this.ctx.createGain();
+    this.voiceBus.gain.value = this.settings.voice ? VOICE_LEVEL : 0;
+    this.voiceBus.connect(comp);
+
     // One second of white noise, reused by every percussive sound.
     const len = Math.floor(this.ctx.sampleRate);
     this.noise = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
@@ -73,6 +93,7 @@ export class Audio {
     if (!this.ctx) return;
     this.sfxBus.gain.value = this.settings.sound ? 0.9 : 0;
     this.musicBus.gain.value = this.settings.music ? 0.20 : 0;
+    this.voiceBus.gain.value = this.settings.voice ? VOICE_LEVEL : 0;
     if (!this.settings.music) this.stopMusic();
   }
 

@@ -576,7 +576,7 @@ export const VOICE = {
   dir: 'audio/vo/',
   ext: '.mp3',
   manifest: 'audio/vo/manifest.json',
-  volume: 0.95,
+  volume: 1,          // per-line trim; the mix level lives on the voice bus
   // Recorded lines only. The browser's own speech synthesis is available as a
   // stand-in for lines with no recording, but it sounds like a narrator
   // rather than a drone, so it is off: set this to true to hear it.
