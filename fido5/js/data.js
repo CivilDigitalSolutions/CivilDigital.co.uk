@@ -602,7 +602,7 @@ export const VOICE = {
 /* Contextual prompts, each shown once ever. Order is the teaching order. */
 export const ONBOARDING = [
   { id: 'move',   trigger: 'start',         text: 'Move',                  sub: 'A  D   or  \u2190  \u2192', subTouch: 'Push the stick left or right' },
-  { id: 'jump',   trigger: 'firstObstacle', text: 'Jump',                  sub: 'W  /  Space  /  \u2191',      subTouch: 'The jump button, or push the stick up' },
+  { id: 'jump',   trigger: 'firstObstacle', text: 'Jump',                  sub: 'W  /  Space  /  \u2191',      subTouch: 'The jump button' },
   { id: 'low',    trigger: 'firstLow',      text: 'Slide under',           sub: 'S  /  \u2193',                subTouch: 'Push the stick down' },
   { id: 'shoot',  trigger: 'firstEnemy',    text: 'Fire',                  sub: 'J  /  click',                subTouch: 'Hold the fire button' },
   { id: 'tier',   trigger: 'firstTier',     text: 'Jump to climb a level', sub: 'Higher up pays better' },

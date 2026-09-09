@@ -398,18 +398,17 @@ body {
   will-change: transform;
 }
 .stick.is-live .stick__knob { background: rgba(139,92,246,.8); }
-/* Chevrons on the rim, lit by whichever way the stick is pushed: the stick
-   teaches that up is jump and down is slide without a tutorial line. */
+/* Chevrons on the rim, lit by whichever way the stick is pushed. Three of
+   them, not four: the missing one at the top is how the stick says it does not
+   do jump. */
 .stick__dir {
   position: absolute; width: 0; height: 0; opacity: .3;
   border: 7px solid transparent;
   transition: opacity .1s linear;
 }
-.stick__dir--up    { top: 2px;    border-bottom-color: var(--dim); border-top-width: 0; }
 .stick__dir--down  { bottom: 2px; border-top-color: var(--dim); border-bottom-width: 0; }
 .stick__dir--left  { left: 2px;   border-right-color: var(--dim); border-left-width: 0; }
 .stick__dir--right { right: 2px;  border-left-color: var(--dim); border-right-width: 0; }
-.stick__base.on-up    .stick__dir--up    { opacity: 1; border-bottom-color: var(--purple-l); }
 .stick__base.on-down  .stick__dir--down  { opacity: 1; border-top-color: var(--purple-l); }
 .stick__base.on-left  .stick__dir--left  { opacity: 1; border-right-color: var(--purple-l); }
 .stick__base.on-right .stick__dir--right { opacity: 1; border-left-color: var(--purple-l); }

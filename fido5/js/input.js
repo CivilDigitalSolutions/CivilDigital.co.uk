@@ -210,26 +210,26 @@ export class Input {
      repositioned on touchdown rather than fixed, because a fixed stick has to
      be aimed at and a thumb on a phone is already somewhere.
 
-     Left and right are held while pushed. Up and down are discrete — one jump
-     or one slide per push, re-armed only once the stick comes back towards
-     centre — so resting a thumb on the rim does not machine-gun the action.
-     Down is also held, because a slide continues while it is. */
+     Three directions, not four: left and right are held while pushed, down is
+     discrete and re-arms only once the stick comes back towards centre, so
+     resting a thumb on the rim does not machine-gun a slide. Down is held as
+     well as pressed, because a slide continues while it is. Up is deliberately
+     nothing — jump has a button. */
   bindStick(zone, base, knob) {
     if (!zone || !base || !knob) return;
     const DEAD = 0.34;       // how far before a direction counts at all
-    const FIRE = 0.55;       // ...and before up or down triggers
+    const FIRE = 0.55;       // ...and before down triggers a slide
     const REARM = 0.32;      // ...and back inside before it can trigger again
     let id = null, cx = 0, cy = 0, radius = 52, ringR = 52;
-    let upArmed = true, downArmed = true;
+    let downArmed = true;
 
     const reset = () => {
       this.pointerHeld.left = false;
       this.pointerHeld.right = false;
       this.pointerHeld.down = false;
-      this.pointerHeld.jump = false;
-      upArmed = downArmed = true;
+      downArmed = true;
       knob.style.transform = 'translate(0px, 0px)';
-      base.classList.remove('on-up', 'on-down', 'on-left', 'on-right');
+      base.classList.remove('on-down', 'on-left', 'on-right');
       zone.classList.remove('is-live');
       base.style.left = '';
       base.style.bottom = '';
@@ -286,19 +286,16 @@ export class Input {
       this.pointerHeld.right = right;
       this.pointerHeld.left = left;
 
-      if (ny < -FIRE && upArmed) { this.press('jump'); upArmed = false; }
-      if (ny > -REARM) upArmed = true;
-      // Held as well as pressed, so a stick jump gets the same variable height
-      // as the button: flick up for a hop, hold up for the full jump.
-      this.pointerHeld.jump = ny < -DEAD;
-
+      /* Up does nothing. Jump is a button, and it was the only thing the stick
+         did that also lived somewhere else — two ways to jump meant a thumb
+         drifting up mid-turn produced one the player never asked for. Pushing
+         up is neutral now, and up-and-right is simply right. */
       if (ny > FIRE && downArmed) { this.press('down'); downArmed = false; }
       if (ny < REARM) downArmed = true;
       this.pointerHeld.down = ny > DEAD;
 
       base.classList.toggle('on-right', right);
       base.classList.toggle('on-left', left);
-      base.classList.toggle('on-up', ny < -DEAD);
       base.classList.toggle('on-down', ny > DEAD);
     };
 
