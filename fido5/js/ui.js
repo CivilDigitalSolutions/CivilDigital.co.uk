@@ -8,6 +8,7 @@
 import {
   WEAPONS, GADGETS, DRONE_CORES, DRONE_SKINS, DRONE_UPGRADES,
   OPERATIVE_UPGRADES, WEAPON_UPGRADES, WEAPON_TIERS, MISSIONS, DAILY, POWERUPS, SCORE,
+  SECTORS,
 } from './data.js';
 import { S } from './sprites.js';
 import {
@@ -812,6 +813,30 @@ export class UI {
     $('hud-health').style.width = (hp * 100) + '%';
     $('hud-health-num').textContent = Math.max(0, Math.round(p.health));
     hb.classList.toggle('is-low', hp < 0.3);
+
+    // Lives: only during a boss fight, and only ever redrawn when the count
+    // changes, since this runs every frame.
+    const lw = $('hud-lives');
+    const inFight = !!r.arena;
+    lw.hidden = !inFight;
+    if (inFight && this._livesShown !== r.lives) {
+      const lost = this._livesShown !== undefined && r.lives < this._livesShown;
+      this._livesShown = r.lives;
+      const pips = $('hud-lives-pips');
+      pips.innerHTML = '';
+      for (let i = 0; i < SECTORS.lives; i++) {
+        const pip = document.createElement('i');
+        if (i >= r.lives) pip.className = 'is-spent';
+        pips.appendChild(pip);
+      }
+      lw.setAttribute('aria-label', `${r.lives} of ${SECTORS.lives} lives remaining`);
+      if (lost) {
+        lw.classList.remove('is-lost');
+        void lw.offsetWidth;            // restart the flash
+        lw.classList.add('is-lost');
+      }
+    }
+    if (!inFight) this._livesShown = undefined;
 
     const shWrap = $('hud-shield-wrap');
     shWrap.hidden = p.shield <= 0;

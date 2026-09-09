@@ -9,7 +9,7 @@
    ========================================================================== */
 
 import { WORLD, DIFFICULTY, ENEMIES } from './data.js';
-import { CHUNKS, OPENING } from './chunks.js';
+import { CHUNKS, OPENING, ARENA } from './chunks.js';
 
 /* Column obstacle codes. */
 export const NONE = 0, BLOCK = 1, LOW = 2;
@@ -58,6 +58,8 @@ export class World {
     this.spawns = [];            // specs drained by the game each frame
     this.lastTurretCol = -99;
     this.log = [];               // ids of generated chunks, for debug
+    this.arenaReq = null;        // pending arena, set by requestArena()
+    this.arena = null;           // {startCol, endCol, startX, endX} once laid
   }
 
   /* ---- Column access ---- */
@@ -85,6 +87,17 @@ export class World {
   colOfX(x) { return Math.floor(x / WORLD.metre); }
   xOfCol(i) { return i * WORLD.metre; }
   tierY(t) { return WORLD.tierY[t]; }
+
+  /* Ask for the next chunk to be a boss arena `cols` wide. The game calls
+     this when a sector gate comes due; generation is already several chunks
+     ahead, so the arena lands after whatever is in flight rather than
+     replacing it. Returns nothing — read `world.arena` once it is laid. */
+  requestArena(cols) {
+    if (this.arenaReq || this.arena) return;
+    this.arenaReq = { cols: Math.max(8, Math.round(cols)) };
+  }
+
+  clearArena() { this.arena = null; }
 
   /* ---- Generation ---- */
 
@@ -138,9 +151,19 @@ export class World {
   }
 
   _appendChunk(diff) {
-    const tpl = this.chunkCount === 0 ? OPENING : this._chooseTemplate(diff);
+    // A pending arena outranks the template chooser: the gate is a fixture of
+    // the run, not another roll of the dice.
+    const req = this.arenaReq;
+    const tpl = req ? ARENA : (this.chunkCount === 0 ? OPENING : this._chooseTemplate(diff));
     const base = this.nextCol;
-    const len = tpl.len;
+    const len = req ? req.cols : tpl.len;
+    if (req) {
+      this.arenaReq = null;
+      this.arena = {
+        startCol: base, endCol: base + len - 1,
+        startX: this.xOfCol(base), endX: this.xOfCol(base + len),
+      };
+    }
 
     // --- lay down columns -------------------------------------------------
     for (let i = 0; i < len; i++) {
@@ -151,10 +174,16 @@ export class World {
     }
 
     const plat = tpl.plat || [null, [], []];
+    // An arena is generated at whatever width the viewport needs, so its
+    // ledges are given as fractions of the template rather than fixed
+    // columns; at 20 columns the spans of a 40-column template would sit off
+    // the end of the floor.
+    const scale = req ? len / ARENA.len : 1;
     for (let t = 1; t < WORLD.tierCount; t++) {
       const spans = plat[t];
       if (!spans) continue;
-      for (const [a, b] of spans) {
+      for (const [a0, b0] of spans) {
+        const a = Math.round(a0 * scale), b = Math.round(b0 * scale);
         for (let i = a; i <= b && i < len; i++) this.cols.get(base + i).p[t] = 1;
       }
     }

@@ -253,6 +253,35 @@ body {
 .hud-drone__bar > div { height: 100%; width: 100%; background: var(--green); transition: width .15s linear; }
 .hud-drone.is-cooling .hud-drone__bar > div { background: var(--dim); }
 
+/* Lives. Only ever on screen during a boss fight. Deliberately louder than
+   the bars beside it: running out of these ends the run outright. */
+.hud-lives {
+  display: flex; align-items: center; gap: .45em; align-self: flex-start;
+  background: rgba(8,10,18,.8); border: 1px solid var(--line);
+  border-left: 2px solid var(--red);
+  border-radius: 6px; padding: .2rem .45rem;
+}
+.hud-lives__label {
+  font: 800 .56rem/1 var(--ui); letter-spacing: .16em; text-transform: uppercase;
+  color: var(--dim);
+}
+.hud-lives__pips { display: flex; gap: .28em; }
+.hud-lives__pips i {
+  width: .62rem; height: .62rem; border-radius: 2px;
+  background: var(--red); box-shadow: 0 0 6px rgba(255,61,104,.65);
+}
+.hud-lives__pips i.is-spent {
+  background: transparent; box-shadow: none;
+  border: 1px solid var(--line); opacity: .55;
+}
+/* The pip that has just gone flashes before it empties, so a life lost in the
+   middle of a fight is not something the player only notices afterwards. */
+.hud-lives.is-lost .hud-lives__pips i.is-spent:first-of-type { animation: life-lost .5s ease-out; }
+@keyframes life-lost {
+  0%   { background: #fff; box-shadow: 0 0 12px rgba(255,255,255,.9); opacity: 1; }
+  100% { background: transparent; box-shadow: none; opacity: .55; }
+}
+
 .hud-powers {
   position: absolute; top: calc(var(--safe-t) + 3.4rem); right: calc(var(--safe-r) + .5rem);
   list-style: none; display: flex; flex-direction: column; gap: .22rem; align-items: flex-end;

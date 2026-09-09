@@ -306,7 +306,9 @@ export class Renderer {
     this._crates(x, cam, g);
     this._coins(x, cam, g);
     this._pickups(x, cam, g);
+    this._bossArena(x, cam, g);
     this._enemies(x, cam, g);
+    this._boss(x, cam, g);
     this._blasts(x, cam, g);
     this._incoming(x, cam, g);
     this._bullets(x, cam, g);
@@ -643,6 +645,172 @@ export class Renderer {
         x.fillRect(dx + 1, dy - 3, Math.max(0, Math.round((bw - 2) * (e.hp / e.maxHp))), 1);
       }
     });
+  }
+
+  /* ---- Boss --------------------------------------------------------------
+     Everything a boss does has to read at a glance on a 180px canvas, so the
+     drawing order is: arena walls, then the ground attacks, then the body,
+     then the bar. The body's colour states carry the whole fight:
+       telegraph — red wash and a growing ring, "something is coming"
+       recover   — the core lights up, "hit it now" */
+
+  _bossArena(x, cam, g) {
+    const a = g.run.arena;
+    if (!a) return;
+    const t = g.run.time;
+    for (const [wx, dir] of [[a.startX + 6, 1], [a.endX - 6, -1]]) {
+      const sx = Math.round(wx - cam);
+      if (sx < -6 || sx > W + 6) continue;
+      x.globalAlpha = 0.5 + 0.2 * Math.abs(Math.sin(t * 3));
+      x.fillStyle = '#8b5cf6';
+      x.fillRect(sx, 0, 1, H);
+      x.globalAlpha = 0.18;
+      x.fillRect(sx + (dir < 0 ? -4 : 0), 0, 4, H);
+      x.globalAlpha = 1;
+      // Chevrons crawling up the wall, so it reads as containment.
+      x.fillStyle = '#b794ff';
+      for (let y = ((t * 26) % 12) - 12; y < H; y += 12) {
+        x.fillRect(sx, Math.round(y), 1, 4);
+      }
+    }
+  }
+
+  _boss(x, cam, g) {
+    const b = g.boss;
+    if (!b || !b.active) return;
+    const def = b.def;
+
+    // Shockwaves: a ground-hugging crest that has to be jumped.
+    for (const wv of b.waves) {
+      const sx = Math.round(wv.x - cam);
+      if (sx < -14 || sx > W + 14) continue;
+      const y = Math.round(WORLD.tierY[0]);
+      const a = Math.max(0, Math.min(1, wv.life / 1.2));
+      x.globalAlpha = a;
+      x.fillStyle = '#ffb238';
+      for (let i = 0; i < 5; i++) {
+        const h = 7 - i;
+        x.fillRect(sx - wv.dir * i * 3, y - h, 2, h);
+      }
+      x.globalAlpha = a * 0.7;
+      x.fillStyle = '#ffe66d';
+      x.fillRect(sx - 1, y - 8, 2, 8);
+      x.globalAlpha = 1;
+    }
+
+    // Flak: arcing shells with a short trail so the arc is legible.
+    for (const s of b.shots) {
+      const sx = Math.round(s.x - cam);
+      const sy = Math.round(s.y);
+      if (sx < -6 || sx > W + 6) continue;
+      x.globalAlpha = 0.35;
+      x.fillStyle = '#8c1533';
+      x.fillRect(sx - Math.sign(s.vx) * 3, sy - 2, 2, 2);
+      x.globalAlpha = 1;
+      x.fillStyle = '#ff3d68';
+      x.fillRect(sx - 2, sy - 2, 4, 4);
+      x.fillStyle = '#ffe66d';
+      x.fillRect(sx - 1, sy - 1, 2, 2);
+    }
+
+    const img = (b.dir < 0 ? S.boss : S.bossFlip)[def.id];
+    if (!img) return;
+    const dx = Math.round(b.x - cam - def.w / 2);
+    const dy = Math.round(b.y - def.h / 2);
+
+    if (b.dying > 0) {
+      // Comes apart in stages rather than simply fading.
+      const f = b.dying / 1.6;
+      x.globalAlpha = Math.max(0, f);
+      x.drawImage(img.c, dx, dy + Math.round((1 - f) * 4), def.w, def.h);
+      x.globalAlpha = 1;
+      if (((b.t * 12) | 0) % 2 === 0) {
+        this._flash(x, img, dx, dy, '#ffffff', 0.8, def.w, def.h);
+      }
+      return;
+    }
+
+    // Telegraph: the whole body washes red and a ring closes on it, which is
+    // the only warning the player gets and so has to be impossible to miss.
+    if (b.phase === 'telegraph') {
+      const f = 1 - Math.max(0, b.phaseT) / def.telegraph;
+      x.globalAlpha = 0.25 + 0.35 * f;
+      x.strokeStyle = '#ff3d68';
+      x.lineWidth = 1;
+      x.beginPath();
+      x.arc(dx + def.w / 2, dy + def.h / 2, def.w * (1.1 - f * 0.55), 0, Math.PI * 2);
+      x.stroke();
+      x.globalAlpha = 1;
+      // Name the attack. A boss you can learn beats a boss you can only dodge.
+      const label = { stomp: 'STOMP', flak: 'FLAK', charge: 'CHARGE' }[b.attack];
+      if (label) this.text(label, dx + def.w / 2, dy - 16, 'R', 1, 'center');
+    }
+
+    // Mid-charge: speed lines behind it, so a boss crossing the arena reads as
+    // moving rather than as teleporting between frames.
+    if (b.phase === 'strike' && b.attack === 'charge') {
+      x.globalAlpha = 0.45;
+      x.fillStyle = '#ff3d68';
+      for (let i = 1; i <= 3; i++) {
+        x.fillRect(dx - b.dir * i * 5 + (b.dir < 0 ? def.w : 0), dy + 6 + i * 7, 6, 1);
+      }
+      x.globalAlpha = 1;
+    }
+
+    x.drawImage(img.c, dx, dy, def.w, def.h);
+
+    if (b.phase === 'strike' && b.attack === 'charge') {
+      this._flash(x, img, dx, dy, '#ff3d68', 0.22, def.w, def.h);
+    }
+    if (b.phase === 'telegraph') {
+      const f = 1 - Math.max(0, b.phaseT) / def.telegraph;
+      this._flash(x, img, dx, dy, '#ff3d68', 0.2 + 0.4 * f, def.w, def.h);
+    }
+    // Exposed: armour is off, so the core glows and the outline pulses. This
+    // is the damage window and it is the single most important read here.
+    if (b.exposed) {
+      const pulse = 0.35 + 0.3 * Math.abs(Math.sin(b.t * 12));
+      this._flash(x, img, dx, dy, '#ffe66d', pulse * 0.5, def.w, def.h);
+      // Mirror the core with the sprite: it is off-centre by design.
+      const core = def.core || { x: def.w / 2, y: def.h / 2 };
+      const cxp = dx + Math.round(b.dir < 0 ? core.x : def.w - 1 - core.x);
+      const cyp = dy + Math.round(core.y);
+      x.globalAlpha = 0.6 + 0.4 * Math.abs(Math.sin(b.t * 14));
+      x.strokeStyle = '#ffe66d';
+      x.lineWidth = 1;
+      x.beginPath();
+      x.arc(cxp + 0.5, cyp + 0.5, 7 + Math.sin(b.t * 14) * 1.5, 0, Math.PI * 2);
+      x.stroke();
+      x.globalAlpha = 1;
+    }
+    if (b.flash > 0) {
+      this._flash(x, img, dx, dy, '#ffffff', Math.min(0.9, b.flash * 7), def.w, def.h);
+    }
+
+    this._bossBar(x, g, b);
+  }
+
+  /* The bar sits under the HUD, full width, with a segment per pass so a
+     hardened repeat of the same boss looks different from the first one. */
+  _bossBar(x, g, b) {
+    const bw = Math.min(W - 40, 220);
+    const bx = Math.round(W / 2 - bw / 2);
+    const by = 22;
+    x.globalAlpha = 0.8;
+    x.fillStyle = '#080a12';
+    x.fillRect(bx - 1, by - 1, bw + 2, 7);
+    x.globalAlpha = 1;
+    x.fillStyle = '#8c1533';
+    x.fillRect(bx, by, bw, 5);
+    x.fillStyle = b.exposed ? '#ffe66d' : '#ff3d68';
+    x.fillRect(bx, by, Math.max(0, Math.round(bw * b.hpFrac)), 5);
+    // Armour state, spelled out: a bar that will not move is otherwise read
+    // as a bug rather than as "you are hitting the plating".
+    x.fillStyle = '#161b33';
+    for (let i = 1; i < 5; i++) x.fillRect(bx + Math.round(bw * i / 5), by, 1, 5);
+    this.text(b.def.name.toUpperCase(), bx, by - 8, 'W', 1, 'left');
+    this.text(b.exposed ? 'CORE EXPOSED' : 'ARMOURED', bx + bw, by - 8,
+      b.exposed ? 'Y' : 'S', 1, 'right');
   }
 
   _blasts(x, cam, g) {

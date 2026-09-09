@@ -349,6 +349,21 @@ export class Player {
   }
   addEnergy(n) { this.energy = Math.min(this.energyMax, this.energy + n); }
 
+  /* Back on your feet for another go at a boss. Health and shield are
+     restored but nothing else about the run is rewound: score, coins and the
+     difficulty you have earned all stand. */
+  revive() {
+    this.dead = false;
+    this.state = 'run';
+    this.deathT = 0;
+    this.cause = null;
+    this.health = this.maxHealth;
+    this.shield = this.maxShield || 0;
+    this.hurtFlash = 0;
+    this.fellIntoPit = false;
+    this.invuln = Math.max(this.invuln || 0, 1.5);
+  }
+
   die(cause) {
     if (this.dead) return;
     this.dead = true;

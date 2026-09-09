@@ -11,7 +11,7 @@
    Bump VERSION on release and every old cache is dropped.
    ========================================================================== */
 
-const VERSION = 'fido5-v3';
+const VERSION = 'fido5-v4';
 
 /* Fetched fresh whenever the network allows. Anything the game's behaviour
    depends on belongs here, including the voice manifest: it decides whether
@@ -33,6 +33,7 @@ const ASSETS = [
   'js/player.js',
   'js/fido5.js',
   'js/combat.js',
+  'js/boss.js',
   'js/loot.js',
   'js/entities.js',
   'js/render.js',

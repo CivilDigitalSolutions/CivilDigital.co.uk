@@ -361,6 +361,17 @@ export class Audio {
       pad:   ['A3', null, null, null, null, null, null, null,
               'F3', null, null, null, 'G3', null, null, null],
     },
+    /* Slower and heavier than the run track: a boss is a stand-up fight, not
+       a chase. Minor second in the pad gives it the unease the runner lacks. */
+    boss: {
+      bpm: 104,
+      bass:  ['D2', 'D2', null, 'D2', 'A#1', null, 'D2', null,
+              'C2', 'C2', null, 'C2', 'G1', null, 'A#1', null],
+      arp:   ['D4', null, 'F4', null, 'A4', null, 'F4', null,
+              'C4', null, 'D#4', null, 'G4', null, 'D#4', null],
+      pad:   ['D3', null, null, null, null, null, null, null,
+              'A#2', null, null, null, null, null, null, null],
+    },
   };
 
   static noteHz(n) {

@@ -608,3 +608,59 @@ export const SCORE = {
   streakMult: 0.25,       // +25% score per streak tier
   riskBonus: 40,          // taking the top tier through a hostile chunk
 };
+
+/* ---- Bosses ------------------------------------------------------------- */
+/* The run is divided into sectors, each ending at a boss gate. Clearing a
+   gate steps the sector on and the runner resumes; the gates are what give an
+   otherwise endless track a shape.
+
+   Gates are spaced by *time*, not distance. Speed nearly doubles across the
+   difficulty ramp, so a fixed distance would put the first boss 86 seconds in
+   and the fourth barely 40 seconds apart. */
+export const SECTORS = {
+  firstGateSeconds: 75,   // into the first run before the Warden appears
+  gateSeconds: 95,        // between gates thereafter
+  lives: 3,               // spent only in boss fights, never in the runner
+  clearHeal: 0.35,        // fraction of max health restored on a clear
+  arenaMinCols: 20,       // arena never narrower than the tightest viewport
+  arenaMaxCols: 56,
+  arenaPadCols: 2,        // breathing room inside the walls
+};
+
+/* Bosses in gate order. The roster loops once exhausted, with each pass
+   raising health and speed, so the tail of a long run keeps escalating
+   instead of flattening out the way the difficulty ramp does. */
+export const BOSSES = [
+  {
+    id: 'warden',
+    name: 'The Warden',
+    subtitle: 'Sector 1 — heavy walker',
+    arena: 'static',       // fixed camera, no scrolling
+    health: 520,
+    contact: 16,           // damage from walking into it
+    score: 2400,
+    coins: 90,
+    w: 40, h: 34,
+    core: { x: 12, y: 15 },// weak point, in sprite pixels from the top-left
+    tier: 0,               // fights on the street
+    /* Armoured except in the moment after an attack, which is what turns the
+       fight from a damage race into a rhythm: read the telegraph, stay clear,
+       punish the recovery. */
+    armour: 0.25,          // damage multiplier while armoured
+    telegraph: 0.85,       // seconds of wind-up before every attack
+    recover: 1.25,         // seconds of exposed core afterwards
+    walkSpeed: 26,
+    attacks: ['stomp', 'flak', 'charge'],
+  },
+];
+
+/* Per-attack tuning, kept out of the behaviour code. */
+export const BOSS_ATTACKS = {
+  /* Slams a leg down. A shockwave runs both ways along the street, so the
+     answer is to be in the air — the first thing the game ever taught. */
+  stomp: { damage: 18, waveSpeed: 190, waveLife: 1.6, collapse: true },
+  /* Lobs an arc of shells across the arena. The answer is to move. */
+  flak: { damage: 14, shots: 5, speed: 130, spread: 0.55 },
+  /* Walks the player down. The answer is to change level. */
+  charge: { damage: 20, speed: 118, duration: 1.5 },
+};

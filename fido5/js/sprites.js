@@ -327,6 +327,47 @@ const E_TURRET = rows('turret', [
   '..................',
 ]);
 
+/* ---- Boss: The Warden ---------------------------------------------------
+   A walker, so it reads as heavy and slow: wide stance, low head, a lit core
+   in the chest that is the thing you are actually shooting at. 40x34, drawn
+   facing left, mirrored at build time for the other direction. */
+const B_WARDEN = rows('warden', [
+  '........................................',
+  '........................................',
+  '............................KKK..KKK....',
+  '...........................KAAAKKAAAK...',
+  '...........................KMMMKKMMMK...',
+  '...........................KMSMKKMSMK...',
+  '...............KKKKKKKKKKKKKMMMKKMMMK...',
+  '............KKKMMMMMMMMMMMMMMSMKKMSMK...',
+  '....KKKKKKKKMMMMMMMMMMMMMMMMMMMMMMMMK...',
+  '...KMMMMMMMMMMMSSSSSSSSSMSSSSSSSSSSMK...',
+  '...KMMMMMMMMMMMMMMMSSSSSMSSLSSLSSLSMK...',
+  '...KSMSSSSSSSSSSSSMSSSSSMSSSSSSSSSSMK...',
+  '...KSSSrrrrRRRrrrrSSSSSSMMMMMMMMMMMMMK..',
+  '...KSSrrrRRRRRRRrrrSSSSSSSSSSSSSSSMMMMK.',
+  '...KSrrrRRRRRRRRRrrrSSSSSSSSSSSSSSSMMMK.',
+  '...KSrrYYYYEEYYYYYrrSSSSSSSSSSSSSSSMMMK.',
+  '...KSrrrRRRRRRRRRrrrSSSSSSSSSSSSSSSMMMK.',
+  '...KSSrrrRRRRRRRrrrSSSSSSSSSSSSSSSMMMMK.',
+  '....KSSrrrrRRRrrrrSSSSSSSSSSSSSSSSMMMK..',
+  '.....KSSSSrrrrrSSSSSSSSSSSSSSSSSMMMMK...',
+  '....KMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMK....',
+  '....KANNAANNAANNAANNAANNAANNAANNAANK....',
+  '....KMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMK....',
+  '.....KKKKKKKKKKMMMMMMMMMMMMMKKKKKKK.....',
+  '..........KMMMMMKKKKKKKKMMMMMK..........',
+  '..........KMMMMMK......KMMMMMK..........',
+  '..........KMMMMMK......KMMMMMK..........',
+  '.........KSSSSSSSK....KSSSSSSSK.........',
+  '.........KSSASASSK....KSSASASSK.........',
+  '.........KSMMMMMSK....KSMMMMMSK.........',
+  '.........KKMMMMMKK....KKMMMMMKK.........',
+  '........KSSSSSSSSSK..KSSSSSSSSSK........',
+  '........KLLLLLLLLLK..KLLLLLLLLLK........',
+  '.........KKKKKKKKK....KKKKKKKKK.........',
+]);
+
 const E_TANK = rows('tank', [
   '.........KKKKKK...........',
   '........KMRRRRMK..........',
@@ -542,6 +583,10 @@ export function buildSprites() {
     turret: fromRows(E_TURRET),
     tank: fromRows(E_TANK),
   };
+
+  // Bosses. Mirrored once at boot, the same way the player is.
+  S.boss = { warden: fromRows(B_WARDEN) };
+  S.bossFlip = { warden: flip(S.boss.warden) };
   // Turrets and tanks are ground-mounted and face left already; flying enemies
   // get a mirrored copy for the rare case they are drawn retreating.
   S.enemyFlip = {};

@@ -40,6 +40,13 @@
     </div>
 
     <div class="hud-bars">
+      <!-- Lives. Shown only during a boss fight, because that is the only
+           place they are ever spent. Pips rather than a number, so the count
+           reads at a glance in the middle of one. -->
+      <div class="hud-lives" id="hud-lives" hidden role="img" aria-label="Lives remaining">
+        <span class="hud-lives__label">Lives</span>
+        <span class="hud-lives__pips" id="hud-lives-pips"></span>
+      </div>
       <div class="hud-drone" id="hud-drone">
         <span class="hud-drone__name">FiDo-5</span>
         <span class="hud-drone__state" id="hud-drone-state">Ready</span>

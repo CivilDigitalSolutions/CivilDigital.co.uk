@@ -214,6 +214,18 @@ export const CHUNKS = [
 
 /* The opening chunk is fixed so the first few seconds of a new game are
    always calm and legible — onboarding happens here. */
+/* ---- Boss arena ---------------------------------------------------------
+   Flat, sealed and empty: no gaps to fall down, no obstacles to hide behind,
+   nothing to collect. Two walkway ledges give the fight a vertical axis and
+   somewhere to escape a ground attack — the Warden's stomp takes them away
+   one at a time, so the space closes down as the fight goes on.
+   `len` is overwritten at generation time to match the viewport, because a
+   fixed camera only works if the whole arena is on screen. */
+export const ARENA = {
+  id: 'arena', type: 'arena', len: 40, arena: true, weight: 0,
+  plat: [null, [[7, 15], [24, 32]], []],
+};
+
 export const OPENING = {
   id: 'opening', type: 'coin', len: 40, from: 0, to: 1,
   plat: [null, [[22, 34]], []],

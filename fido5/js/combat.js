@@ -321,6 +321,23 @@ export function updateBullets(dt, ctx) {
 
     // Player and drone fire.
     let consumed = false;
+
+    // A boss is not in the enemy pool — it has its own state machine — so it
+    // is checked first and takes the shot before anything else can.
+    const boss = ctx.boss;
+    if (boss && boss.active && boss.dying <= 0) {
+      const hw = boss.def.w / 2, hh = boss.def.h / 2;
+      if (b.x > boss.x - hw && b.x < boss.x + hw &&
+          b.y + 2 > boss.y - hh && b.y - 2 < boss.y + hh) {
+        const dealt = boss.hurt(ctx, b.dmg);
+        // The armour has to be legible or the fight reads as a bullet sponge:
+        // a dull thud and a grey spark while plated, the usual hit when open.
+        particles.impact(b.x, b.y, boss.exposed ? (b.crit ? 'Y' : b.colour) : 'C');
+        ctx.audio.play(boss.exposed ? 'hit' : 'hit.shielded');
+        if (dealt > 0 && boss.exposed) ctx.floater(b.x, b.y - 6, Math.round(dealt), 'Y', 1);
+        return false;
+      }
+    }
     pools.enemies.each((e) => {
       if (consumed || e.dying > 0) return;
       const hw = (e.def.w * e.scale) / 2, hh = (e.def.h * e.scale) / 2;

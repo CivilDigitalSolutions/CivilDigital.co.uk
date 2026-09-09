@@ -5,7 +5,7 @@
    ui.js; this file raises events and lets the UI decide what to show.
    ========================================================================== */
 
-import { WORLD, DIFFICULTY, SCORE, ONBOARDING, POWERUPS, ELITE, ENEMIES } from './data.js';
+import { WORLD, DIFFICULTY, SCORE, ONBOARDING, POWERUPS, ELITE, ENEMIES, SECTORS } from './data.js';
 import { World, makeRng, pick, clamp } from './world.js';
 import { Pool, Particles, makeBullet, makeCoin, makePickup, makeCrate, makeEnemy, makeFloater, makeBlast } from './entities.js';
 import { Player } from './player.js';
@@ -15,6 +15,7 @@ import { resolveStats } from './progression.js';
 import * as Combat from './combat.js';
 import * as Loot from './loot.js';
 import { save as persist } from './save.js';
+import { Boss, bossForGate, arenaCols } from './boss.js';
 
 const STEP = 1 / 60;
 const MAX_STEPS = 5;
@@ -46,6 +47,7 @@ export class Game {
     this.stats = resolveStats(sv);
     this.player = new Player(this.stats);
     this.drone = new Fido(this.stats, sv.loadout.skin, this.voice);
+    this.boss = new Boss();
 
     this.state = 'idle';      // idle | running | paused | over
     this.acc = 0;
@@ -77,6 +79,7 @@ export class Game {
     this.player.reset(this.stats);
     this.drone.reset(this.stats, this.sv.loadout.skin);
     this.world.reset();
+    this.boss.clear();
     for (const k in this.pools) this.pools[k].clear();
     this.particles.clear();
     this.applyQuality();
@@ -128,6 +131,16 @@ export class Game {
       chunkRiskX: 0,
       deathT: 0,
       seenElite: false,
+
+      // Sector / boss state. `lives` is spent only in a boss fight; the
+      // runner between gates is as lethal as it ever was.
+      gate: 0,                 // how many gates have been cleared
+      gateT: SECTORS.firstGateSeconds,
+      lives: SECTORS.lives,
+      bossPhase: null,         // null | 'approach' | 'locked' | 'clear'
+      arena: null,             // {startX, endX, camX} while locked
+      bossName: null,
+      bossHp: 0,
     };
     this._ctx = this._buildCtx();
 
@@ -159,6 +172,7 @@ export class Game {
       get audio() { return self.audio; },
       get run() { return self.run; },
       get droneGlow() { return 'C'; },
+      get boss() { return self.boss; },
 
       floater: (x, y, text, colour, size) => self.floater(x, y, text, colour, size),
       bumpStreak: () => self.bumpStreak(),
@@ -294,14 +308,29 @@ export class Game {
     // The camera trails the player and only ever moves forward. That keeps
     // generation and pruning honest, and means backtracking is limited to the
     // screen you are on rather than the whole route.
-    const camTarget = Math.max(0, p.x - WORLD.viewW * WORLD.cameraX);
-    r.camX = Math.max(r.camX, camTarget);
-    const leftWall = r.camX + 10;
-    if (p.x < leftWall) { p.x = leftWall; if (p.vx < 0) p.vx = 0; }
+    if (r.arena) {
+      // Locked in with the boss: the camera stops dead and both ends of the
+      // arena are solid. This is the whole trick behind a non-scrolling
+      // fight in a game built around a camera that only moves forward.
+      r.camX = r.arena.camX;
+      const leftWall = r.arena.startX + 6;
+      const rightWall = r.arena.endX - 6;
+      if (p.x < leftWall) { p.x = leftWall; if (p.vx < 0) p.vx = 0; }
+      if (p.x > rightWall) { p.x = rightWall; if (p.vx > 0) p.vx = 0; }
+    } else {
+      const camTarget = Math.max(0, p.x - WORLD.viewW * WORLD.cameraX);
+      r.camX = Math.max(r.camX, camTarget);
+      const leftWall = r.camX + 10;
+      if (p.x < leftWall) { p.x = leftWall; if (p.vx < 0) p.vx = 0; }
+    }
 
     this.world.update(p.x, r.diff);
     this._drainSpawns();
-    this._director(dt);
+    this._sector(dt);
+    // The director tops the field up between gates only: a boss arena is a
+    // duel, not a duel with the usual traffic wandering through it.
+    if (!r.arena) this._director(dt);
+    if (this.boss.active) this.boss.update(dt, this._ctx);
 
     Combat.updateEnemies(dt, this._ctx);
     Combat.updateBullets(dt, this._ctx);
@@ -327,6 +356,9 @@ export class Game {
       } else {
         p.die(p.fellIntoPit ? 'pit' : 'damage');
         this._onDeath();
+        // Inside a boss arena a death costs a life and the fight restarts.
+        // Out of lives, or anywhere else on the track, the run is over.
+        if (r.arena && this._bossDeath()) { /* back in the fight */ }
       }
     }
 
@@ -348,6 +380,109 @@ export class Game {
     }
 
     this.frameCount++;
+  }
+
+  /* ---- Sectors and boss gates ------------------------------------------
+     Gates are timed rather than spaced by distance: speed nearly doubles
+     across the difficulty ramp, so a fixed distance would bunch the later
+     gates together. Three states —
+       approach : the gate is due, the arena has been asked for, the player
+                  is still running towards it
+       locked   : inside the arena, camera frozen, boss alive
+       clear    : boss dead, walls down, run resumes
+     ---------------------------------------------------------------------- */
+  _sector(dt) {
+    const r = this.run;
+    const p = this.player;
+
+    if (!r.bossPhase) {
+      if (p.dead) return;
+      r.gateT -= dt;
+      if (r.gateT <= 0) {
+        r.bossPhase = 'approach';
+        this.world.requestArena(arenaCols());
+        const { def } = bossForGate(r.gate);
+        r.bossName = def.name;
+        this.announce(def.name.toUpperCase(), 'Incoming', '#ff3d68');
+        this.drone.say('threat', true);
+      }
+      return;
+    }
+
+    if (r.bossPhase === 'approach') {
+      const a = this.world.arena;
+      // Wait for the arena to be generated, then for the player to walk in.
+      if (a && p.x >= a.startX + 8) this._lockArena(a);
+      return;
+    }
+
+    if (r.bossPhase === 'locked' && !this.boss.active && this.boss.dying <= 0) {
+      this._clearArena();
+    }
+  }
+
+  _lockArena(a) {
+    const r = this.run;
+    const { def, pass } = bossForGate(r.gate);
+    // Centre the frozen camera on the arena, clamped so it can never move
+    // backwards — the rest of the engine assumes camX only ever grows.
+    const camX = Math.max(r.camX, a.startX - SECTORS.arenaPadCols * WORLD.metre / 2);
+    r.arena = { startX: a.startX, endX: a.endX, camX, startCol: a.startCol, endCol: a.endCol };
+    r.bossPhase = 'locked';
+    r.prompt = null;
+    // Auto-run is suspended for the fight: a fixed arena and a player who
+    // cannot stop pressing forward is a player pinned against the far wall.
+    this.player.autoRun = false;
+    this.boss.spawn(this._ctx, def, r.arena, pass);
+    r.bossHp = 1;
+    this.audio.startMusic('boss');
+    this.announce(def.name.toUpperCase(), def.subtitle, '#ff3d68');
+  }
+
+  _clearArena() {
+    const r = this.run;
+    const { def } = bossForGate(r.gate);
+    r.bossPhase = null;
+    r.arena = null;
+    r.bossName = null;
+    this.world.clearArena();
+    this.boss.clear();
+    // Restore the player's own preference now the fight is over.
+    this.player.autoRun = r.autoRun;
+    r.gate++;
+    r.gateT = SECTORS.gateSeconds;
+    r.score += def.score * this.mult();
+    r.coins += def.coins;
+    this.sv.coins += def.coins;
+    const heal = this.player.maxHealth * SECTORS.clearHeal;
+    this.player.health = Math.min(this.player.maxHealth, this.player.health + heal);
+    this.audio.startMusic('run');
+    this.announce('SECTOR CLEAR', `+${def.score.toLocaleString('en-GB')}  +${def.coins}`, '#ffe66d');
+    this.drone.say('playerKill', true);
+    this.onEvent({ type: 'bossCleared', gate: r.gate });
+  }
+
+  /* A death inside an arena costs a life and restarts the fight. Outside one
+     it ends the run exactly as it always did — lives are a boss mechanic, not
+     a general safety net. */
+  _bossDeath() {
+    const r = this.run;
+    r.lives--;
+    this.onEvent({ type: 'lifeLost', lives: r.lives });
+    if (r.lives <= 0) return false;
+    const p = this.player;
+    p.revive();
+    r.deathT = 0;
+    p.x = r.arena.startX + 20;
+    p.tier = 0;
+    p.y = WORLD.tierY[0];
+    p.vy = 0; p.vx = 0;
+    p.grounded = true;
+    const { def, pass } = bossForGate(r.gate);
+    this.boss.spawn(this._ctx, def, r.arena, pass);
+    this.announce(`${r.lives} LIVES LEFT`, 'Again', '#ffb238');
+    this.audio.play('powerup');
+    return true;
   }
 
   /* Encounter director.
@@ -479,6 +614,9 @@ export class Game {
   _onboarding() {
     const r = this.run;
     if (r.prompt) return;
+    // A boss fight owns the top of the screen, and a tip about climbing is
+    // not what the player needs while something is winding up at them.
+    if (r.arena) return;
     const seen = this.sv.seen;
     const show = (id) => {
       const def = ONBOARDING.find((o) => o.id === id);
