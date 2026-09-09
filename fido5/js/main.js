@@ -143,6 +143,9 @@ layout();   // re-apply now that the renderers exist and can be resized
 /* Bind the on-screen buttons to the same actions as the keys. */
 input.bindStick(document.getElementById('stick'),
   document.getElementById('stick-base'), document.getElementById('stick-knob'));
+// Jump is bound 'hold' as well as pressed: game.js takes the press to start
+// the jump, and player.js reads the held state to decide how high it goes.
+input.bindButton(document.getElementById('btn-jump'), 'jump', 'hold');
 input.bindButton(document.getElementById('btn-fire'), 'fire', 'hold');
 input.bindButton(document.getElementById('btn-gadget'), 'gadget');
 

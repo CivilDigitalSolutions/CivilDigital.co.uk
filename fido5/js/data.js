@@ -19,6 +19,19 @@ export const WORLD = {
   tierY: [148, 100, 52], // ground line (feet) for street / walkway / rooftop
   gravity: 800,          // px/s^2
   jumpVel: -320,         // px/s — apex 64px, clears one 48px tier with margin
+  /* Variable jump height. Releasing the button while still rising cuts the
+     climb short — but the tiers are 48px apart and the full jump only reaches
+     64px, so the cut has a hard floor: it may never leave the player short of
+     jumpMinApex. That is 6px of margin over a tier, and it is what keeps a
+     tapped jump a usable traversal move rather than a trap.
+
+     The range this leaves is deliberately narrow (54px to 64px). It is the
+     whole range there is between "clears a tier" and "the jump we already
+     had"; a bigger one would mean a taller maximum jump, which is a different
+     change to a game whose level geometry is built around this one. */
+  jumpCutVel: -150,      // upward speed a released jump is cut back to...
+  jumpMinApex: 57,       // ...never below what still clears a 48px tier
+  fallGravity: 1.5,      // gravity multiplier while descending
   slideTime: 0.55,       // s
 
   cameraX: 0.30,         // where the player sits on screen, as a fraction
@@ -589,7 +602,7 @@ export const VOICE = {
 /* Contextual prompts, each shown once ever. Order is the teaching order. */
 export const ONBOARDING = [
   { id: 'move',   trigger: 'start',         text: 'Move',                  sub: 'A  D   or  \u2190  \u2192', subTouch: 'Push the stick left or right' },
-  { id: 'jump',   trigger: 'firstObstacle', text: 'Jump',                  sub: 'W  /  Space  /  \u2191',      subTouch: 'Push the stick up' },
+  { id: 'jump',   trigger: 'firstObstacle', text: 'Jump',                  sub: 'W  /  Space  /  \u2191',      subTouch: 'The jump button, or push the stick up' },
   { id: 'low',    trigger: 'firstLow',      text: 'Slide under',           sub: 'S  /  \u2193',                subTouch: 'Push the stick down' },
   { id: 'shoot',  trigger: 'firstEnemy',    text: 'Fire',                  sub: 'J  /  click',                subTouch: 'Hold the fire button' },
   { id: 'tier',   trigger: 'firstTier',     text: 'Jump to climb a level', sub: 'Higher up pays better' },

@@ -14,10 +14,21 @@ import { CHUNKS, OPENING, ARENA } from './chunks.js';
 /* Column obstacle codes. */
 export const NONE = 0, BLOCK = 1, LOW = 2;
 
-/* Conservative movement envelope used by the solver. Real jumps reach much
-   further at speed; deliberately understating them means a route the solver
-   accepts is comfortable rather than frame-perfect. */
-const JUMP_MIN = 2, JUMP_MAX = 5, DROP_MAX = 4, DROP2_MAX = 6;
+/* Movement envelope used by the solver, measured against the real physics at
+   the slowest horizontal speed the game has (manual control, 152 px/s) and
+   then rounded down.
+
+   A flat jump covers eight or nine columns, so JUMP_MAX is barely a limit at
+   all and stays where it was. The vertical numbers are the tight ones, and
+   they moved when the descent was made heavier: a jump is only above the next
+   tier's height for a third of a second, and a walk-off drop spends even less
+   time falling. Measured, held all the way: 4.2 columns of climb, 3.6 across a
+   one-tier drop, 5.1 across a two-tier one.
+
+   A drop can also be jumped, which reaches much further, so the drop figures
+   understate the real envelope — which is the direction a solver guaranteeing
+   passability should err in. */
+const JUMP_MIN = 2, JUMP_MAX = 5, CLIMB_MAX = 4, DROP_MAX = 3, DROP2_MAX = 5;
 const EDGE_SAFE = 2;        // columns at each chunk seam kept clear
 
 export function lerp(a, b, t) { return a + (b - a) * t; }
@@ -251,7 +262,9 @@ export class World {
       push(c + 1, t);                                                // keep running
       for (let d = JUMP_MIN; d <= JUMP_MAX; d++) {
         push(c + d, t);                                              // jump a barrier or a gap
-        if (t + 1 < WORLD.tierCount) push(c + d, t + 1);             // climb a level
+        // A climb reaches less far than a flat jump: most of the arc is spent
+        // below the height being climbed to.
+        if (d <= CLIMB_MAX && t + 1 < WORLD.tierCount) push(c + d, t + 1);
       }
       for (let d = 1; d <= DROP_MAX; d++) if (t - 1 >= 0) push(c + d, t - 1);
       for (let d = 2; d <= DROP2_MAX; d++) if (t - 2 >= 0) push(c + d, t - 2);

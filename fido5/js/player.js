@@ -37,6 +37,8 @@ export class Player {
     this.coyote = 0;
     this.dropIgnore = 0;
     this.slideT = 0;
+    this.jumpCut = true;         // no jump in flight, so nothing to cut
+    this.jumpFromY = 0;
     this.vx = 0;                 // horizontal velocity, px/s
     this.speedMul = 1;           // development speed control
     this.facing = 1;             // 1 = right, -1 = left
@@ -92,6 +94,10 @@ export class Player {
     this.state = 'air';
     this.slideT = 0;
     this.airTime = 0;
+    // Arm the variable-height cut for this jump, and remember the height it
+    // started from so the floor can be measured against it.
+    this.jumpCut = false;
+    this.jumpFromY = this.y;
     if (audio) audio.play('jump');
     return true;
   }
@@ -204,10 +210,25 @@ export class Player {
     // Vertical -------------------------------------------------------------
     if (!this.grounded) {
       this.airTime += dt;
-      // Jump height is fixed. A swipe cannot be held the way a key can, so
-      // variable height would make the same jump behave differently per device.
+
+      /* Variable jump height. Let go while still rising and the climb is cut
+         short — but never below jumpMinApex measured from where the jump
+         started, because anything less would fail to clear a tier and turn a
+         tapped jump into a dead end.
+
+         Armed only by tryJump, so the climb and drop assists and the death
+         impulse, which set vy directly, are never touched by it. */
+      if (!this.jumpCut && !this.dead && this.vy < 0
+          && !(input && input.held.jump)) {
+        this.jumpCut = true;
+        const risen = Math.max(0, this.jumpFromY - this.y);
+        const owed = Math.max(0, WORLD.jumpMinApex - risen);
+        const floor = -Math.sqrt(2 * WORLD.gravity * owed);
+        this.vy = Math.max(this.vy, Math.min(WORLD.jumpCutVel, floor));
+      }
+
       let g = WORLD.gravity;
-      if (this.vy > 0) g *= 1.12;          // snappier descent
+      if (this.vy > 0) g *= WORLD.fallGravity;   // snappier descent
       this.vy += g * dt;
       const prevY = this.y;
       this.y += this.vy * dt;
@@ -361,6 +382,7 @@ export class Player {
     this.shield = this.maxShield || 0;
     this.hurtFlash = 0;
     this.fellIntoPit = false;
+    this.jumpCut = true;         // a revive is not a jump in flight
     this.invuln = Math.max(this.invuln || 0, 1.5);
   }
 

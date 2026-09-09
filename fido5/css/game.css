@@ -320,10 +320,9 @@ body {
 
 /* Touch pad. Movement on the left, actions on the right, and neither cluster
    covers the deck the player has to read. */
-.pad { position: absolute; inset: 0; pointer-events: none; }
 .pad__btn {
   position: absolute; pointer-events: auto;
-  width: clamp(52px, 11vh, 74px); height: clamp(52px, 11vh, 74px);
+  width: var(--btn-alt); height: var(--btn-alt);
   border-radius: 50%;
   background: rgba(18,24,58,.55);
   border: 2px solid rgba(143,154,210,.45);
@@ -334,12 +333,34 @@ body {
 .pad__btn svg { width: 46%; height: 46%; fill: currentColor; stroke: currentColor; stroke-width: 1.6; }
 .pad__btn.is-down { background: rgba(139,92,246,.55); border-color: var(--purple-l); transform: scale(.94); }
 .pad__btn:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
-/* Fire is the button held for most of a run, so it gets the corner and the
-   size. The gadget sits up and inboard of it, on the arc the same thumb
-   sweeps, far enough out that the two cannot be hit together. */
-.pad__btn--fire   { right: calc(var(--safe-r) + .7rem); bottom: calc(var(--safe-b) + 1.1rem);
-                    width: clamp(58px, 12vh, 80px); height: clamp(58px, 12vh, 80px); }
-.pad__btn--gadget { right: calc(var(--safe-r) + 6.4rem); bottom: calc(var(--safe-b) + 4.6rem); }
+/* The right-hand cluster, laid out from four numbers rather than from four
+   sets of hand-computed offsets. Sizes are clamps in vh, so rem arithmetic
+   cannot tell you whether two buttons touch — expressing every position in
+   terms of the same size makes the gaps hold at any viewport height, and the
+   @media block below only has to restate these four. */
+.pad {
+  position: absolute; inset: 0; pointer-events: none;
+  --btn-main: clamp(58px, 12vh, 80px);   /* fire and jump: the two held ones */
+  --btn-alt:  clamp(52px, 11vh, 74px);   /* gadget */
+  --btn-gap:  .5rem;
+  --pad-r:    calc(var(--safe-r) + .7rem);
+  --pad-b:    calc(var(--safe-b) + 1.1rem);
+}
+
+/* Fire keeps the corner: it is held for most of a run. Jump sits immediately
+   inboard of it on the same row and at the same size — jump is the one input
+   in the game where a few pixels of miss is a death, so it does not get the
+   smaller target. The gadget is cooldown-gated and the least time-critical, so
+   it takes the longest reach, above the pair. */
+.pad__btn--fire   { right: var(--pad-r); bottom: var(--pad-b);
+                    width: var(--btn-main); height: var(--btn-main); }
+.pad__btn--jump   { right: calc(var(--pad-r) + var(--btn-main) + var(--btn-gap));
+                    bottom: var(--pad-b);
+                    width: var(--btn-main); height: var(--btn-main);
+                    background: rgba(46,230,166,.16); border-color: rgba(46,230,166,.5); }
+.pad__btn--jump.is-down { background: rgba(46,230,166,.5); border-color: var(--green); }
+.pad__btn--gadget { right: calc(var(--pad-r) + var(--btn-main) * .75);
+                    bottom: calc(var(--pad-b) + var(--btn-main) + var(--btn-gap)); }
 
 /* ---- Movement stick -------------------------------------------------------
    One thumb, four directions. Left and right run, up jumps or climbs a level,
@@ -406,9 +427,9 @@ body {
 
 /* Health bars sit low-left, so on very short screens shrink the pad instead. */
 @media (max-height: 400px) {
-  .pad__btn { width: 46px; height: 46px; }
-  .pad__btn--fire   { width: 60px; height: 60px; bottom: calc(var(--safe-b) + .8rem); }
-  .pad__btn--gadget { right: calc(var(--safe-r) + 4.9rem); bottom: calc(var(--safe-b) + 3.4rem); }
+  /* Only these numbers change; every size and position above follows them. */
+  .pad { --btn-main: 60px; --btn-alt: 46px; --btn-gap: .4rem;
+         --pad-b: calc(var(--safe-b) + .8rem); }
   .stick__base { width: 92px; height: 92px; margin: -46px 0 0 -46px;
                  left: calc(var(--safe-l) + 3.6rem); bottom: calc(var(--safe-b) + 3.2rem); }
   .stick__knob { width: 42px; height: 42px; margin: -21px 0 0 -21px; }
