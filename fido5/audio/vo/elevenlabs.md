@@ -17,18 +17,57 @@ If a take sounds like a performance, it is wrong.
 
 ## Voice prompt
 
-A starting point for Voice Design. Adjust to taste — nothing downstream depends
-on the exact wording.
+Paste this into the voice description field. It covers the six things a voice
+description needs to pin down: what it is, timbre, accent, character, pacing
+and recording quality.
 
-> The synthetic voice of a small military combat drone. Mid-to-low register,
-> neutral British accent, with a faint metallic edge and light radio
-> compression, as though heard over a comms channel. Clipped, precise and
-> unhurried, calm even under fire. Dry and deadpan, with no warmth, no
-> theatricality and no rising urgency. Speaks in short efficient bursts.
+> The synthetic voice of a small military combat drone. Male-neutral and
+> slightly androgynous, mid-to-low register, neutral British accent with clean
+> vowels and no regional colour. Calm, clipped and precise at all times,
+> speaking in short efficient bursts like radio traffic rather than
+> conversation. Dry and deadpan, with a flat undercurrent of sarcasm that is
+> never played for laughs. No warmth, no enthusiasm, no rising urgency and no
+> narrator polish. A faint metallic resonance and light radio compression, as
+> though transmitted over a comms channel. Close, dry recording with no room
+> reverb.
 
-Gender is deliberately left open — FiDo-5 is referred to as "it" throughout the
-game, so anything from androgynous to male-neutral fits. Pick whichever sounds
-least human.
+### Preview text
+
+What the voice says while you audition candidates matters as much as the
+description. Use real lines rather than the default sample, and include a
+one-word line: most of FiDo-5's dialogue is two to four words, and a voice that
+sounds right on a full sentence often falls apart on a single word.
+
+> Threat detected. Target acquired. Nice shot. I recommend avoiding the
+> explosion. Hold still. Shield spent, recharging. Company. Take less damage.
+> Please.
+
+### Judging the candidates
+
+Generate several and reject on these, in this order.
+
+- Anything that sounds like an audiobook narrator or a film trailer. This is
+  the most common failure and the hardest to fix later.
+- Anything that puts feeling into "I recommend avoiding the explosion." That
+  line only works if the delivery is identical to a status readout.
+- One-word lines that trail off or sound cut short. "Company." should land
+  flat and finished, not clipped.
+- Any candidate whose calm changes between "Move." and "Nice shot." The whole
+  character is that it does not.
+
+Save the voice you settle on and use it for all 45 lines. Regenerating the
+voice partway through will leave the set sounding like two different drones.
+
+### If the first attempt is wrong
+
+Append one of these to the description rather than rewriting it.
+
+| Problem | Add |
+|---|---|
+| Too human | "Heavily processed, with a subtle vocoder edge and a trace of digital artefacting." |
+| Too robotic to act the dry lines | "Under the flatness, a trace of world-weariness, like a machine that has done this many times before." |
+| Too light or too young | "Low and chest-heavy, with a slow deliberate cadence and weight on the consonants." |
+| Too soft for the combat lines | "Hard consonants and a tight, forward delivery, cutting through noise without ever being loud." |
 
 ## Settings
 
