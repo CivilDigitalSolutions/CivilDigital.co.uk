@@ -255,7 +255,7 @@ body {
 
 /* Out of the way for the boss intro card, back with the bell. */
 #hud { transition: opacity .22s ease; }
-#hud.is-intro { opacity: 0; pointer-events: none; }
+#hud.is-card { opacity: 0; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { #hud { transition: none; } }
 
 /* Lives. Only ever on screen during a boss fight. Deliberately louder than
@@ -340,8 +340,8 @@ body {
    @media block below only has to restate these four. */
 .pad {
   position: absolute; inset: 0; pointer-events: none;
-  --btn-main: clamp(68px, calc(13.5vh + 2px), 90px); /* jump and fire: the held pair */
-  --btn-alt:  clamp(62px, calc(11.5vh + 6px), 84px); /* gadget */
+  --btn-main: clamp(70px, calc(13.5vh + 4px), 92px); /* jump and fire: the held pair */
+  --btn-alt:  clamp(64px, calc(11.5vh + 8px), 86px); /* gadget */
   --btn-gap:  .5rem;
   --pad-r:    calc(var(--safe-r) + .7rem);
   --pad-b:    calc(var(--safe-b) + 1.1rem);
@@ -439,7 +439,7 @@ body {
 /* Health bars sit low-left, so on very short screens shrink the pad instead. */
 @media (max-height: 400px) {
   /* Only these numbers change; every size and position above follows them. */
-  .pad { --btn-main: 70px; --btn-alt: 56px; --btn-gap: .4rem;
+  .pad { --btn-main: 72px; --btn-alt: 58px; --btn-gap: .4rem;
          --pad-b: calc(var(--safe-b) + .7rem); }
   .stick__base { width: 92px; height: 92px; margin: -46px 0 0 -46px;
                  left: calc(var(--safe-l) + 3.6rem); bottom: calc(var(--safe-b) + 3.2rem); }

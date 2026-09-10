@@ -13,7 +13,7 @@
        that matters to gameplay is
    ========================================================================== */
 
-import { WORLD, PAL, BOSS_INTRO } from './data.js';
+import { WORLD, PAL, BOSS_INTRO, BOSS_OUTRO } from './data.js';
 import { S } from './sprites.js';
 import { makeRng } from './world.js';
 
@@ -334,6 +334,7 @@ export class Renderer {
     if (sh > 0.1) x.restore();
     this._overlay(x, g);
     this._bossIntro(x, g);
+    this._bossOutro(x, g);
   }
 
   _sky(x, g) {
@@ -1094,8 +1095,9 @@ export class Renderer {
       }
     }
 
-    // Dialogue, in the drone's own colour, above it.
-    if (d.line) {
+    // Dialogue, in the drone's own colour, above it. A title card owns the
+    // screen, so a line left over from the fight does not sit behind it.
+    if (d.line && !g.run.intro && !g.run.outro) {
       const str = d.line.toUpperCase().replace(/[’]/g, "'");
       const cw = str.length * GLYPH_W;
       let bx = Math.round(sx + img.w / 2 - cw / 2);
@@ -1431,6 +1433,117 @@ export class Renderer {
         x.fillRect(0, 0, W, H);
         x.globalAlpha = 1;
       }
+    }
+  }
+
+  /* ---- Boss outro --------------------------------------------------------
+     The other half of the intro card. Same frame — dimmed world, letterbox
+     bars, a slammed word, a name plate — so the two read as a matched pair,
+     but mint instead of red and one word instead of two: the intro announces
+     something arriving, this reports something finished.
+
+     Driven off run.outro.t against BOSS_OUTRO, exactly as the intro is. */
+
+  _bossOutro(x, g) {
+    const io = g.run && g.run.outro;
+    if (!io) return;
+    const T = BOSS_OUTRO;
+    const t = io.t;
+    const fadeOut = Math.max(0, (t - (T.done - 0.3)) / 0.3);
+    const veil = Math.min(1, t / 0.2) * (1 - fadeOut);
+    if (veil <= 0) return;
+
+    x.globalAlpha = 0.74 * veil;
+    x.fillStyle = '#080a12';
+    x.fillRect(0, 0, W, H);
+    x.globalAlpha = 1;
+
+    const barH = Math.round(H * 0.13 * ease(Math.min(1, t / 0.24)) * (1 - fadeOut));
+    if (barH > 0) {
+      x.fillStyle = '#080a12';
+      x.fillRect(0, 0, W, barH);
+      x.fillRect(0, H - barH, W, barH);
+      x.fillStyle = '#2ee6a6';
+      x.fillRect(0, barH, W, 1);
+      x.fillRect(0, H - barH - 1, W, 1);
+    }
+
+    /* Embers drifting up rather than the intro's streaks tearing sideways.
+       The same job — stopping the middle of the screen being a flat band of
+       nothing — with the motion reversed, because this is the aftermath. */
+    if (t > T.word) {
+      x.globalAlpha = 0.2 * (1 - fadeOut);
+      for (let i = 0; i < 9; i++) {
+        const ex = Math.round(((i * 71) % 13) / 13 * W + ((i * 37) % 11) * 3);
+        const rise = ((t * (26 + (i % 4) * 9) + i * 31) % (H * 0.9));
+        x.fillStyle = i % 3 ? '#2ee6a6' : '#ffe66d';
+        x.fillRect(ex, Math.round(H - barH - rise), 1, 2);
+      }
+      x.globalAlpha = 1;
+    }
+
+    /* Laid out as one stack rather than at two fixed fractions of the height.
+       The render height is fixed at 180 but the width is not, so a word sized
+       from the width alone is five times taller on a wide short window than on
+       a narrow one — and on a landscape phone it grew until it ran into the
+       name plate. Size the plate first, give the word what is left between the
+       bars, then centre the pair. The card then holds the same shape from 240
+       to 720 internal pixels, and the word is the hero on all of them. */
+    const cv = this._textCanvas(io.word, 'G', true);
+    const nameCv = this._textCanvas(io.name, 'E', true);
+    const bars = Math.round(H * 0.13);
+    // Capped tighter than the intro's plate: there the name is the point, here
+    // it is the footnote under the word.
+    const ns = Math.max(2, Math.min(4, Math.floor((W * 0.62) / nameCv.width)));
+    const nameH = nameCv.height * ns;
+    const ph = 5 + 6 + nameH + 2 + (GLYPH_H + 2) + 5;
+    const gapY = 6;
+    const room = H - bars * 2 - 8 - ph - gapY;
+    const base = Math.max(2, Math.min(Math.floor((W * 0.84) / cv.width),
+                                      Math.floor(room / cv.height)));
+    const wordH = cv.height * base;
+    const top = Math.round((H - (wordH + gapY + ph)) / 2);
+
+    if (t >= T.word) {
+      const k = Math.min(1, (t - T.word) / T.travel);
+      // Stamps in oversized and settles. It is one word rather than two
+      // meeting, so the impact has to come from the scale rather than the
+      // travel — and the overshoot grows about its own centre, so it does not
+      // reach down into the plate on the way in.
+      const scale = base * (1 + Math.pow(1 - k, 2) * 0.8);
+      const wy = Math.round(top - (cv.height * (scale - base)) / 2);
+      x.globalAlpha = Math.min(1, (t - T.word) / 0.05) * (1 - fadeOut);
+      this._word(x, io.word, W / 2, wy, scale, '#2ee6a6', '#0e7a58');
+      const settle = t - (T.word + T.travel);
+      if (settle >= 0 && settle < 0.07) {
+        this._word(x, io.word, W / 2, wy, scale, '#ffffff', '#ffffff');
+      }
+      x.globalAlpha = 1;
+      if (settle >= 0 && settle < 0.1) {
+        x.globalAlpha = 0.45 * (1 - settle / 0.1);
+        x.fillStyle = '#ffffff';
+        x.fillRect(0, 0, W, H);
+        x.globalAlpha = 1;
+      }
+    }
+
+    // Who it was, and that they are done. The intro's plate names the thing
+    // arriving; this one closes the file on it.
+    if (t >= T.plate) {
+      const k = ease(Math.min(1, (t - T.plate) / T.plateIn));
+      const plateW = Math.min(W - 8, Math.max(nameCv.width * ns + 20, 130));
+      const px = Math.round(W / 2 - plateW / 2);
+      const py = Math.round(top + wordH + gapY + (1 - k) * 22);
+      x.globalAlpha = k * (1 - fadeOut);
+      x.fillStyle = '#080a12';
+      x.fillRect(px, py, plateW, ph);
+      x.fillStyle = '#2ee6a6';
+      x.fillRect(px, py, plateW, 2);
+      x.fillRect(px, py + ph - 2, plateW, 2);
+      this.text('SECTOR ' + (g.run.gate + 1) + ' CLEAR', W / 2, py + 4, 'S', 1, 'center');
+      this.text(io.name, W / 2, py + 5 + 6, 'E', ns, 'center');
+      this.text('SYSTEM OFFLINE', W / 2, py + 5 + 6 + nameH + 1, 'G', 1, 'center');
+      x.globalAlpha = 1;
     }
   }
 

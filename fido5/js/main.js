@@ -233,6 +233,9 @@ function onGameEvent(ev) {
 
 /* ---- The loop ---------------------------------------------------------- */
 
+let updatePending = false;    // a newer worker has taken over; reload when idle
+let reloadingNow = false;
+
 let last = performance.now();
 function frame(ts) {
   requestAnimationFrame(frame);
@@ -248,6 +251,7 @@ function frame(ts) {
     if (game.state === 'running' || game.state === 'over') ui.updateHud(game);
   } else {
     ui.tickMenu(elapsed, game.renderer);
+    if (updatePending) applyPendingUpdate();
   }
 }
 
@@ -360,15 +364,39 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 
   /* A new worker takes over one visit after it is fetched, so without this the
      first load of a release still runs the previous one — which looks exactly
-     like the update never shipped. Reload once when control changes so a
-     release lands on the visit it arrives, not the one after.
+     like the update never shipped. Reload when control changes so a release
+     lands on the visit it arrives, not the one after.
 
-     Guarded, because a worker calling skipWaiting() during an ongoing load can
-     otherwise change control repeatedly and reload in a loop. */
+     Two things decide whether that reload is right, and getting either wrong
+     throws away a run the player is in the middle of.
+
+     The first: a page that arrived with no controller fetched every file from
+     the network itself, so a worker claiming it afterwards replaces nothing.
+     That is every cold visit — no worker yet, or the first load after a
+     release — and the claim lands whenever the install finishes fetching the
+     asset list. On a fast connection that is while the player is still reading
+     the menu and nobody sees it; on a real one it is a couple of seconds into
+     their first run, which is exactly the restart being reported. There is
+     nothing stale to reload for, so there is no reload.
+
+     The second: even a genuine update — an older worker replaced by a newer
+     one — must not interrupt a run. The reload waits for the menu. */
+  const hadController = !!navigator.serviceWorker.controller;
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloading) return;
-    reloading = true;
-    window.location.reload();
+    if (!hadController || reloading) return;
+    updatePending = true;
+    applyPendingUpdate();
   });
+}
+
+/* Applied the next time the player is not in the middle of anything: the menu
+   or the results screen. Called from the frame loop, so it lands as soon as
+   they get there rather than waiting for another event. */
+function applyPendingUpdate() {
+  if (!updatePending || reloadingNow) return;
+  if (ui.current !== 'menu' && ui.current !== 'results') return;
+  reloadingNow = true;
+  flush();                    // the save is written before the page goes
+  window.location.reload();
 }

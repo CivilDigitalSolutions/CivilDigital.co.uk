@@ -329,6 +329,14 @@ export class Audio {
         this._tone({ freq: 700, to: 150, type: 'square', dur: 0.55, gain: 0.14, detune: -10 });
         this._burst({ dur: 0.5, gain: 0.14, cut: 3400, sweepTo: 700, type: 'bandpass', q: 2 });
         break;
+      case 'boss.down':
+        // The riser played backwards: everything sweeping down and away at
+        // once, which is what something the size of a building sounds like
+        // when the power goes out of it.
+        this._burst({ dur: 1.0, gain: 0.15, cut: 5200, sweepTo: 150, type: 'bandpass', q: 1.4 });
+        this._tone({ freq: 420, to: 55, type: 'sawtooth', dur: 1.0, gain: 0.11 });
+        this._tone({ freq: 210, to: 28, type: 'square', dur: 1.15, gain: 0.08 });
+        break;
       case 'boss.plate':
         this._burst({ dur: 0.28, gain: 0.14, cut: 900, sweepTo: 3000, type: 'bandpass', q: 1.2 });
         this._tone({ freq: hz('D', 3), type: 'sawtooth', dur: 0.2, gain: 0.12 });

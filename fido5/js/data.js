@@ -678,6 +678,25 @@ export const BOSS_INTRO = {
   travel: 0.24,   // how long each word spends flying in
 };
 
+/* The defeat card, in the same shape as the intro's timeline. Shorter, because
+   the fight is over and the intermission is waiting — but built from the same
+   beats so the two read as a pair rather than as two unrelated overlays.
+
+   The word alternates gate by gate. Both are eight characters, which is not an
+   accident: the card is sized from the word, and two words of the same length
+   means the second one lands exactly where the first did. */
+export const BOSS_OUTRO = {
+  bars:    0.00,   // the world dims, the bars close, the power-down starts
+  word:    0.14,   // the word stamps in oversized...
+  travel:  0.20,   // ...and settles, with a flash on the frame it lands
+  plate:   0.58,   // the name plate rises with the status under it
+  plateIn: 0.22,
+  skip:    0.40,   // a press before this is the one that killed the boss
+  hold:    1.55,   // everything starts punching out
+  done:    1.85,   // the intermission takes over
+};
+export const BOSS_OUTRO_WORDS = ['SHUTDOWN', 'FINISHED'];
+
 /* Bosses in gate order. The roster loops once exhausted, with each pass
    raising health and speed, so the tail of a long run keeps escalating
    instead of flattening out the way the difficulty ramp does. */

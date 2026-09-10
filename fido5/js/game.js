@@ -5,7 +5,8 @@
    ui.js; this file raises events and lets the UI decide what to show.
    ========================================================================== */
 
-import { WORLD, DIFFICULTY, SCORE, ONBOARDING, POWERUPS, ELITE, ENEMIES, SECTORS, BOSS_INTRO } from './data.js';
+import { WORLD, DIFFICULTY, SCORE, ONBOARDING, POWERUPS, ELITE, ENEMIES, SECTORS, BOSS_INTRO,
+         BOSS_OUTRO, BOSS_OUTRO_WORDS } from './data.js';
 import { World, makeRng, pick, clamp } from './world.js';
 import { Pool, Particles, makeBullet, makeCoin, makePickup, makeCrate, makeEnemy, makeFloater, makeBlast } from './entities.js';
 import { Player } from './player.js';
@@ -153,6 +154,7 @@ export class Game {
       bossPhase: null,
       approachT: 0,            // countdown to a moving fight, which has no mouth
       intro: null,             // {t, name, subtitle, cued} while the flourish runs
+      outro: null,             // {t, word, name, cued} while the defeat card runs
       shake: 0,                // screen shake magnitude, decays every frame
       arena: null,             // {startX, endX, camX} while locked
       bossName: null,
@@ -339,13 +341,24 @@ export class Game {
     if (r.rewardT <= 0) r.reward = null;
 
     // Input ---------------------------------------------------------------
-    // The flourish holds everything still. Any of the action buttons skips it,
-    // because an arcade intro nobody can mash through is a cutscene.
-    const introLock = r.bossPhase === 'intro';
-    if (introLock) {
+    // Either flourish holds everything still. Both are skippable, because an
+    // arcade card nobody can mash through is a cutscene.
+    const introLock = r.bossPhase === 'intro' || r.bossPhase === 'outro';
+    if (r.bossPhase === 'intro') {
       if (this.input.take('jump') || this.input.take('fire') || this.input.take('gadget')
           || this.input.held.fire) {
         r.intro.t = Math.max(r.intro.t, BOSS_INTRO.fight);
+      }
+      this.input.take('down');
+    } else if (r.bossPhase === 'outro') {
+      /* Skippable by a fresh press only — not by the trigger they were already
+         holding when the boss died, and not by a press still sitting in the
+         input buffer from the shot that killed it. Otherwise the player who
+         fights to the last frame is the one who never sees the card. */
+      const pressed = [this.input.take('jump'), this.input.take('fire'),
+                       this.input.take('gadget')].some(Boolean);
+      if (pressed && r.outro.t >= BOSS_OUTRO.skip) {
+        r.outro.t = Math.max(r.outro.t, BOSS_OUTRO.hold);
       }
       this.input.take('down');
     }
@@ -502,8 +515,52 @@ export class Game {
 
     if ((r.bossPhase === 'locked' || r.bossPhase === 'chase')
         && !this.boss.active && this.boss.dying <= 0) {
-      this._clearFight();
+      this._beginOutro();
+      return;
     }
+
+    if (r.bossPhase === 'outro') this._outro(dt);
+  }
+
+  /* The defeat card. Reached once the boss's death animation has finished, so
+     the explosion is over and this is what follows it. */
+  _beginOutro() {
+    const r = this.run;
+    const { def } = bossForGate(r.gate);
+    r.bossPhase = 'outro';
+    r.prompt = null;
+    r.reward = null;
+    r.outro = {
+      t: 0,
+      // Alternating gate by gate, so a long run does not show the same card
+      // six times.
+      word: BOSS_OUTRO_WORDS[r.gate % BOSS_OUTRO_WORDS.length],
+      name: def.name.toUpperCase(),
+      cued: {},
+    };
+    // A shot the boss fired before it died can still be in the air. Dying to
+    // it behind the card that says you won would be a bad joke.
+    this.player.invuln = Math.max(this.player.invuln, BOSS_OUTRO.done + 0.3);
+    this.audio.stopMusic();
+    this.shake(5);
+  }
+
+  /* Same one-clock, cue-once shape as the intro, for the same reason: a skip
+     that jumps the clock forward must not replay a beat it has passed. */
+  _outro(dt) {
+    const r = this.run;
+    const io = r.outro;
+    io.t += dt;
+    const cue = (name, at, fn) => {
+      if (io.t >= at && !io.cued[name]) { io.cued[name] = true; fn(); }
+    };
+    cue('down', BOSS_OUTRO.bars, () => this.audio.play('boss.down'));
+    cue('land', BOSS_OUTRO.word + BOSS_OUTRO.travel, () => {
+      this.audio.play('boss.slam', { n: 1 });
+      this.shake(6);
+    });
+    cue('plate', BOSS_OUTRO.plate, () => this.audio.play('boss.plate'));
+    if (io.t >= BOSS_OUTRO.done) this._clearFight();
   }
 
   /* The flourish. Beats come from BOSS_INTRO and each is cued exactly once,
@@ -554,7 +611,7 @@ export class Game {
      this rather than off run.arena, which only a static fight has. */
   get inFight() {
     const ph = this.run && this.run.bossPhase;
-    return ph === 'intro' || ph === 'locked' || ph === 'chase';
+    return ph === 'intro' || ph === 'locked' || ph === 'chase' || ph === 'outro';
   }
 
   /* Start a fight. `a` is the generated arena for a static boss, or null for a
@@ -597,6 +654,7 @@ export class Game {
     r.bossPhase = null;
     r.arena = null;
     r.intro = null;
+    r.outro = null;
     r.bossName = null;
     this.world.clearArena();
     this.boss.clear();

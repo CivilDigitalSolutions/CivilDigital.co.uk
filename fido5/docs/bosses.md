@@ -40,12 +40,15 @@ A gate runs through three states:
    for a moving fight there is no mouth, so it ends on a short timer instead.
 2. **locked** — the player has crossed into the arena. The camera freezes, the
    walls come in, auto-run is suspended and the boss spawns.
-3. **clear** — the boss's death animation has finished. The camera is
-   released, auto-run is restored to the player's own setting, score and coins
-   are paid, the player is resupplied, the gate counter advances and the run
-   pauses on the sector intermission (below) — all on the same frame. There is
-   deliberately no gap: the runner moving again on a screen the player has
-   stopped playing is a window that eats input.
+3. **outro** — the boss's death animation has finished and the defeat card
+   is up (below). The runner is held still and takes no gameplay input, the
+   same way the intro holds it.
+4. **clear** — the camera is released, auto-run is restored to the player's own
+   setting, score and coins are paid, the player is resupplied, the gate
+   counter advances and the run pauses on the sector intermission (below) —
+   all on the same frame. There is deliberately no gap: the runner moving
+   again on a screen the player has stopped playing is a window that eats
+   input.
 
 A moving fight (`arena: 'moving'`) skips the arena entirely: no walls, no
 camera freeze, the encounter director left running and auto-run untouched. The
@@ -106,6 +109,33 @@ a running fight is the wrong shape.
 **FiDo-5 keeps talking.** The drone announces the threat on approach and calls
 the clear. Its rescue is still available, which means the real cost of a bad
 fight is the rescue cooldown, not just health.
+
+### The defeat card
+
+The other half of the intro flourish, and built from the same parts — dimmed
+world, letterbox bars, a slammed word, a name plate, one clock cued once
+against a timeline in `BOSS_OUTRO`. Mint instead of red, embers drifting up
+instead of streaks tearing sideways, and one word instead of two meeting: the
+intro announces something arriving, this reports something finished.
+
+The word alternates gate by gate between **SHUTDOWN** and **FINISHED**. Both
+are eight characters, so the card does not change shape between gates.
+
+Two things are worth knowing if you touch it:
+
+- **It is laid out as a stack, not at fixed fractions of the height.** The
+  render height is fixed at 180 but the width is not, so a word sized from the
+  width alone is far taller on a wide short window than on a narrow one — on a
+  landscape phone it grew until it ran into the name plate. The plate is sized
+  first, the word takes what is left between the bars, and the pair is centred.
+- **It is skippable, but not by the trigger that killed the boss.** A held
+  trigger or a press still sitting in the input buffer would mean the player
+  who fights to the last frame is the one who never sees it, so a skip needs a
+  fresh press after `BOSS_OUTRO.skip`.
+
+The player is made invulnerable for its duration: a shot the boss fired before
+it died can still be in the air, and dying to it behind the card that says you
+won would be a bad joke.
 
 ### A clear is a checkpoint
 
@@ -321,11 +351,13 @@ twice and the fight cannot stall on it.
 | Per-boss parts (relays, pods, drones) | `parts` block in the definition |
 | Second phases | `phase2` block in the definition |
 | Behaviour and the phase machine | `boss.js` |
+| Defeat card timeline and words | `BOSS_OUTRO`, `BOSS_OUTRO_WORDS` in `data.js` |
 | Arena template | `ARENA` in `chunks.js` |
 | Gate states and rewards | `Game._sector`, `_startFight`, `_clearFight`, `_bossDeath` |
 | Resupply, banking, mid-run stats | `Game.resupply`, `bank`, `applyStats`, `resumeFromSector` |
 | Sector intermission | `#screen-sector` in `play.html`, `UI.openSector` / `buildSector`, `.sec-*` in `css/game.css` |
 | Drawing | `Renderer._boss`, `_bossArena`, `_bossBar` |
+| Intro and defeat cards | `Renderer._bossIntro`, `_bossOutro`, `_word`, `_slam` |
 | Lives HUD | `play.html`, `.hud-lives` in `css/game.css`, `UI.updateHud` |
 
 ## 7. Adding the next boss
