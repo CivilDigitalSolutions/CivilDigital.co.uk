@@ -340,7 +340,7 @@ body {
    @media block below only has to restate these four. */
 .pad {
   position: absolute; inset: 0; pointer-events: none;
-  --btn-main: clamp(66px, 13.5vh, 88px); /* fire and jump: the two held ones */
+  --btn-main: clamp(68px, calc(13.5vh + 2px), 90px); /* jump and fire: the held pair */
   --btn-alt:  clamp(56px, 11.5vh, 78px); /* gadget */
   --btn-gap:  .5rem;
   --pad-r:    calc(var(--safe-r) + .7rem);
@@ -353,22 +353,22 @@ body {
 }
 
 /* The two held buttons sit on a diagonal rather than a row, along the arc a
-   right thumb actually sweeps: jump low and inboard where the thumb rests,
-   fire up and out in the corner where it reaches. Both are the same size —
+   right thumb actually sweeps: fire low and inboard where the thumb rests,
+   jump up and out in the corner where it reaches. Both are the same size —
    jump is the one input in the game where a few pixels of miss is a death, so
    it does not get the smaller target. The gadget is cooldown-gated and the
    least time-critical, so it takes the longest reach, above the pair. */
-.pad__btn--fire   { right: var(--pad-r);
+.pad__btn--jump   { right: var(--pad-r);
                     bottom: calc(var(--pad-b) + var(--btn-step));
-                    width: var(--btn-main); height: var(--btn-main); }
-.pad__btn--jump   { right: calc(var(--pad-r) + var(--btn-step));
-                    bottom: var(--pad-b);
                     width: var(--btn-main); height: var(--btn-main);
                     background: rgba(46,230,166,.16); border-color: rgba(46,230,166,.5); }
+.pad__btn--fire   { right: calc(var(--pad-r) + var(--btn-step));
+                    bottom: var(--pad-b);
+                    width: var(--btn-main); height: var(--btn-main); }
 .pad__btn--jump.is-down { background: rgba(46,230,166,.5); border-color: var(--green); }
-/* A wider gap above fire than between fire and jump: reaching up for fire and
-   overshooting into the gadget wastes a cooldown, which is worse than either
-   of the two held buttons catching the other. */
+/* A wider gap above jump than between jump and fire: reaching up for jump and
+   overshooting into the gadget wastes a cooldown and misses the jump, which is
+   worse than either of the two held buttons catching the other. */
 .pad__btn--gadget { right: calc(var(--pad-r) + var(--btn-step) * .5);
                     bottom: calc(var(--pad-b) + var(--btn-step) + var(--btn-main)
                                  + var(--btn-gap) * 2.2); }
@@ -439,7 +439,7 @@ body {
 /* Health bars sit low-left, so on very short screens shrink the pad instead. */
 @media (max-height: 400px) {
   /* Only these numbers change; every size and position above follows them. */
-  .pad { --btn-main: 68px; --btn-alt: 50px; --btn-gap: .4rem;
+  .pad { --btn-main: 70px; --btn-alt: 50px; --btn-gap: .4rem;
          --pad-b: calc(var(--safe-b) + .7rem); }
   .stick__base { width: 92px; height: 92px; margin: -46px 0 0 -46px;
                  left: calc(var(--safe-l) + 3.6rem); bottom: calc(var(--safe-b) + 3.2rem); }
