@@ -31,7 +31,6 @@ and squeeze the sectors together exactly when the player is least able to cope.
 | Every gate after | 95 s | `SECTORS.gateSeconds` |
 | Lives | 3, refilled at every gate | `SECTORS.lives` |
 | Shield on a clear | 6 s | `SECTORS.clearShield` |
-| Celebration before the intermission | 1.5 s | `SECTORS.clearPause` |
 
 A gate runs through three states:
 
@@ -41,10 +40,12 @@ A gate runs through three states:
    for a moving fight there is no mouth, so it ends on a short timer instead.
 2. **locked** — the player has crossed into the arena. The camera freezes, the
    walls come in, auto-run is suspended and the boss spawns.
-3. **clear** — the boss is dead. The camera is released, auto-run is restored
-   to the player's own setting, score and coins are paid, the player is
-   resupplied and the gate counter advances. A second and a half later the run
-   pauses on the sector intermission (below).
+3. **clear** — the boss's death animation has finished. The camera is
+   released, auto-run is restored to the player's own setting, score and coins
+   are paid, the player is resupplied, the gate counter advances and the run
+   pauses on the sector intermission (below) — all on the same frame. There is
+   deliberately no gap: the runner moving again on a screen the player has
+   stopped playing is a window that eats input.
 
 A moving fight (`arena: 'moving'`) skips the arena entirely: no walls, no
 camera freeze, the encounter director left running and auto-run untouched. The
@@ -143,10 +144,12 @@ the loadout and the upgrade tree can be changed. Three things make that work:
 
 The hand-off is deliberately not raised from inside a fixed timestep: pausing
 mid-step would leave the remaining steps advancing a run the player can no
-longer see. `update()` sets a flag and `tick()` acts on it once the step loop
-has finished — and skips it if the run ended during the celebration, because a
-pit still swallows a shielded player and the results screen is what they are
-owed.
+longer see. `_clearFight()` sets a flag, the step loop breaks on it, and
+`tick()` acts once the loop has finished. The accumulator is dropped at the
+same time, so a slow frame cannot bank simulation time and spend it the
+instant the player continues. The one case it skips is a death on the same
+frame — a pit still swallows a shielded player, and the results screen is what
+they are owed.
 
 ## 4. The roster
 

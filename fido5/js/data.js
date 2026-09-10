@@ -656,7 +656,6 @@ export const SECTORS = {
      speed, a fresh chunk, and a player still reading the screen. It does not
      cover a fall, exactly as the shield gadget does not. */
   clearShield: 6,         // s of shielding as the run resumes
-  clearPause: 1.5,        // s of celebration before the intermission opens
   arenaMinCols: 20,       // arena never narrower than the tightest viewport
   arenaMaxCols: 56,
   arenaPadCols: 2,        // breathing room inside the walls

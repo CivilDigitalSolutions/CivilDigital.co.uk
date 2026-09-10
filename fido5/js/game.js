@@ -143,7 +143,6 @@ export class Game {
       chunkRiskX: 0,
       deathT: 0,
       seenElite: false,
-      clearT: 0,               // celebration left to run before the intermission
 
       // Sector / boss state. `lives` is spent only in a boss fight; the
       // runner between gates is as lethal as it ever was.
@@ -170,6 +169,8 @@ export class Game {
     this.player.autoRun = this.run.autoRun;
     this.state = 'running';
     this.acc = 0;
+    this.sectorDue = false;
+    this.sectorInfo = null;
     this.drone.onRunStart();
     this.audio.startMusic('run');
     this.input.enabled = true;
@@ -226,17 +227,25 @@ export class Game {
         this.update(STEP);
         this.acc -= STEP;
         steps++;
+        // A cleared gate ends the frame there. A browser that handed us a long
+        // elapsed — a slow frame, a tab coming back — would otherwise run up
+        // to four more steps of a run the player is about to stop watching,
+        // and those steps read input.
+        if (this.sectorDue) break;
       }
       if (steps === MAX_STEPS) this.acc = 0;     // give up rather than spiral
-      // A pit swallows a player mid-celebration now and again: the clear
-      // shield stops damage, not a fall. If the run ended in that second and a
-      // half, the results screen is what the player is owed, not a resupply
-      // panel opening on top of it.
       if (this.sectorDue) {
         this.sectorDue = false;
+        this.acc = 0;                            // nothing owed to a paused run
+        // The one case where the gate clears and the intermission is wrong: the
+        // player died on the same frame. The clear shield stops damage, not a
+        // fall, so a pit at the arena mouth can still take them — and then the
+        // results screen is what they are owed, not a resupply panel over it.
         if (this.state === 'running' && !this.player.dead) {
           this.pause();
           this.onEvent({ type: 'sectorClear', sector: this.sectorInfo });
+        } else {
+          this.audio.startMusic('run');
         }
       }
       this._trackPerformance(elapsed);
@@ -311,13 +320,6 @@ export class Game {
     r.shake = Math.max(0, r.shake - dt * 26);
     r.energyWarn = Math.max(0, r.energyWarn - dt);
     r.gadgetCool = Math.max(0, r.gadgetCool - dt);
-    if (r.clearT > 0) {
-      r.clearT -= dt;
-      // Raising the event from inside a fixed step would pause the game while
-      // the step loop is still running, and the remaining steps would advance
-      // a run the player can no longer see. Flag it and let tick() do it.
-      if (r.clearT <= 0) { r.clearT = 0; this.sectorDue = true; }
-    }
     r.promptT = Math.max(0, r.promptT - dt);
     if (r.promptT <= 0) r.prompt = null;
     for (let i = r.arcs.length - 1; i >= 0; i--) {
@@ -605,16 +607,18 @@ export class Game {
     r.score += def.score * this.mult();
     r.coins += def.coins;
     const supplied = this.resupply();
-    this.audio.startMusic('run');
-    this.announce('SECTOR CLEAR', `+${def.score.toLocaleString('en-GB')}  +${def.coins}`, '#ffe66d');
     this.drone.say('playerKill', true);
-    // The intermission waits for the explosion and the banner. Until then the
-    // run carries on, shielded, so the clear reads as a moment rather than as
-    // the screen being taken away mid-kill.
-    r.clearT = SECTORS.clearPause;
+    /* Straight to the intermission. This is reached only once the boss's death
+       animation has finished — `_sector` waits for `dying` to run out — so
+       there is nothing left to watch, and any gap here is a window where the
+       runner is moving again and taking input on a screen the player has
+       already stopped playing. The score and coins are reported by the
+       intermission rather than by a HUD banner, which would otherwise be
+       sitting there when they press Continue. */
     this.sectorInfo = {
       gate: r.gate, boss: def.name, score: def.score, coins: def.coins, supplied,
     };
+    this.sectorDue = true;
     this.onEvent({ type: 'bossCleared', gate: r.gate });
   }
 
