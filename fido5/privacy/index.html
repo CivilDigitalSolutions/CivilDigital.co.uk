@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Privacy Policy | FiDo-5</title>
+  <meta name="description" content="Privacy policy for the FiDo-5 game: how information is handled. Progress is stored on your device, and advertising is served by Google AdMob.">
+  <link rel="canonical" href="https://civildigital.co.uk/fido5/privacy/">
+  <meta name="robots" content="index,follow">
+  <meta name="theme-color" content="#080a12">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/images/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+  <style>
+    :root {
+      --ink:      #080a12;
+      --ink-2:    #101632;
+      --panel:    #12183a;
+      --line:     rgba(255, 255, 255, 0.13);
+      --text:     #dfe4ff;
+      --dim:      #9aa4cf;
+      --purple:   #8b5cf6;
+      --purple-l: #b794ff;
+      --cyan:     #35d0ff;
+      --amber:    #ffb238;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.7;
+      color: var(--text);
+      margin: 0;
+      min-height: 100vh;
+      background-color: var(--ink);
+      background-image:
+        radial-gradient(ellipse 90% 70% at 82% -12%, rgba(139, 92, 246, 0.42) 0%, rgba(53, 208, 255, 0.12) 38%, rgba(8, 10, 18, 0) 72%),
+        radial-gradient(ellipse 70% 60% at 0% 100%, rgba(53, 208, 255, 0.14) 0%, rgba(8, 10, 18, 0) 62%),
+        linear-gradient(160deg, #171f45 0%, #101632 46%, #080a12 100%);
+      background-attachment: fixed;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    .page {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: calc(44px + env(safe-area-inset-top, 0px)) 20px
+               calc(56px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 34px;
+    }
+
+    .mark {
+      flex: none;
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #1a2148, #101632);
+      border: 2px solid var(--line);
+      display: grid;
+      place-items: center;
+      filter: drop-shadow(0 2px 12px rgba(53, 208, 255, 0.22));
+    }
+
+    .mark span {
+      display: block;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 12px rgba(53, 208, 255, 0.9), inset -4px -4px 0 rgba(255, 255, 255, 0.55);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand h1 em {
+      font-style: normal;
+      color: var(--cyan);
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--amber);
+    }
+
+    h2 {
+      margin: 0 0 6px;
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+
+    .updated {
+      margin: 0 0 28px;
+      font-size: 0.88rem;
+      color: var(--dim);
+    }
+
+    section {
+      background: rgba(18, 24, 58, 0.5);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px 22px;
+      margin-bottom: 16px;
+    }
+
+    section h3 {
+      margin: 0 0 10px;
+      font-size: 1.12rem;
+      font-weight: 700;
+      color: var(--purple-l);
+      letter-spacing: 0.01em;
+    }
+
+    section p { margin: 0 0 12px; }
+    section p:last-child { margin-bottom: 0; }
+
+    section ul {
+      margin: 0 0 12px;
+      padding-left: 20px;
+    }
+
+    section li { margin-bottom: 7px; }
+    section li:last-child { margin-bottom: 0; }
+
+    a {
+      color: var(--cyan);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(53, 208, 255, 0.4);
+    }
+
+    a:hover { border-bottom-color: var(--cyan); }
+    a:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
+
+    strong { color: #fff; }
+
+    footer {
+      margin-top: 34px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      font-size: 0.84rem;
+      color: var(--dim);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      justify-content: space-between;
+    }
+
+    @media (max-width: 480px) {
+      .brand h1 { font-size: 1.6rem; }
+      h2 { font-size: 1.4rem; }
+      section { padding: 17px 16px; }
+      .page { padding-left: 15px; padding-right: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <header>
+      <div class="mark" aria-hidden="true"><span></span></div>
+      <div class="brand">
+        <h1>FiDo<em>-5</em></h1>
+        <p>Run. Shoot. Survive. Upgrade.</p>
+      </div>
+    </header>
+
+    <h2>Privacy Policy</h2>
+    <p class="updated">Last updated: 10 September 2026</p>
+
+    <section>
+      <p>
+        This privacy policy explains how <strong>FiDo-5</strong> ("the game", "the app", "we",
+        "us") handles information when you play it. It covers both the Android app and the
+        browser version at
+        <a href="https://civildigital.co.uk/fido5/">civildigital.co.uk/fido5</a>.
+        FiDo-5 is published by Civil Digital, based in the United Kingdom. By using the game,
+        you agree to the practices described below.
+      </p>
+    </section>
+
+    <section>
+      <h3>Information we collect</h3>
+      <p>
+        <strong>We do not collect any personal data ourselves.</strong> FiDo-5 has no accounts,
+        no sign-in, no leaderboards and no analytics. The game sends nothing to us, and we
+        operate no servers that receive information about you.
+      </p>
+      <p>
+        Your progress — coins, upgrades, missions, best scores and settings — is written to
+        storage on your own device. In the Android app this uses the system's app preferences;
+        in the browser version it uses local storage. It is not transmitted to us at any point.
+      </p>
+      <p>
+        Two third parties do receive information when you play the Android app, and both are
+        Google: the advertising described below, and, if you have Android backup switched on,
+        Google's own backup service. Neither is operated by us.
+      </p>
+    </section>
+
+    <section>
+      <h3>Advertising</h3>
+      <p>
+        The Android app shows advertisements supplied by <strong>Google AdMob</strong>. There
+        are two places they appear:
+      </p>
+      <ul>
+        <li>
+          A full-screen advertisement that may be shown on the results screen after a run has
+          ended. It never interrupts play.
+        </li>
+        <li>
+          An optional rewarded video that you choose to watch in exchange for doubling the
+          coins earned in a run. It is never shown unless you tap the button asking for it.
+        </li>
+      </ul>
+      <p>
+        To select and deliver these advertisements, Google may automatically collect information
+        such as your device's advertising identifier, device and app information, approximate
+        location derived from your IP address, and signals about how advertisements are
+        interacted with. <strong>This information is collected and processed by Google, not by
+        us.</strong> We never see it. For full details of what Google collects and how it is
+        used, see
+        <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">
+          how Google uses information from sites or apps that use its services</a>
+        and
+        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.
+      </p>
+      <p>
+        The browser version of FiDo-5 at civildigital.co.uk shows no advertisements at all.
+      </p>
+    </section>
+
+    <section>
+      <h3>Your advertising choices</h3>
+      <p>
+        If you are in the United Kingdom, the European Economic Area or Switzerland, you will be
+        asked for your choices about personalised advertising the first time the app requests an
+        advertisement. Until you have answered, no advertisement is requested.
+      </p>
+      <p>
+        <strong>You can change or withdraw those choices at any time</strong> from inside the
+        game: open <strong>Settings</strong> and choose <strong>Ad privacy choices</strong>.
+        That reopens the same consent form and your new choice takes effect immediately.
+      </p>
+      <p>
+        If you do not consent to personalised advertising, you will still see advertisements,
+        but they will be non-personalised — chosen from general context rather than from
+        information about you.
+      </p>
+      <p>
+        You can also reset or delete your advertising identifier entirely through your device's
+        own settings, under Privacy or Ads, and you can manage your Google-wide preferences at
+        <a href="https://myadcenter.google.com/" target="_blank" rel="noopener">Google My Ad Center</a>.
+      </p>
+    </section>
+
+    <section>
+      <h3>Purchases</h3>
+      <p>
+        The Android app offers one optional purchase, <strong>Remove ads</strong>, which turns
+        off the full-screen advertisement after a run. Rewarded videos remain available, because
+        you choose to watch those.
+      </p>
+      <p>
+        Payment is handled entirely by <strong>Google Play</strong>. We never see or receive your
+        payment details. The app asks Google Play only whether the purchase has been made, and
+        stores that answer on your device so the game knows to stop showing advertisements.
+        Google's handling of your purchase is covered by
+        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.
+      </p>
+    </section>
+
+    <section>
+      <h3>Backup</h3>
+      <p>
+        Android offers an automatic backup service, and FiDo-5 takes part in it so that your
+        progress can survive moving to a new phone. If backup is enabled on your device, your
+        saved progress may be copied to <strong>your own Google account</strong>, where it is
+        held under Google's terms rather than ours. We have no access to it.
+      </p>
+      <p>
+        You can turn this off for all apps, or for FiDo-5 specifically, in your device's backup
+        settings.
+      </p>
+    </section>
+
+    <section>
+      <h3>Sharing of information</h3>
+      <p>
+        We do not sell, rent or share personal information with anyone, because we do not hold
+        any. The only third-party services present in the app are Google AdMob for advertising,
+        Google Play for the optional purchase, and Android's backup service — each described
+        above, and each governed by
+        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.
+      </p>
+    </section>
+
+    <section>
+      <h3>Retention and deletion</h3>
+      <p>
+        Your progress stays on your device for as long as the app is installed. You can erase it
+        at any time from inside the game — <strong>Settings → Erase all progress</strong> — or by
+        clearing the app's storage or uninstalling it. Uninstalling also removes the record of
+        any purchase from the device, though your entitlement remains with your Google account
+        and is restored if you reinstall.
+      </p>
+      <p>
+        Because we hold no personal data on any server of ours, there is nothing for us to
+        delete on request and no facility for us to do so. For data held by Google in connection
+        with advertising, backup or your purchase, please use Google's own privacy controls.
+      </p>
+    </section>
+
+    <section>
+      <h3>Children</h3>
+      <p>
+        FiDo-5 is not directed at children. It is rated for teenage players and above, it is
+        declared to Google as not being child-directed, and we do not knowingly collect
+        information from children. If you believe a child has provided information through the
+        app, please contact us and we will help you address it with the relevant service.
+      </p>
+    </section>
+
+    <section>
+      <h3>Your rights</h3>
+      <p>
+        Under UK and EU data protection law you have rights of access, correction, erasure and
+        objection over personal data held about you. As we hold none, those rights are exercised
+        directly with Google in respect of the advertising, purchase and backup services
+        described above. If you are unsure where to start, contact us and we will point you to
+        the right control.
+      </p>
+    </section>
+
+    <section>
+      <h3>Security</h3>
+      <p>
+        Because your progress stays on your device and is never sent to us, there is no exposure
+        to network risk from our side. The security of data held on your device is governed by
+        your device's own operating system and settings.
+      </p>
+    </section>
+
+    <section>
+      <h3>Changes to this policy</h3>
+      <p>
+        We may update this policy from time to time. Any changes will be posted on this page
+        with a revised date above.
+      </p>
+    </section>
+
+    <section>
+      <h3>Contact</h3>
+      <p>
+        If you have any questions about this privacy policy, contact us at
+        <a href="mailto:info@civildigital.co.uk">info@civildigital.co.uk</a>.
+      </p>
+    </section>
+
+    <footer>
+      <span>FiDo-5 &middot; A Civil Digital game</span>
+      <span><a href="/fido5/">Play FiDo-5</a> &middot; <a href="/">Civil Digital</a></span>
+    </footer>
+
+  </div>
+</body>
+</html>
