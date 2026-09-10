@@ -34,6 +34,12 @@ export class UI {
     this.droneYaw = 0.35;
     this.droneT = 0;
     this.debugOn = false;
+    // Set while the sector intermission is up. The loadout and upgrade panels
+    // are shared with the menu, and a couple of things they do — offering to
+    // start a run, leaving the stats they changed on the shelf — are wrong
+    // when there is a run paused behind them.
+    this.midRun = false;
+    this.sector = null;
     this.tapCount = 0;
     this.tapTimer = 0;
 
@@ -46,6 +52,7 @@ export class UI {
       missions: $('screen-missions'),
       settings: $('screen-settings'),
       pause: $('screen-pause'),
+      sector: $('screen-sector'),
       results: $('screen-results'),
       daily: $('screen-daily'),
       debug: $('screen-debug'),
@@ -74,10 +81,14 @@ export class UI {
     for (const k in this.screens) this.screens[k].hidden = k !== name;
     this.current = name;
     this.hud.hidden = true;
-    // Focus the first control so keyboard and screen-reader users land somewhere.
-    const target = this.screens[name] && this.screens[name].querySelector('button:not([hidden]), select, input');
+    // Focus a control so keyboard and screen-reader users land somewhere. A
+    // screen can nominate which one; otherwise it is the first.
+    const target = this.screens[name] && (this.screens[name].querySelector('[data-autofocus]')
+      || this.screens[name].querySelector('button:not([hidden]), select, input'));
     if (target) setTimeout(() => target.focus({ preventScroll: true }), 30);
     if (name === 'menu') this.refreshMenu();
+    // Coming back from Upgrades, the wallet and the resupply lines are stale.
+    if (name === 'sector' && this.sector) this.buildSector();
   }
 
   showHud() {
@@ -114,6 +125,10 @@ export class UI {
     $('btn-restart').addEventListener('click', () => { this.audio.play('ui.select'); this.hooks.restart(); });
     $('btn-quit').addEventListener('click', () => { this.audio.play('ui.back'); this.hooks.quit(); });
     $('btn-pause-settings').addEventListener('click', () => { this.audio.play('ui.select'); this.openSettings(); });
+
+    $('btn-sec-go').addEventListener('click', () => { this.audio.play('ui.select'); this.hooks.continueRun(); });
+    $('btn-sec-upgrades').addEventListener('click', () => { this.audio.play('ui.select'); this.openUpgrades('sector'); });
+    $('btn-sec-loadout').addEventListener('click', () => { this.audio.play('ui.select'); this.openLoadout('sector'); });
 
     $('btn-again').addEventListener('click', () => { this.audio.play('ui.select'); this.hooks.startRun(); });
     $('btn-res-loadout').addEventListener('click', () => { this.audio.play('ui.select'); this.openLoadout('menu'); });
@@ -243,6 +258,83 @@ export class UI {
     if (this.current === 'drone') this.drawDrone(dt);
   }
 
+  /* ---- Sector intermission ----------------------------------------------
+     Shown once a gate is cleared, with the run paused behind it. Its job is
+     to say what the clear gave back and to be the one place mid-run where the
+     loadout and the upgrade tree can be changed. */
+
+  openSector(info) {
+    this.sector = info;
+    this.midRun = true;
+    this.buildSector();
+    // `from: null` keeps the back stack empty, so the panels opened from here
+    // return to this screen and Back never walks into the main menu with a run
+    // still paused behind it.
+    this.show('sector', { from: null });
+    this.audio.play('ui.select');
+  }
+
+  closeSector() {
+    this.midRun = false;
+    this.sector = null;
+    this.stack.length = 0;
+  }
+
+  buildSector() {
+    const info = this.sector;
+    if (!info) return;
+    $('sec-title').textContent = `Sector ${info.gate} clear`;
+    $('sec-kill').innerHTML = '';
+    const who = document.createElement('span');
+    who.textContent = info.boss + ' is down';
+    const small = document.createElement('small');
+    small.textContent = `Gate ${info.gate} of the run`;
+    $('sec-kill').append(who, small);
+
+    const stats = $('sec-stats');
+    stats.innerHTML = '';
+    const row = (k, v) => {
+      const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = v;
+      stats.append(dt, dd);
+    };
+    row('Clear bonus', fmt(info.score) + ' pts');
+    row('Salvage', fmt(info.coins) + ' coins');
+    row('Banked and spendable', fmt(this.sv.coins) + ' coins');
+
+    /* Only what was actually restored is listed. A player who cleared the gate
+       untouched should not be told their health was topped up. */
+    const supply = $('sec-supply');
+    supply.innerHTML = '';
+    const line = (text, cls) => {
+      const li = document.createElement('li');
+      if (cls) li.className = cls;
+      li.innerHTML = text;
+      supply.appendChild(li);
+    };
+    const LABELS = {
+      health: '<b>Health</b> restored to full',
+      energy: '<b>Energy</b> cell recharged',
+      shield: '<b>Shield</b> plating replaced',
+      lives: `<b>Lives</b> back to ${SECTORS.lives}`,
+      gadget: '<b>Gadget</b> off cooldown',
+      rescue: '<b>FiDo-5</b> rescue rearmed',
+    };
+    for (const k of info.supplied || []) if (LABELS[k]) line(LABELS[k]);
+    if (!supply.children.length) line('<b>Everything</b> was already at full');
+    line(`<b>Shield</b> holds for ${SECTORS.clearShield} seconds once you set off`, 'is-shield');
+
+    $('sec-hint').textContent = this.sv.coins > 0
+      ? 'Coins earned this run are already banked, so anything you buy now applies to the rest of it.'
+      : 'Upgrades and the loadout can both be changed here, and apply to the rest of this run.';
+    this.refreshMenu();
+  }
+
+  /* Called whenever a panel changes something the run is already using. */
+  _restat() {
+    if (this.midRun && this.hooks.statsChanged) this.hooks.statsChanged();
+  }
+
   /* ---- Loadout ---------------------------------------------------------- */
 
   openLoadout(from) { this.buildLoadout(); this.show('loadout', from ? { from } : {}); }
@@ -266,7 +358,7 @@ export class UI {
       ], ps.effect ? ps.effectName : null);
       card.addEventListener('click', () => {
         sv.loadout.weapon = w.id; persist();
-        this.audio.play('ui.select'); this.buildLoadout();
+        this.audio.play('ui.select'); this._restat(); this.buildLoadout();
       });
       wrap.appendChild(card);
     }
@@ -278,7 +370,7 @@ export class UI {
       const card = this._card(g.name, g.blurb, sv.loadout.gadget === g.id, [['COOLDOWN', g.cooldown + 's']]);
       card.addEventListener('click', () => {
         sv.loadout.gadget = g.id; persist();
-        this.audio.play('ui.select'); this.buildLoadout();
+        this.audio.play('ui.select'); this._restat(); this.buildLoadout();
       });
       gw.appendChild(card);
     }
@@ -297,7 +389,7 @@ export class UI {
       ]);
       card.addEventListener('click', () => {
         sv.loadout.core = c.id; persist();
-        this.audio.play('ui.select'); this.buildLoadout();
+        this.audio.play('ui.select'); this._restat(); this.buildLoadout();
       });
       cw.appendChild(card);
     }
@@ -309,10 +401,14 @@ export class UI {
       const card = this._skinCard(sk, sv.loadout.skin === sk.id);
       card.addEventListener('click', () => {
         sv.loadout.skin = sk.id; persist();
-        this.audio.play('ui.select'); this.buildLoadout();
+        this.audio.play('ui.select'); this._restat(); this.buildLoadout();
       });
       sw.appendChild(card);
     }
+    // "Start run" would restart the run that is paused behind the
+    // intermission, which is the opposite of what a player reaching this
+    // screen mid-run wants.
+    $('ld-foot').hidden = this.midRun;
     this.refreshMenu();
   }
 
@@ -456,6 +552,7 @@ export class UI {
         buy.addEventListener('click', () => {
           if (buyUpgrade(this.sv, group, def.id)) {
             this.audio.play('ui.buy');
+            this._restat();
             this.buildUpgrades();
           } else {
             this.audio.play('ui.deny');

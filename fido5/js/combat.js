@@ -586,8 +586,11 @@ export function updatePowerUps(dt, ctx) {
     run.gadgetShield -= dt;
     if (run.gadgetShield <= 0) changed = true;
   }
+  // The sector-clear shield is its own timer rather than the gadget's, so
+  // clearing a gate never reads as the gadget being spent or on cooldown.
+  if (run.clearShield > 0) run.clearShield = Math.max(0, run.clearShield - dt);
   if (changed) recomputeMods(run);
-  player.powerInvuln = !!run.mods.invuln || run.gadgetShield > 0;
+  player.powerInvuln = !!run.mods.invuln || run.gadgetShield > 0 || run.clearShield > 0;
 }
 
 export function recomputeMods(run) {

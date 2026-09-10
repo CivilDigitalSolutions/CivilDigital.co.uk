@@ -54,6 +54,8 @@ export class Game {
     this.debugSpeedMul = 1;
     this.touchControls = false;   // set by the interface once it knows
     this.debugDiffBonus = 0;
+    this.sectorDue = false;       // an intermission is waiting for the step loop to end
+    this.sectorInfo = null;       // what the intermission has to report
     this.frameCount = 0;
     this.fpsSamples = [];
     this.autoQuality = true;
@@ -122,6 +124,12 @@ export class Game {
       actives: new Map(),
       gadgetCool: 0,
       gadgetShield: 0,
+      clearShield: 0,          // s of shielding granted by a sector clear
+      // Coins and parts are normally banked once, at the end of the run. The
+      // sector intermission lets them be spent mid-run, so anything already
+      // moved into the save is recorded here and commitRun credits the rest.
+      banked: 0,
+      bankedParts: 0,
       empFlash: 0,
       energyWarn: 0,
       incoming: [],
@@ -135,6 +143,7 @@ export class Game {
       chunkRiskX: 0,
       deathT: 0,
       seenElite: false,
+      clearT: 0,               // celebration left to run before the intermission
 
       // Sector / boss state. `lives` is spent only in a boss fight; the
       // runner between gates is as lethal as it ever was.
@@ -219,6 +228,17 @@ export class Game {
         steps++;
       }
       if (steps === MAX_STEPS) this.acc = 0;     // give up rather than spiral
+      // A pit swallows a player mid-celebration now and again: the clear
+      // shield stops damage, not a fall. If the run ended in that second and a
+      // half, the results screen is what the player is owed, not a resupply
+      // panel opening on top of it.
+      if (this.sectorDue) {
+        this.sectorDue = false;
+        if (this.state === 'running' && !this.player.dead) {
+          this.pause();
+          this.onEvent({ type: 'sectorClear', sector: this.sectorInfo });
+        }
+      }
       this._trackPerformance(elapsed);
       this.render();
     } else if (this.state === 'paused') {
@@ -262,6 +282,14 @@ export class Game {
     this.onEvent({ type: 'resumed' });
   }
 
+  /* Leaving the intermission. The shield is re-armed rather than left ticking
+     through however long the player spent in the upgrade tree: it exists to
+     cover the restart, and the restart is the moment they press Continue. */
+  resumeFromSector() {
+    if (this.run) this.run.clearShield = SECTORS.clearShield;
+    this.resume();
+  }
+
   stop() {
     this.state = 'idle';
     this.input.enabled = false;
@@ -283,6 +311,13 @@ export class Game {
     r.shake = Math.max(0, r.shake - dt * 26);
     r.energyWarn = Math.max(0, r.energyWarn - dt);
     r.gadgetCool = Math.max(0, r.gadgetCool - dt);
+    if (r.clearT > 0) {
+      r.clearT -= dt;
+      // Raising the event from inside a fixed step would pause the game while
+      // the step loop is still running, and the remaining steps would advance
+      // a run the player can no longer see. Flag it and let tick() do it.
+      if (r.clearT <= 0) { r.clearT = 0; this.sectorDue = true; }
+    }
     r.promptT = Math.max(0, r.promptT - dt);
     if (r.promptT <= 0) r.prompt = null;
     for (let i = r.arcs.length - 1; i >= 0; i--) {
@@ -569,13 +604,83 @@ export class Game {
     r.gateT = SECTORS.gateSeconds;
     r.score += def.score * this.mult();
     r.coins += def.coins;
-    this.sv.coins += def.coins;
-    const heal = this.player.maxHealth * SECTORS.clearHeal;
-    this.player.health = Math.min(this.player.maxHealth, this.player.health + heal);
+    const supplied = this.resupply();
     this.audio.startMusic('run');
     this.announce('SECTOR CLEAR', `+${def.score.toLocaleString('en-GB')}  +${def.coins}`, '#ffe66d');
     this.drone.say('playerKill', true);
+    // The intermission waits for the explosion and the banner. Until then the
+    // run carries on, shielded, so the clear reads as a moment rather than as
+    // the screen being taken away mid-kill.
+    r.clearT = SECTORS.clearPause;
+    this.sectorInfo = {
+      gate: r.gate, boss: def.name, score: def.score, coins: def.coins, supplied,
+    };
     this.onEvent({ type: 'bossCleared', gate: r.gate });
+  }
+
+  /* Everything the fight spent, handed back. Called on a clear, and reported
+     so the intermission can say what it actually did rather than assert a
+     fixed list — a player at full health should not be told they were healed. */
+  resupply() {
+    const r = this.run;
+    const p = this.player;
+    const out = [];
+    if (p.health < p.maxHealth) out.push('health');
+    p.health = p.maxHealth;
+    if (p.energy < p.energyMax) out.push('energy');
+    p.energy = p.energyMax;
+    if (p.maxShield > 0 && p.shield < p.maxShield) out.push('shield');
+    p.shield = p.maxShield;
+    if (r.lives < SECTORS.lives) out.push('lives');
+    r.lives = SECTORS.lives;
+    if (r.gadgetCool > 0) out.push('gadget');
+    r.gadgetCool = 0;
+    if (this.drone.rescueCool > 0) out.push('rescue');
+    this.drone.rescueCool = 0;
+    r.clearShield = SECTORS.clearShield;
+    p.invuln = Math.max(p.invuln, 0.5);
+    this.particles.shieldRing(p.x, p.midY, 'C');
+    // Coins and parts earned so far become spendable at the intermission.
+    this.bank();
+    return out;
+  }
+
+  /* Move what the run has earned into the save, once. Only the difference is
+     credited, so a second call — or commitRun at the end — cannot pay twice. */
+  bank() {
+    const r = this.run;
+    this.sv.coins += r.coins - r.banked;
+    this.sv.parts += r.parts - r.bankedParts;
+    r.banked = r.coins;
+    r.bankedParts = r.parts;
+    persist();
+  }
+
+  /* Rebuild the live run from the save after an upgrade or a loadout change at
+     the intermission. Health and energy are refilled rather than carried: the
+     pools may have just changed size, and the player is at a checkpoint. */
+  applyStats() {
+    const st = resolveStats(this.sv);
+    const r = this.run;
+    const p = this.player;
+    this.stats = st;
+    p.stats = st;
+    p.maxHealth = st.operative.maxHealth;
+    p.energyMax = st.operative.energyMax;
+    p.maxShield = Math.max(st.operative.startShield, st.drone.shieldStrength);
+    p.health = p.maxHealth;
+    p.energy = p.energyMax;
+    p.shield = p.maxShield;
+    this.drone.stats = st;
+    this.drone.skin = this.sv.loadout.skin;
+    r.weapon = st.weapon;
+    r.drone = st.drone;
+    r.gadget = st.gadget;
+    r.operative = st.operative;
+    // A gadget swap must not carry the old one's cooldown, and the shield
+    // gadget's timer belongs to a gadget that may no longer be equipped.
+    r.gadgetCool = 0;
+    r.gadgetShield = 0;
   }
 
   /* A death inside an arena costs a life and restarts the fight. Outside one

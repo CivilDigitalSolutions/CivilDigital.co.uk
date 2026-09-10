@@ -341,7 +341,7 @@ body {
 .pad {
   position: absolute; inset: 0; pointer-events: none;
   --btn-main: clamp(68px, calc(13.5vh + 2px), 90px); /* jump and fire: the held pair */
-  --btn-alt:  clamp(56px, 11.5vh, 78px); /* gadget */
+  --btn-alt:  clamp(62px, calc(11.5vh + 6px), 84px); /* gadget */
   --btn-gap:  .5rem;
   --pad-r:    calc(var(--safe-r) + .7rem);
   --pad-b:    calc(var(--safe-b) + 1.1rem);
@@ -439,7 +439,7 @@ body {
 /* Health bars sit low-left, so on very short screens shrink the pad instead. */
 @media (max-height: 400px) {
   /* Only these numbers change; every size and position above follows them. */
-  .pad { --btn-main: 70px; --btn-alt: 50px; --btn-gap: .4rem;
+  .pad { --btn-main: 70px; --btn-alt: 56px; --btn-gap: .4rem;
          --pad-b: calc(var(--safe-b) + .7rem); }
   .stick__base { width: 92px; height: 92px; margin: -46px 0 0 -46px;
                  left: calc(var(--safe-l) + 3.6rem); bottom: calc(var(--safe-b) + 3.2rem); }
@@ -591,6 +591,60 @@ body {
 .dialog h2 {
   font-size: clamp(1.1rem, 4vh, 1.5rem); text-align: center;
   letter-spacing: .06em; text-transform: uppercase; margin-bottom: .4rem;
+}
+
+/* ---- Sector intermission ----------------------------------------------
+   Continue is the button a player reaching for anything is reaching for, so
+   it takes the full width and the whole row; the two that lead away from the
+   run share the one below. It is also first in the DOM, which is what makes
+   it the focused control and the one Enter presses. */
+.pfoot--sector { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.pfoot--sector .btn--wide { grid-column: 1 / -1; }
+.sec-kill {
+  text-align: center; font: 800 clamp(1.1rem, 4.4vh, 1.7rem)/1.2 var(--ui);
+  color: #fff; margin: .3rem 0 .1rem; letter-spacing: .03em; text-transform: uppercase;
+  text-shadow: 0 0 14px rgba(139,92,246,.7);
+}
+.sec-kill small {
+  display: block; font: 700 .62rem/1.6 var(--ui); letter-spacing: .22em; color: var(--dim);
+  text-transform: uppercase; text-shadow: none;
+}
+/* Short lines, so they wrap into columns on a wide screen rather than each
+   taking a full 1280px row. The shield keeps a row of its own: it is the one
+   line that describes what happens next rather than what just happened. */
+.sec-supply {
+  display: grid; gap: .3rem; margin: .1rem 0 0; padding: 0; list-style: none;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+.sec-supply li {
+  display: flex; align-items: baseline; gap: .5rem;
+  font-size: .78rem; background: rgba(46,230,166,.08);
+  border: 1px solid rgba(46,230,166,.32); border-radius: 8px; padding: .34rem .6rem;
+}
+.sec-supply li::before { content: '+'; color: var(--green); font-weight: 800; }
+.sec-supply li b { color: var(--green); font-weight: 700; }
+.sec-supply .is-shield {
+  grid-column: 1 / -1;
+  background: rgba(53,208,255,.09); border-color: rgba(53,208,255,.36);
+}
+.sec-supply .is-shield::before { content: '\25C6'; color: var(--cyan); }
+.sec-supply .is-shield b { color: var(--cyan); }
+
+/* A landscape phone is about 390px tall and the panel has a fixed header and
+   footer, which leaves roughly 240px for the body. Everything here is
+   readable at these sizes; the point is to fit the whole resupply rather
+   than slice the second row in half at the footer edge, which reads as
+   broken rather than as "there is more below". */
+@media (max-height: 470px) {
+  #screen-sector .pbody { padding: .45rem .8rem; }
+  .sec-kill { font-size: 1.02rem; margin: .05rem 0 0; }
+  .sec-kill small { font-size: .55rem; line-height: 1.5; letter-spacing: .18em; }
+  #screen-sector .statlist--res { font-size: .74rem; margin: .45rem 0; }
+  #screen-sector .grouphead { margin: .5rem 0 .3rem; }
+  .sec-supply { gap: .26rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+  .sec-supply li { padding: .26rem .5rem; font-size: .72rem; }
+  #screen-sector .note { margin-top: .4rem; font-size: .68rem; }
+  .pfoot--sector { padding: .45rem .8rem; gap: .4rem; }
 }
 
 /* ---- Results ---------------------------------------------------------- */

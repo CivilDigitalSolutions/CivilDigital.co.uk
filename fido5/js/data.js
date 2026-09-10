@@ -647,7 +647,16 @@ export const SECTORS = {
   firstGateSeconds: 75,   // into the first run before the Warden appears
   gateSeconds: 95,        // between gates thereafter
   lives: 3,               // spent only in boss fights, never in the runner
-  clearHeal: 0.35,        // fraction of max health restored on a clear
+
+  /* Clearing a gate is a checkpoint, not just a kill. Everything the fight
+     spent comes back — health, energy, the shield pool, the gadget, FiDo-5's
+     rescue and the lives themselves, so each boss is met with the same three
+     the first one was. `clearShield` then covers the moment the runner starts
+     again, which is otherwise the most dangerous second in the game: full
+     speed, a fresh chunk, and a player still reading the screen. It does not
+     cover a fall, exactly as the shield gadget does not. */
+  clearShield: 6,         // s of shielding as the run resumes
+  clearPause: 1.5,        // s of celebration before the intermission opens
   arenaMinCols: 20,       // arena never narrower than the tightest viewport
   arenaMaxCols: 56,
   arenaPadCols: 2,        // breathing room inside the walls

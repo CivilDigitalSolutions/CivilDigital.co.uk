@@ -96,6 +96,10 @@ const input = new Input(stage, {
   sensitivity: sv.settings.sensitivity ?? 1,
   onPause: () => {
     if (game.state === 'running') doPause();
+    // The intermission is a paused run too, and so is any panel opened from
+    // it. Resuming out of either has to go through Continue, or the interface
+    // is left thinking a run is still on hold behind it.
+    else if (ui.midRun) doSectorContinue();
     else if (game.state === 'paused') doResume();
   },
   onDebug: () => {
@@ -128,6 +132,8 @@ const ui = new UI({
     quit: doQuit,
     applySettings: applySettings,
     setTouchControls: (on) => { game.touchControls = on; },
+    continueRun: doSectorContinue,
+    statsChanged: doStatsChanged,
     debug: makeDebugHooks(),
   },
 });
@@ -167,6 +173,7 @@ function applySettings() {
 
 function doStart() {
   audio.init();
+  ui.closeSector();
   ui.buildHudIcons(sv);
   ui.applyButtonMode();
   ui.showHud();
@@ -188,6 +195,22 @@ function doRestart() {
   doStart();
 }
 
+/* Leave the sector intermission and pick the run back up. */
+function doSectorContinue() {
+  ui.closeSector();
+  ui.buildHudIcons(sv);
+  ui.showHud();
+  game.resumeFromSector();
+}
+
+/* An upgrade bought, or a loadout changed, while a run is paused behind the
+   intermission. The run is rebuilt from the save rather than waiting for the
+   next one to start. */
+function doStatsChanged() {
+  if (!game.run) return;
+  game.applyStats();
+}
+
 function doQuit() {
   game.stop();
   ui.stack.length = 0;
@@ -196,7 +219,12 @@ function doQuit() {
 }
 
 function onGameEvent(ev) {
+  if (ev.type === 'sectorClear') {
+    ui.openSector(ev.sector);
+    return;
+  }
   if (ev.type === 'gameOver') {
+    ui.closeSector();
     const outcome = commitRun(sv, ev.run);
     ui.showResults(ev.run, outcome);
     if (sv.settings.music) audio.startMusic('menu');

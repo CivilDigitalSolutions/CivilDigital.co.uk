@@ -266,8 +266,9 @@ export function commitRun(sv, run) {
   s.rescues += run.rescues;
   s.bestStreak = Math.max(s.bestStreak, run.bestStreak);
 
-  sv.coins += run.coins;
-  sv.parts += run.parts;
+  // Anything the sector intermission already made spendable is not paid twice.
+  sv.coins += run.coins - (run.banked || 0);
+  sv.parts += run.parts - (run.bankedParts || 0);
   sv.keys = Math.max(0, sv.keys + run.keysGained - run.keysUsed);
 
   const newBestScore = run.score > sv.best.score;

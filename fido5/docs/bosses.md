@@ -29,8 +29,9 @@ and squeeze the sectors together exactly when the player is least able to cope.
 |---|---|---|
 | First gate | 75 s into the run | `SECTORS.firstGateSeconds` |
 | Every gate after | 95 s | `SECTORS.gateSeconds` |
-| Lives | 3 | `SECTORS.lives` |
-| Healed on a clear | 35 % of max | `SECTORS.clearHeal` |
+| Lives | 3, refilled at every gate | `SECTORS.lives` |
+| Shield on a clear | 6 s | `SECTORS.clearShield` |
+| Celebration before the intermission | 1.5 s | `SECTORS.clearPause` |
 
 A gate runs through three states:
 
@@ -41,8 +42,9 @@ A gate runs through three states:
 2. **locked** — the player has crossed into the arena. The camera freezes, the
    walls come in, auto-run is suspended and the boss spawns.
 3. **clear** — the boss is dead. The camera is released, auto-run is restored
-   to the player's own setting, score and coins are paid, health is topped up
-   and the gate counter advances.
+   to the player's own setting, score and coins are paid, the player is
+   resupplied and the gate counter advances. A second and a half later the run
+   pauses on the sector intermission (below).
 
 A moving fight (`arena: 'moving'`) skips the arena entirely: no walls, no
 camera freeze, the encounter director left running and auto-run untouched. The
@@ -90,8 +92,9 @@ charge, still crosses; the wall only exists while the boss is in front.
 **Lives are a boss mechanic and nothing else.** A death inside an arena costs
 one of three lives and restarts the fight with the boss at full health. A
 death anywhere else on the track ends the run exactly as it always has. Lives
-never carry over between gates — they are the budget for *this* fight — and
-the count is shown in the HUD only while a fight is running.
+never carry over between gates — they are the budget for *this* fight, so a
+clear refills them — and the count is shown in the HUD only while a fight is
+running.
 
 **Auto-run is off for a walled fight, and on for a running one.** A fixed arena
 and a player who cannot stop pressing forward is a player pinned against the far
@@ -102,6 +105,48 @@ a running fight is the wrong shape.
 **FiDo-5 keeps talking.** The drone announces the threat on approach and calls
 the clear. Its rescue is still available, which means the real cost of a bad
 fight is the rescue cooldown, not just health.
+
+### A clear is a checkpoint
+
+Everything the fight spent comes back on the kill: health, energy, the shield
+pool, the gadget cooldown, FiDo-5's rescue and the lives. `Game.resupply()`
+does it in one place and returns *what it actually restored*, so the
+intermission can list the real changes rather than assert a fixed set — a
+player who cleared the gate untouched is not told they were healed.
+
+`clearShield` then covers the restart. Resuming the runner is the most
+dangerous second in the game — full speed, a fresh chunk, and a player still
+reading the screen — so six seconds of shielding follow the player out of the
+gate. It is re-armed when they press Continue rather than left ticking through
+however long they spent in the upgrade tree, and it is its own timer rather
+than the gadget's, so a clear never reads as the gadget being spent. Like the
+shield gadget it stops damage, not a fall.
+
+### The sector intermission
+
+With the run paused behind it, the intermission is the one place mid-run where
+the loadout and the upgrade tree can be changed. Three things make that work:
+
+- **Coins are banked.** Normally a run's coins reach the save only at the end.
+  `Game.bank()` moves what has been earned so far across and records it in
+  `run.banked`, so `commitRun` credits only the remainder and nothing is paid
+  twice. (Boss coins used to be credited at the clear *and* again at the end;
+  banking is what fixed it.)
+- **Changes reach the live run.** `Game.applyStats()` rebuilds the player, the
+  drone and the run's cached stat blocks from the save. Health and energy are
+  refilled rather than carried, because the pools may have just changed size
+  and the player is at a checkpoint anyway.
+- **The shared panels behave.** The loadout screen's "Start run" footer is
+  hidden while a run is paused behind it, and the back stack is empty when the
+  intermission opens, so Back returns here and never walks out to the main
+  menu with a run still on hold.
+
+The hand-off is deliberately not raised from inside a fixed timestep: pausing
+mid-step would leave the remaining steps advancing a run the player can no
+longer see. `update()` sets a flag and `tick()` acts on it once the step loop
+has finished — and skips it if the run ended during the celebration, because a
+pit still swallows a shielded player and the results screen is what they are
+owed.
 
 ## 4. The roster
 
@@ -267,7 +312,7 @@ twice and the fight cannot stall on it.
 
 | What | Where |
 |---|---|
-| Gate timings, lives, heal, arena widths | `SECTORS` in `data.js` |
+| Gate timings, lives, clear shield, arena widths | `SECTORS` in `data.js` |
 | Per-boss health, armour, telegraph, recovery, attacks | `BOSSES` in `data.js` |
 | Per-attack damage, speed, spread, counts | `BOSS_ATTACKS` in `data.js` |
 | Per-boss parts (relays, pods, drones) | `parts` block in the definition |
@@ -275,6 +320,8 @@ twice and the fight cannot stall on it.
 | Behaviour and the phase machine | `boss.js` |
 | Arena template | `ARENA` in `chunks.js` |
 | Gate states and rewards | `Game._sector`, `_startFight`, `_clearFight`, `_bossDeath` |
+| Resupply, banking, mid-run stats | `Game.resupply`, `bank`, `applyStats`, `resumeFromSector` |
+| Sector intermission | `#screen-sector` in `play.html`, `UI.openSector` / `buildSector`, `.sec-*` in `css/game.css` |
 | Drawing | `Renderer._boss`, `_bossArena`, `_bossBar` |
 | Lives HUD | `play.html`, `.hud-lives` in `css/game.css`, `UI.updateHud` |
 

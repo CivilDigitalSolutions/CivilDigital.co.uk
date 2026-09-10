@@ -162,7 +162,7 @@
       <h3 class="grouphead">FiDo-5 skin</h3>
       <div class="cards cards--skins" id="ld-skins"></div>
     </div>
-    <footer class="pfoot"><button class="btn btn--play btn--wide" data-start>Start run</button></footer>
+    <footer class="pfoot" id="ld-foot"><button class="btn btn--play btn--wide" data-start>Start run</button></footer>
   </section>
 
   <!-- ==================== Upgrades ==================== -->
@@ -309,6 +309,32 @@
       <button class="btn btn--menu btn--wide" id="btn-pause-settings">Settings</button>
       <button class="btn btn--menu btn--wide" id="btn-quit">Main menu</button>
     </div>
+  </section>
+
+  <!-- ==================== Sector intermission ====================
+       Between a boss clear and the rest of the run. The run is paused behind
+       it, so this is the one place mid-run where upgrades and the loadout can
+       be changed — coins earned so far have been banked and are spendable. -->
+  <section class="layer screen screen--panel" id="screen-sector" hidden>
+    <header class="phead">
+      <h2 id="sec-title">Sector clear</h2>
+      <span class="phead__wallet">
+        <span class="ico ico-coin" aria-hidden="true"></span><span data-coins>0</span>
+        <span class="ico ico-part" aria-hidden="true"></span><span data-parts>0</span>
+      </span>
+    </header>
+    <div class="pbody">
+      <p class="sec-kill" id="sec-kill"></p>
+      <dl class="statlist statlist--res" id="sec-stats"></dl>
+      <h3 class="grouphead">Resupply</h3>
+      <ul class="sec-supply" id="sec-supply"></ul>
+      <p class="note" id="sec-hint"></p>
+    </div>
+    <footer class="pfoot pfoot--sector">
+      <button class="btn btn--play btn--wide" id="btn-sec-go" data-autofocus>Continue the run</button>
+      <button class="btn btn--menu" id="btn-sec-upgrades">Upgrades</button>
+      <button class="btn btn--menu" id="btn-sec-loadout">Loadout</button>
+    </footer>
   </section>
 
   <!-- ==================== Results ==================== -->
