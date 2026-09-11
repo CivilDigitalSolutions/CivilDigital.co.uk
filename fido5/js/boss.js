@@ -464,7 +464,12 @@ export class Boss {
     // A hovering boss also tracks the player's height, slowly, so it cannot be
     // parked on one tier and ignored. A moving one flies its own profile.
     if (this.def.float && !this.moving) {
-      const wantY = clamp(p.midY, WORLD.tierY[2] - 4, WORLD.tierY[0] - 26);
+      /* The floor of the hover has to put the beam through a player standing
+         on the street rather than over their head. Their centre sits 11.5px
+         above the deck and the beam reaches 9px either side of the node, so a
+         node bottoming out 26px up missed a stationary target by five pixels.
+         At 18 it crosses the chest, and a slide still ducks under it. */
+      const wantY = clamp(p.midY, WORLD.tierY[2] - 4, WORLD.tierY[0] - 18);
       this.y += Math.sign(wantY - this.y) * Math.min(Math.abs(wantY - this.y), 16 * dt);
     }
     // A walker turns to face whoever it is fighting. A gunship escorting the

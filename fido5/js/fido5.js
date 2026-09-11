@@ -321,7 +321,7 @@ export class Fido {
             this.say('target');
           }
         } else if (this.fireCool <= 0 && t.alive && t.dying <= 0) {
-          const rate = d.fireRate * (this.boost > 0 ? 2 : 1);
+          const rate = d.fireRate * (this.boost > 0 ? 3 : 1);
           this.fireCool = 1 / rate;
           fireDroneShot(ctx, this, t);
         }

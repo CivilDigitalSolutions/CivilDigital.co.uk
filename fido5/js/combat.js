@@ -8,7 +8,7 @@
    something that chases you down a corridor.
    ========================================================================== */
 
-import { WORLD, ELITE, POWERUPS, DIFFICULTY } from './data.js';
+import { WORLD, ELITE, POWERUPS, DIFFICULTY, OVERHEAT } from './data.js';
 import { pick } from './world.js';
 
 const FLYERS = { drifter: 1, shielder: 1, bomber: 1 };
@@ -228,6 +228,7 @@ export function tryPlayerFire(ctx, dt, wantFire) {
   const { player, run } = ctx;
   player.firing = false;
   if (player.dead || player.state === 'rescue') return;
+  if (player.overheat > 0) return;          // the weapon is dead, not merely empty
   if (!wantFire) return;
   if (player.fireCool > 0) return;
 
@@ -238,8 +239,16 @@ export function tryPlayerFire(ctx, dt, wantFire) {
   const cost = free ? 0 : w.cost;
 
   if (player.energy < cost) {
-    // Out of energy: a dry click, and the HUD flashes the bar.
+    /* The cell is spent. Whatever was left in it vents at once and the weapon
+       goes offline: the bar flashes, the banner comes up, and the muzzle
+       steams until it has cooled. */
     run.energyWarn = 0.4;
+    if (player.overheat <= 0) {
+      player.energy = 0;
+      player.overheat = OVERHEAT.lockout;
+      player.cooling = false;
+      ctx.audio.play('overheat');
+    }
     return;
   }
 
@@ -568,10 +577,15 @@ export function updateIncoming(dt, ctx) {
 export function applyPowerUp(ctx, id) {
   const def = POWERUPS.find((p) => p.id === id);
   if (!def) return null;
-  ctx.run.actives.set(id, { def, t: def.duration });
+  /* A gadget power-up is named after the gadget it is boosting, because that
+     is whichever one the player took into the run — not a fixed one. */
+  const label = def.mods && def.mods.freeGadget && ctx.run.gadget
+    ? ctx.run.gadget.short + ' Overdrive'
+    : def.name;
+  ctx.run.actives.set(id, { def, t: def.duration, label });
   recomputeMods(ctx.run);
   ctx.audio.play('powerup');
-  ctx.floater(ctx.player.x, ctx.player.y - 34, def.name, def.colour, 1.2);
+  ctx.floater(ctx.player.x, ctx.player.y - 34, label, def.colour, 1.2);
   return def;
 }
 
@@ -594,12 +608,13 @@ export function updatePowerUps(dt, ctx) {
 }
 
 export function recomputeMods(run) {
-  const m = { fireRate: 1, damage: 1, magnet: 0, invuln: false, freeEnergy: false, freeGadget: null };
+  const m = { fireRate: 1, damage: 1, magnet: 0, magnetAll: 0, invuln: false, freeEnergy: false, freeGadget: null };
   for (const [, a] of run.actives) {
     const mod = a.def.mods || {};
     if (mod.fireRate) m.fireRate *= mod.fireRate;
     if (mod.damage) m.damage *= mod.damage;
     if (mod.magnet) m.magnet = Math.max(m.magnet, mod.magnet);
+    if (mod.magnetAll) m.magnetAll = Math.max(m.magnetAll, mod.magnetAll);
     if (mod.invuln) m.invuln = true;
     if (mod.freeEnergy) m.freeEnergy = true;
     if (mod.freeGadget) m.freeGadget = mod.freeGadget;

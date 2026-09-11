@@ -10,7 +10,7 @@
    drops through a platform when there is one above the street.
    ========================================================================== */
 
-import { WORLD } from './data.js';
+import { WORLD, OVERHEAT } from './data.js';
 
 const STAND_W = 11, STAND_H = 23;   // body 15 + legs 9, overlapping by one row
 const SLIDE_W = 18, SLIDE_H = 13;
@@ -56,6 +56,9 @@ export class Player {
     this.fireCool = 0;
     this.firing = false;
     this.recoil = 0;
+    this.overheat = 0;           // s of enforced silence after emptying the cell
+    this.cooling = false;        // refilling at the post-overheat rate, until full
+    this.steamT = 0;
     this.dead = false;
     this.deathT = 0;
     this.rescueT = 0;
@@ -168,9 +171,24 @@ export class Player {
     this.fireCool = Math.max(0, this.fireCool - dt);
     this.recoil = Math.max(0, this.recoil - dt * 8);
 
-    // Energy regenerates whether or not the trigger is held.
-    const regen = this.stats.operative.energyRegen * (this.firing ? 0.75 : 1.25);
-    this.energy = Math.min(this.energyMax, this.energy + regen * dt);
+    /* Energy. Nothing comes back while the weapon is overheated — that is the
+       whole point of it — and once the lockout clears the cell refills at the
+       faster rate until it is full, then settles back to normal. */
+    if (this.overheat > 0) {
+      this.overheat = Math.max(0, this.overheat - dt);
+      if (this.overheat === 0) this.cooling = true;
+      this.steamT += dt;
+      if (particles && this.steamT >= OVERHEAT.steamEvery) {
+        this.steamT = 0;
+        const m = this.muzzle();
+        particles.steam(m.x, m.y);
+      }
+    } else {
+      const base = this.stats.operative.energyRegen * (this.cooling ? OVERHEAT.recoverMul : 1);
+      const regen = base * (this.firing ? 0.75 : 1.25);
+      this.energy = Math.min(this.energyMax, this.energy + regen * dt);
+      if (this.energy >= this.energyMax) this.cooling = false;
+    }
 
     // Horizontal -------------------------------------------------------------
     // Two modes share one velocity model. Under auto-run the target speed is

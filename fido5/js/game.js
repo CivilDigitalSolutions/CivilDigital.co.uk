@@ -121,7 +121,7 @@ export class Game {
       drone: st.drone,
       gadget: st.gadget,
       operative: st.operative,
-      mods: { fireRate: 1, damage: 1, magnet: 0, invuln: false, freeEnergy: false, freeGadget: null },
+      mods: { fireRate: 1, damage: 1, magnet: 0, magnetAll: 0, invuln: false, freeEnergy: false, freeGadget: null },
       actives: new Map(),
       gadgetCool: 0,
       gadgetShield: 0,

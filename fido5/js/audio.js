@@ -283,6 +283,11 @@ export class Audio {
         this._tone({ freq: 300, to: 40, type: 'sawtooth', dur: 0.9, gain: 0.26 });
         this._burst({ dur: 0.8, gain: 0.24, cut: 1200, sweepTo: 60 });
         break;
+      case 'overheat':
+        // A cell venting: the clunk of it failing, then a long hiss.
+        this._tone({ freq: 190, to: 55, type: 'square', dur: 0.16, gain: 0.20 });
+        this._burst({ dur: 1.0, gain: 0.15, cut: 5400, sweepTo: 1500, type: 'highpass' });
+        break;
 
       /* The signature moment ------------------------------------------- */
       case 'rescue':

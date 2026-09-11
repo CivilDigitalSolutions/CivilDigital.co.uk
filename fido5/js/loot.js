@@ -56,7 +56,7 @@ export function spawnPickup(ctx, x, y, kind, amount, id) {
 }
 
 export function spawnPowerUp(ctx, x, tier, id) {
-  const pool = POWERUPS.filter((p) => ['rapid', 'shield', 'magnet', 'overcharge', 'missile'].includes(p.id));
+  const pool = POWERUPS.filter((p) => ['rapid', 'shield', 'magnet', 'overcharge', 'overdrive'].includes(p.id));
   const def = id ? POWERUPS.find((p) => p.id === id) : pool[Math.floor(Math.random() * pool.length)];
   return spawnPickup(ctx, x, WORLD.tierY[tier] - 16, 'power', 0, def.id);
 }
@@ -211,7 +211,8 @@ export function updateCoins(dt, ctx) {
 export function updatePickups(dt, ctx) {
   const { pools, player, run } = ctx;
   const camX = run.camX;
-  const magnetR = run.mods.magnet || 0;
+  /* Only a Magnet Storm reaches loot. A Coin Magnet is exactly what it says. */
+  const magnetR = run.mods.magnetAll || 0;
 
   pools.pickups.sweep((p) => {
     if (p.x < camX - 45) return false;

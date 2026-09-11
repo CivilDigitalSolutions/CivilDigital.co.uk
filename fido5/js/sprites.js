@@ -893,7 +893,7 @@ export function buildSprites() {
   S.power = {};
   const powerLook = {
     rapid: ['Y', 'rapid'], shield: ['C', 'shield'], magnet: ['A', 'magnet'],
-    overcharge: ['P', 'bolt'], missile: ['R', 'missile'], berserk: ['R', 'skull'],
+    overcharge: ['P', 'bolt'], overdrive: ['R', 'bolt'], berserk: ['R', 'skull'],
     magnetStorm: ['G', 'magnet'], infinite: ['C', 'inf'],
   };
   for (const k in powerLook) S.power[k] = makePower(powerLook[k][0], powerLook[k][1]);

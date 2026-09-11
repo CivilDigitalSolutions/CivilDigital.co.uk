@@ -1191,6 +1191,23 @@ export class Renderer {
     x.drawImage(body.c, bx, bodyY);
     x.globalAlpha = 1;
 
+    /* Overheated: the barrel runs red and pulses. Drawn back from the muzzle
+       rather than over the sprite, so it lands on the gun whichever way the
+       operative is facing. */
+    if (p.overheat > 0) {
+      const m = p.muzzle();
+      const f = p.facing;
+      const mx = Math.round(m.x - cam), my = Math.round(m.y);
+      const pulse = 0.55 + 0.45 * Math.sin(p.overheat * 17);
+      x.globalAlpha = 0.45 + 0.5 * pulse;
+      x.fillStyle = '#ff3d68';
+      x.fillRect(f > 0 ? mx - 6 : mx + 1, my - 1, 6, 3);
+      x.globalAlpha = 0.9 * pulse;
+      x.fillStyle = '#ffb238';
+      x.fillRect(f > 0 ? mx - 3 : mx + 1, my, 3, 1);
+      x.globalAlpha = 1;
+    }
+
     // Muzzle flash, drawn procedurally so it can animate with the recoil.
     if (p.recoil > 0.45) {
       const m = p.muzzle();

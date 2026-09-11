@@ -183,6 +183,7 @@ export const GADGETS = [
   {
     id: 'shield',
     name: 'Shield Generator',
+    short: 'Shield',
     blurb: 'Absorbs all damage for a few seconds.',
     cooldown: 16,
     duration: 5,
@@ -191,6 +192,7 @@ export const GADGETS = [
   {
     id: 'emp',
     name: 'EMP Burst',
+    short: 'EMP',
     blurb: 'Overloads nearby machines: heavy damage and a stun.',
     cooldown: 14,
     radius: 128,
@@ -201,6 +203,7 @@ export const GADGETS = [
   {
     id: 'missile',
     name: 'Missile Strike',
+    short: 'Missile',
     blurb: 'Calls a salvo down the track ahead of you.',
     cooldown: 19,
     salvo: 5,
@@ -308,9 +311,24 @@ export const OPERATIVE_BASE = {
   maxHealth: 100,
   startShield: 0,
   energyMax: 100,
-  energyRegen: 24,        // energy/s
+  /* Half what it was. At 24/s the cell refilled faster than any weapon could
+     drain it the moment the trigger came off, so energy never actually decided
+     anything; at 12/s a held trigger empties it in under four seconds and the
+     player has to choose their bursts. */
+  energyRegen: 12,        // energy/s
   coinMult: 1,
   invulnAfterHit: 0.9,    // s
+};
+
+/* Emptying the cell does not just stop the weapon, it takes it away. The
+   punishment is the silence: four seconds with no shot, in a game where four
+   seconds is a whole encounter. The cell then refills at the old, faster rate
+   until it is full, so the cost is paid once rather than dragged out.
+   `recoverMul` is against the player's own regen, so upgrades still count. */
+export const OVERHEAT = {
+  lockout: 4,             // s the weapon is dead
+  recoverMul: 2,          // x the player's regen while cooling: 24/s at base
+  steamEvery: 0.05,       // s between puffs off the muzzle
 };
 
 /* ---- Enemies ------------------------------------------------------------ */
@@ -472,12 +490,12 @@ export const POWERUPS = [
     blurb: 'Coins come to you.',           mods: { magnet: 82 } },
   { id: 'overcharge', name: 'Overcharge',      duration: 10, icon: 'bolt',   colour: 'P',
     blurb: 'Damage and fire rate up.',     mods: { damage: 1.7, fireRate: 1.3 } },
-  { id: 'missile',    name: 'Missile Strike',  duration: 12, icon: 'missile',colour: 'R',
-    blurb: 'Gadget becomes a salvo, no cooldown.', mods: { freeGadget: 'missile' } },
+  { id: 'overdrive',  name: 'Gadget Overdrive',duration: 12, icon: 'bolt',   colour: 'R',
+    blurb: 'Your gadget recharges almost instantly.', mods: { freeGadget: true } },
   { id: 'berserk',    name: 'Berserk',         duration: 9,  icon: 'skull',  colour: 'R',
     blurb: 'Big damage, no defence bonus.', mods: { damage: 2.4 } },
   { id: 'magnetStorm',name: 'Magnet Storm',    duration: 10, icon: 'magnet', colour: 'G',
-    blurb: 'Everything collectable comes to you.', mods: { magnet: 176 } },
+    blurb: 'Everything collectable comes to you.', mods: { magnet: 176, magnetAll: 176 } },
   { id: 'infinite',   name: 'Infinite Energy', duration: 9,  icon: 'inf',    colour: 'C',
     blurb: 'Weapons cost nothing.',        mods: { freeEnergy: true } },
 ];

@@ -948,6 +948,7 @@ export class UI {
     $('hud-energy').style.width = (p.energy / p.energyMax * 100) + '%';
     const eb = document.querySelector('.bar--energy');
     eb.classList.toggle('is-warn', r.energyWarn > 0);
+    eb.classList.toggle('is-overheat', p.overheat > 0);
 
     // FiDo-5 status, in words as well as a bar.
     const dw = $('hud-drone');
@@ -984,6 +985,15 @@ export class UI {
       rw.dataset.k = '';
     }
 
+    // Overheat, with the wait counted down so it reads as a timer, not a fault.
+    const oh = $('hud-overheat');
+    if (p.overheat > 0) {
+      oh.hidden = false;
+      $('hud-overheat-left').textContent = p.overheat.toFixed(1) + 's';
+    } else if (!oh.hidden) {
+      oh.hidden = true;
+    }
+
     // Active power-ups with their remaining time.
     const pw = $('hud-powers');
     const want = [...r.actives.entries()];
@@ -993,7 +1003,7 @@ export class UI {
         const li = document.createElement('li');
         li.dataset.id = id;
         const n = document.createElement('span');
-        n.textContent = a.def.name;
+        n.textContent = a.label || a.def.name;
         const t = document.createElement('span');
         t.className = 't';
         li.appendChild(n); li.appendChild(t);

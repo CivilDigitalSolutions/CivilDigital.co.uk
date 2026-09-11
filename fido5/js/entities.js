@@ -151,6 +151,20 @@ export class Particles {
     });
   }
 
+  /* Steam off an overheated muzzle: pale, rising, and slowing as it goes. */
+  steam(x, y) {
+    this.spawn(5, (p, i) => {
+      p.x = x + (Math.random() - 0.5) * 3;
+      p.y = y - 1 + (Math.random() - 0.5) * 2;
+      p.vx = (Math.random() - 0.5) * 22;
+      p.vy = -38 - Math.random() * 40;
+      p.grav = 26;
+      p.life = p.max = 0.5 + Math.random() * 0.45;
+      p.colour = i % 3 === 0 ? 'W' : 'E';
+      p.size = Math.random() < 0.5 ? 2 : 1;
+    });
+  }
+
   impact(x, y, colour) {
     this.spawn(5, (p) => {
       const a = Math.random() * Math.PI * 2;

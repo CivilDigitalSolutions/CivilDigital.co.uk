@@ -239,6 +239,9 @@ body {
 .bar--shield .bar__fill { background: linear-gradient(90deg, #6d28d9, var(--purple-l)); }
 .bar--energy .bar__fill { background: linear-gradient(90deg, #1a6c99, var(--cyan)); }
 .bar--energy.is-warn .bar__track { border-color: var(--red); animation: warn .3s steps(2) 3; }
+/* Overheated: the same flash, held for as long as the weapon is out. */
+.bar--energy.is-overheat .bar__track { border-color: var(--red); animation: warn .3s steps(2) infinite; }
+.bar--energy.is-overheat .bar__fill { background: linear-gradient(90deg, #8c1533, var(--red)); }
 @keyframes warn { 50% { background: rgba(255,61,104,.4); } }
 
 /* Sits directly above the health / shield / energy bars, so everything the
@@ -317,6 +320,24 @@ body {
 .hud-reward__got { font: 700 .88rem/1.2 var(--ui); color: #fff; }
 @keyframes reward-in { from { opacity: 0; transform: translate(-50%, 6px); } }
 @media (prefers-reduced-motion: reduce) { .hud-reward { animation: none; } }
+
+/* Overheat. Centred over the play surface, well clear of the bars it refers to. */
+.hud-overheat {
+  position: absolute; left: 50%; top: 27%; transform: translateX(-50%);
+  display: flex; align-items: baseline; gap: .6em;
+  background: rgba(8,10,18,.9); border: 1px solid var(--red);
+  border-radius: 9px; padding: .4rem 1rem;
+  box-shadow: 0 0 18px rgba(255,61,104,.35);
+  animation: overheat-pulse .5s steps(2) infinite;
+}
+.hud-overheat__label {
+  font: 800 .82rem/1 var(--ui); letter-spacing: .2em; text-transform: uppercase; color: var(--red);
+}
+.hud-overheat__left {
+  font: 700 .78rem/1 var(--ui); color: var(--dim); font-variant-numeric: tabular-nums;
+}
+@keyframes overheat-pulse { 50% { border-color: var(--amber); } }
+@media (prefers-reduced-motion: reduce) { .hud-overheat { animation: none; } }
 
 /* Touch pad. Movement on the left, actions on the right, and neither cluster
    covers the deck the player has to read. */
