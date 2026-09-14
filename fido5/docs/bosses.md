@@ -131,7 +131,9 @@ Two things are worth knowing if you touch it:
 - **It is skippable, but not by the trigger that killed the boss.** A held
   trigger or a press still sitting in the input buffer would mean the player
   who fights to the last frame is the one who never sees it, so a skip needs a
-  fresh press after `BOSS_OUTRO.skip`.
+  fresh press after `BOSS_OUTRO.skip`. The intro follows the same rule against
+  `BOSS_INTRO.skip`: it once skipped on a held trigger, so a player who ran into
+  the arena shooting went straight to FIGHT! and never saw BOSS FIGHT at all.
 
 The player is made invulnerable for its duration: a shot the boss fired before
 it died can still be in the air, and dying to it behind the card that says you

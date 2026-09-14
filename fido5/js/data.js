@@ -690,6 +690,7 @@ export const BOSS_INTRO = {
   land2:  0.74,   // ...and lands, harder
   plate:  1.04,   // the name plate rises
   plateIn: 0.26,  // how long the plate takes to settle
+  skip:   1.04,   // earliest a press can skip: BOSS FIGHT has landed and been read
   clear:  2.44,   // words and plate punch out
   fight:  2.60,   // "FIGHT!" stamps, the boss music starts
   done:   3.40,   // control returns

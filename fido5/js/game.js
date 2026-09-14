@@ -345,8 +345,14 @@ export class Game {
     // arcade card nobody can mash through is a cutscene.
     const introLock = r.bossPhase === 'intro' || r.bossPhase === 'outro';
     if (r.bossPhase === 'intro') {
-      if (this.input.take('jump') || this.input.take('fire') || this.input.take('gadget')
-          || this.input.held.fire) {
+      /* Same rule as the outro: a fresh press, and not before BOSS FIGHT has
+         landed. Skipping on a held trigger meant a player running in shooting —
+         which is most of them — went straight to FIGHT! and never saw the card.
+         Every buffer is taken on every frame, so a press from before the skip
+         point is spent rather than left to fire the moment it opens. */
+      const pressed = [this.input.take('jump'), this.input.take('fire'),
+                       this.input.take('gadget')].some(Boolean);
+      if (pressed && r.intro.t >= BOSS_INTRO.skip) {
         r.intro.t = Math.max(r.intro.t, BOSS_INTRO.fight);
       }
       this.input.take('down');
