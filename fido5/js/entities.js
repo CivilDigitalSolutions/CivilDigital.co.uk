@@ -91,6 +91,7 @@ export const makeEnemy = () => ({
   elite: false, scale: 1, t: 0, vy: 0, vx: 0, cool: 0, state: 'idle',
   charge: 0, stun: 0, flash: 0, burn: 0, burnT: 0, dying: 0, aim: 0,
   bobPhase: 0, damage: 0, score: 0, coins: 0, marked: false, seen: false,
+  broodId: 0,           // set when a carrier boss hatched it; 0 otherwise
 });
 
 export const makeFloater = () => ({

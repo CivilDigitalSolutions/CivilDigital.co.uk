@@ -203,6 +203,10 @@ export class Game {
       collectCoin: (c) => self.collectCoin(c),
       collectPickup: (p) => self.collectPickup(p),
 
+      // The Hatchery's bay. Routed through the context rather than imported
+      // directly so the boss code stays free of the spawn rules.
+      spawnEnemy: (spec) => Combat.spawnEnemy(self._ctx, spec),
+
       onEnemyKilled: (e, source) => self.onEnemyKilled(e, source),
       onEnemySeen: (e) => self.onEnemySeen(e),
       onPlayerHit: (dmg) => self.onPlayerHit(dmg),

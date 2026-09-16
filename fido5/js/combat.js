@@ -49,6 +49,9 @@ export function spawnEnemy(ctx, spec) {
   e.charge = 0; e.stun = 0; e.flash = 0; e.burn = 0; e.burnT = 0;
   e.dying = 0; e.aim = 0; e.marked = false; e.seen = false;
   e.bombT = 0;
+  // Which carrier put it in the air, if any. A pooled slot outlives the enemy
+  // in it, so the Hatchery counts its brood by this and not by the slot.
+  e.broodId = spec.broodId || 0;
   // How long this enemy will hold pace with the player once they close.
   // Without it an elite is only in weapons range for about a second, which is
   // not an encounter — it is a thing that goes past.
@@ -335,6 +338,9 @@ export function updateBullets(dt, ctx) {
     // is checked first and takes the shot before anything else can.
     const boss = ctx.boss;
     if (boss && boss.active && boss.dying <= 0 && !boss.hold) {
+      // A raised shield outranks everything: the shot never reaches the parts
+      // or the body, it goes back the way it came. See Boss.deflect.
+      if (boss.blocks(b)) { boss.deflect(ctx, b); return false; }
       // Parts first. They orbit in front of the body they protect, and a shot
       // that reaches one should take it rather than pass through to a boss it
       // cannot hurt anyway.

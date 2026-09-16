@@ -10,7 +10,7 @@
    Lives are spent here and nowhere else — see Game._onDeath.
    ========================================================================== */
 
-import { WORLD, BOSSES, BOSS_ATTACKS, SECTORS } from './data.js';
+import { WORLD, BOSSES, BOSS_ATTACKS, ENEMIES, SECTORS } from './data.js';
 import { clamp } from './world.js';
 
 /* Phases, in the order they cycle:
@@ -29,6 +29,7 @@ export class Boss {
     this.waves = [];        // stomp shockwaves in flight
     this.beams = [];        // sweep beams in flight
     this.parts = [];        // relays and the like, each killed separately
+    this.brood = [];        // enemies a carrier has put in the air
   }
 
   /* `pass` is how many times the roster has looped; each pass hardens it. */
@@ -53,15 +54,38 @@ export class Boss {
     // Enters from the far end of the arena, facing the player — but never so
     // close to the wall that whatever it carries hangs off the screen.
     this.phase2 = false;
+    this.stage = -1;             // how far down the stage list it has fallen
     this.armourOverride = null;
     this.attacksOverride = null;
     this.telegraphOverride = null;
+    this.labelOverride = null;
+    this.partsOverride = null;
+    this.cycleOverride = null;
+    /* State belonging to the attacks added after the first six. Each one is
+       reset here rather than lazily, so a second fight against the same boss
+       can never inherit a raised shield or a street still on fire. */
+    this.guarding = false;       // Bulwark's slab is up
+    this.returns = 0;            // shots it has thrown back this guard
+    this.embedded = false;       // Thresher is stuck in the street
+    this.markX = 0;              // where a dive is going to land
+    this.flood = 0;              // s of coolant left on the street
+    this.floodTick = 0;
+    this.charging = false;       // Arbiter's meter is filling
+    this.charge = 0;             // damage landed on it while it fills
+    this.purge = 0;              // s of purge flash left
+    this.safeTier = 0;           // the level a purge will not burn
+    this.diveHit = false;        // the dive has already caught the player
+    this.healT = 0;              // next "FEEDING" callout
+    this.brood = [];
     // A boss that hunts from behind has to arrive from behind, or it spends the
     // opening of the fight flying backwards past the player to take station.
     this.x = (def.station || 0) < 0
       ? arena.startX + this.margin + def.w / 2
       : arena.endX - this.margin - def.w / 2;
     this.y = this.moving ? this.cruiseY : WORLD.tierY[def.tier] - def.h / 2;
+    // A boss that holds the ceiling starts on it, rather than flying up to it
+    // through the intro with the name plate still on screen.
+    if (def.perch) this.y = this.perchY;
     this.vx = 0;
     this.dir = -1;
     this.phase = 'wait';
@@ -116,12 +140,29 @@ export class Boss {
     this.waves.length = 0;
     this.beams.length = 0;
     this.parts.length = 0;
+    this.brood.length = 0;
+    this.guarding = false;
+    this.charging = false;
+    this.flood = 0;
+    this.purge = 0;
   }
+
+  /* Where a perching boss sits when it is not diving, and how deep into the
+     street it buries itself when it is. The perch is clear of the rooftop
+     line, in the same band the Convoy cruises in: there is no platform up
+     there and nothing standing on a ledge reaches it, so the only way to get
+     at it is to make it come down. */
+  get perchY() { return WORLD.tierY[2] - this.def.h / 2 - 10; }
+  get embedY() { return WORLD.tierY[0] - this.def.h / 2 + 9; }
 
   /* A boss with parts is exposed when every one of them is down; a boss
      without them is exposed in the moment after it attacks. Two different
      fights, one word for "hit it now". */
   get exposed() {
+    // A perching boss is open when — and only when — it is stuck in the
+    // street. Anywhere else the phase may say "recover" while the core is
+    // sitting well above anything the player can shoot.
+    if (this.def.perch) return this.embedded;
     const pd = this.partDef;
     // Parts only gate exposure where the design says they do: Hexcell's relays
     // are a shield, the Choir's pods are plating and Null Prime's drones are
@@ -130,13 +171,48 @@ export class Boss {
     return this.phase === 'recover';
   }
   get liveParts() { return this.parts.reduce((n, q) => n + (q.alive ? 1 : 0), 0); }
-  get partDef() { return this.phase2 && this.def.phase2.parts ? this.def.phase2.parts : this.def.parts; }
+  get partDef() { return this.partsOverride || this.def.parts; }
+
+  /* Stages, in the order the bar falls past them. `phase2` is the one-entry
+     form and is still what most of the roster uses; `stages` is the same idea
+     written out, for a boss that changes its mind more than once. */
+  get stages() {
+    if (this.def.stages) return this.def.stages;
+    return this.def.phase2 ? [this.def.phase2] : [];
+  }
+
+  /* Every member of the brood that is still in the air. A pooled enemy can be
+     recycled into something else entirely, so the id is checked as well as
+     the slot: the count has to be of *this* carrier's children. */
+  get liveBrood() {
+    let n = 0;
+    for (const b of this.brood) {
+      if (b.e.alive && b.e.broodId === b.id && b.e.dying <= 0) n++;
+    }
+    return n;
+  }
 
   /* A boss that changes form part-way through overrides these three rather
      than being a second definition: same body, same bar, different rules. */
   get armourVal() { return this.armourOverride == null ? this.def.armour : this.armourOverride; }
   get attackPool() { return this.attacksOverride || this.def.attacks; }
-  get telegraphT() { return this.telegraphOverride == null ? this.def.telegraph : this.telegraphOverride; }
+  get cycles() { return this.cycleOverride == null ? this.def.cycleAttacks : this.cycleOverride; }
+  get telegraphT() {
+    // The overload brings its own wind-up: it is a meter the player is racing
+    // rather than a tell they are reading, and it has to be long enough to
+    // cross the arena and break something.
+    if (this.attack === 'overload') return BOSS_ATTACKS.overload.charge;
+    return this.telegraphOverride == null ? this.def.telegraph : this.telegraphOverride;
+  }
+
+  /* What the bar calls its defence right now. Two of the new bosses change
+     that mid-fight, and a bar that goes on saying PLATED while nothing at all
+     is getting through reads as a broken bar. */
+  get armourLabel() {
+    if (this.def.submerged && this.flood > 0) return 'SUBMERGED';
+    if (this.guarding) return 'SHIELD UP';
+    return this.labelOverride || this.def.armourLabel || 'ARMOURED';
+  }
 
   /* How far from a wall the body has to stay. A boss with orbiting parts needs
      room for them too, or a relay spends the fight outside the arena where it
@@ -146,7 +222,9 @@ export class Boss {
      on the far side — which is what lets an immobile boss stand against the
      far wall with nothing behind it for the player to hide in. */
   get margin() {
-    const pd = this.def.parts;
+    // partDef rather than def.parts, so a boss that only grows its ring in a
+    // later stage starts keeping room for it the moment the ring exists.
+    const pd = this.partDef;
     if (!pd) return this.def.w / 2;
     return this.def.w / 2 + (pd.layout === 'tiers' ? pd.w / 2 : pd.orbit);
   }
@@ -158,6 +236,10 @@ export class Boss {
      the bar can never claim a boss is protected while the maths says it is
      taking everything. */
   get armourNow() {
+    // Two states that outrank everything else, because in both of them
+    // literally nothing is getting through and the bar has to say so.
+    if (this.guarding) return 0;                            // behind the slab
+    if (this.def.submerged && this.flood > 0) return 0;     // under its own flood
     if (this.exposed) return 1;
     const pd = this.partDef;
     // Plating that comes off a piece at a time: each part silenced is a third
@@ -176,24 +258,45 @@ export class Boss {
     this.hp = Math.max(0, this.hp - dealt);
     this.flash = 0.12;
     this.hitT = 0.2;
+    /* Damage landed during a wind-up is what breaks an overload — and on the
+       body it counts *after* armour. That is the whole reason the capacitors
+       exist: three seconds of rifle fire into insulated plating comes nowhere
+       near the threshold, and the same three seconds spent on a capacitor
+       clears it twice over. Hosing the body and hoping is meant to lose. */
+    if (this.charging) this.charge += dealt;
     if (this.hp <= 0) this._die(ctx);
-    else if (this.def.phase2 && !this.phase2 && this.hp <= this.maxHp * this.def.phase2.at) {
-      this._shed(ctx);
-    }
+    else this._checkStage(ctx);
     return dealt;
   }
 
-  /* Half health, and it throws the armour away. Everything about it changes at
-     once — that is the point of a second phase, and it has to be loud. */
-  _shed(ctx) {
-    const p2 = this.def.phase2;
+  /* Has the bar fallen past the next stage? Walked one at a time rather than
+     jumped to the last one crossed, so a single enormous hit still plays both
+     transformations and the player is never shown a boss whose rules changed
+     twice while they were watching a number. */
+  _checkStage(ctx) {
+    const list = this.stages;
+    const next = list[this.stage + 1];
+    if (next && this.hp <= this.maxHp * next.at) {
+      this.stage++;
+      this._shed(ctx, next);
+    }
+  }
+
+  /* A stage boundary. Everything about the boss changes at once — armour,
+     attacks, wind-up, what is orbiting it — because that is the point of a
+     new form, and it has to be loud. */
+  _shed(ctx, p2) {
     this.phase2 = true;
     this.armourOverride = p2.armour;
     this.attacksOverride = p2.attacks;
     this.telegraphOverride = p2.telegraph;
+    if (p2.armourLabel) this.labelOverride = p2.armourLabel;
+    if (p2.cycleAttacks !== undefined) this.cycleOverride = p2.cycleAttacks;
     this.speedMul *= p2.speedMul || 1;
     this.atkIdx = 0;
-    if (p2.parts) this._buildParts(p2.parts);
+    this.charging = false;
+    this.guarding = false;
+    if (p2.parts) { this.partsOverride = p2.parts; this._buildParts(p2.parts); }
     this._enter('recover', this.def.recover);
     ctx.audio.play('explosion');
     ctx.shake && ctx.shake(8);
@@ -211,6 +314,7 @@ export class Boss {
     if (!part.alive || this.hold || this.dying > 0) return 0;
     part.hp -= amount;
     part.flash = 0.12;
+    if (this.charging) this.charge += amount;
     if (part.hp <= 0) {
       part.alive = false;
       part.respawnT = this.partDef.respawn;
@@ -225,6 +329,11 @@ export class Boss {
   _die(ctx) {
     this.dying = 1.6;
     this.phase = 'dying';
+    this.guarding = false;
+    this.charging = false;
+    // The street goes out with it. A player killed by a puddle belonging to
+    // something that is already scrap would rightly call that a bug.
+    this.flood = 0;
     this.shots.length = 0;
     this.waves.length = 0;
     this.beams.length = 0;
@@ -259,11 +368,18 @@ export class Boss {
       this._updateFlight(dt, ctx);
     }
 
+    // A perching boss owns its own altitude, and only the dive is allowed to
+    // change it. Everything else holds the ceiling.
+    if (this.def.perch) this._updatePerch(dt);
+
     this._updateAnim(dt);
     this._updateWaves(dt, ctx);
     this._updateShots(dt, ctx);
     this._updateBeams(dt, ctx);
     this._updateParts(dt, ctx);
+    this._updateFlood(dt, ctx);
+    this._updateBrood(dt, ctx);
+    this.purge = Math.max(0, this.purge - dt);
 
     this.phaseT -= dt;
     switch (this.phase) {
@@ -272,6 +388,7 @@ export class Boss {
       case 'strike':
         if (this.attack === 'charge') this._charge(dt, ctx, p);
         if (this.attack === 'strafe' || this.attack === 'lunge') this._strafe(dt, ctx, p);
+        if (this.attack === 'dive') this._dive(dt, ctx, p);
         if (this.phaseT <= 0) this._enter('recover', this.def.recover);
         break;
       case 'recover':   if (this.phaseT <= 0) this._enter('wait', 0.5 + Math.random() * 0.7); break;
@@ -358,7 +475,167 @@ export class Boss {
                    this.arena.endX - this.def.w / 2);
   }
 
-  _enter(phase, time) { this.phase = phase; this.phaseT = time; }
+  /* The slab only stays up for as long as the strike it belongs to, so every
+     route out of that phase — including one taken early — lowers it. */
+  _enter(phase, time) {
+    if (phase !== 'strike') this.guarding = false;
+    this.phase = phase;
+    this.phaseT = time;
+  }
+
+  /* ---- The perch, and the dive off it --------------------------------- */
+
+  _updatePerch(dt) {
+    // While the dive is running, _dive owns the altitude.
+    if (this.phase === 'strike' && this.attack === 'dive') return;
+    const want = this.embedded ? this.embedY : this.perchY;
+    const rate = this.embedded ? 240 : 110;
+    this.y += Math.sign(want - this.y) * Math.min(Math.abs(want - this.y), rate * dt);
+  }
+
+  /* Straight down, onto the column it marked at the top of the wind-up. It
+     does not steer on the way — the marker is a promise, and a promise a boss
+     breaks halfway down is just a hit the player could not have avoided. */
+  _dive(dt, ctx, p) {
+    const a = BOSS_ATTACKS.dive;
+    this.y += a.speed * this.speedMul * dt;
+    this.x += (this.markX - this.x) * Math.min(1, 7 * dt);
+    if (Math.random() < 0.7) {
+      ctx.particles.thruster(this.x, this.y - this.def.h / 2, 'R');
+    }
+    if (!this.diveHit && this._overlaps(p)) {
+      this.diveHit = true;
+      this._hit(ctx, a.damage);
+    }
+    if (this.y < this.embedY) return;
+
+    // Landing. Everything that makes the dive worth baiting happens here.
+    this.y = this.embedY;
+    this.embedded = true;
+    this.squash = 0.25;
+    ctx.audio.play('explosion');
+    ctx.shake && ctx.shake(9);
+    for (const off of [-10, 10]) {
+      ctx.particles.dust(this.x + off, WORLD.tierY[0]);
+      ctx.particles.debris(this.x + off, WORLD.tierY[0] - 2, 'S');
+    }
+    for (const dir of [-1, 1]) {
+      this.waves.push({ x: this.x, dir, life: a.waveLife, hit: false,
+                        dmg: a.damage, speed: a.waveSpeed });
+    }
+    if (a.collapse) this._collapse(ctx);
+    // Buried, and open for as long as it takes to pull itself out. This is
+    // the whole damage window of the fight.
+    this._enter('recover', a.embed);
+  }
+
+  /* ---- The slab ------------------------------------------------------- */
+
+  /* Is this shot going into the slab? Asked by the bullet code before it
+     looks at the parts or the body, because while the shield is up there is
+     nothing behind it worth testing. */
+  blocks(b) {
+    if (!this.guarding) return false;
+    const hw = this.def.w / 2, hh = this.def.h / 2;
+    // The slab stands proud of the leading edge, so a shot is stopped a little
+    // short of the body rather than on it — the player sees where it went.
+    const front = this.x + this.dir * (hw + 10);
+    const x0 = Math.min(this.x - hw, front), x1 = Math.max(this.x + hw, front);
+    return b.x > x0 && b.x < x1 && b.y + 2 > this.y - hh && b.y - 2 < this.y + hh;
+  }
+
+  /* ...and what happens to it. It goes back down the line it came in on,
+     which is what makes the guard a punishment for holding the trigger rather
+     than a plain immunity window. Capped per guard: a machine pistol should
+     cost its owner a lesson, not the run. */
+  deflect(ctx, b) {
+    const a = BOSS_ATTACKS.guard;
+    ctx.audio.play('hit.shielded');
+    ctx.particles.impact(b.x, b.y, 'A');
+    if (this.returns >= a.maxReturns) return;
+    this.returns++;
+    const p = ctx.player;
+    const ang = Math.atan2(p.midY - b.y, p.x - b.x);
+    this.shots.push({
+      x: b.x, y: b.y,
+      vx: Math.cos(ang) * a.returnSpeed, vy: Math.sin(ang) * a.returnSpeed,
+      grav: 0, life: 2.2, dmg: a.returnDamage,
+    });
+  }
+
+  /* ---- The flood ------------------------------------------------------ */
+
+  /* Coolant across the street. It only catches a player standing in it, so
+     the answer is the walkway — and the walkway is where the Dredge's spit is
+     aimed, which is why the two are cycled one after the other. */
+  _updateFlood(dt, ctx) {
+    if (this.flood <= 0) return;
+    this.flood -= dt;
+    const a = BOSS_ATTACKS.flood;
+    const p = ctx.player;
+    this.floodTick -= dt;
+    if (this.floodTick <= 0 && p.tier === 0 && p.grounded && !p.dead) {
+      this.floodTick = a.tick;
+      this._hit(ctx, a.damage);
+      ctx.particles.dust(p.x, WORLD.tierY[0]);
+    }
+    if (Math.random() < 0.5) {
+      const x = this.arena.startX + Math.random() * (this.arena.endX - this.arena.startX);
+      ctx.particles.dust(x, WORLD.tierY[0] - 2);
+    }
+  }
+
+  /* ---- The brood ------------------------------------------------------ */
+
+  /* A carrier feeds on what it puts in the air: while any of its children are
+     alive the bar climbs, and it climbs faster than most weapons empty it. So
+     the sky comes first, and the hull second. */
+  _updateBrood(dt, ctx) {
+    const bd = this.def.brood;
+    if (!bd) return;
+    // Forget anything the pool has taken back, so the list cannot grow for the
+    // length of a fight.
+    for (let i = this.brood.length - 1; i >= 0; i--) {
+      const b = this.brood[i];
+      if (!b.e.alive || b.e.broodId !== b.id) this.brood.splice(i, 1);
+    }
+    const live = this.liveBrood;
+    if (live <= 0 || this.dying > 0 || this.hold || this.hp >= this.maxHp) return;
+    this.hp = Math.min(this.maxHp, this.hp + bd.regen * live * dt);
+    this.healT = (this.healT || 0) - dt;
+    if (this.healT <= 0) {
+      this.healT = 1;
+      ctx.floater && ctx.floater(this.x, this.y - this.def.h / 2 - 8, 'FEEDING', 'G', 1);
+    }
+  }
+
+  /* ---- The purge ------------------------------------------------------ */
+
+  /* The level a purge will not burn: the one the engine is furthest from. It
+     tracks the player's height between attacks, so this is almost always the
+     level they are *not* on — which is the point. Standing still through an
+     overload has to cost something, or the interrupt is free.
+
+     A walkway the fight has already torn out is not an escape route, so if
+     tier 1 has been collapsed away the street is safe instead. */
+  _safeTier(ctx) {
+    let near = 0, best = Infinity;
+    for (let t = 0; t < 2; t++) {
+      const d = Math.abs((WORLD.tierY[t] - this.def.h / 2) - this.y);
+      if (d < best) { best = d; near = t; }
+    }
+    const want = near === 0 ? 1 : 0;
+    if (want === 1 && !this._tierExists(ctx, 1)) return 0;
+    return want;
+  }
+
+  _tierExists(ctx, t) {
+    const w = ctx.world;
+    const a = this.arena;
+    if (!w || !a || a.startCol === undefined) return true;
+    for (let c = a.startCol; c <= a.endCol; c++) if (w.hasPlatform(c, t)) return true;
+    return false;
+  }
 
   /* The strafing run. It commits to a direction and crosses the screen at it,
      which is the same bargain the Warden's charge offers: the attack that
@@ -458,12 +735,15 @@ export class Boss {
        charge, still cross it and then come back round.
 
        A gunship keeps station for its own reasons, handled in _updateFlight. */
+    // Out of the hole. A perching boss spends its wait climbing back up, and
+    // the climb is the fight's only quiet beat.
+    this.embedded = false;
     const want = this.moving ? p.x + 90 : p.x + 60;
     const step = this.def.walkSpeed * this.speedMul * dt;
     if (Math.abs(want - this.x) > 4) this.x += Math.sign(want - this.x) * step;
     // A hovering boss also tracks the player's height, slowly, so it cannot be
     // parked on one tier and ignored. A moving one flies its own profile.
-    if (this.def.float && !this.moving) {
+    if (this.def.float && !this.moving && !this.def.perch) {
       /* The floor of the hover has to put the beam through a player standing
          on the street rather than over their head. Their centre sits 11.5px
          above the deck and the beam reaches 9px either side of the node, so a
@@ -485,11 +765,28 @@ export class Boss {
          one particular attack cycles instead: leaving that to chance means the
          same fight runs twenty seconds or forty-five depending on the dice,
          and a rhythm is what makes a boss learnable rather than survivable. */
-      this.attack = this.def.cycleAttacks
+      this.attack = this.cycles
         ? pool[this.atkIdx++ % pool.length]
         : pool[Math.floor(Math.random() * pool.length)];
+      this._beginTelegraph(ctx, p);
       this._enter('telegraph', this.telegraphT);
       ctx.audio.play('turret.charge');
+    }
+  }
+
+  /* Everything an attack has to decide *before* the wind-up rather than at
+     the end of it, because the player is reading it for that whole second:
+     where a dive is going to land, and which level a purge will spare. */
+  _beginTelegraph(ctx, p) {
+    if (this.attack === 'dive') {
+      this.markX = clamp(p.x, this.arena.startX + this.def.w / 2,
+                         this.arena.endX - this.def.w / 2);
+      this.diveHit = false;
+    }
+    if (this.attack === 'overload') {
+      this.charging = true;
+      this.charge = 0;
+      this.safeTier = this._safeTier(ctx);
     }
   }
 
@@ -668,6 +965,116 @@ export class Boss {
         this._enter('strike', 0.3);
         break;
       }
+      case 'guard': {
+        // The slab comes up. Nothing gets through it and everything that
+        // tries comes back — see deflect().
+        ctx.audio.play('hit.shielded');
+        this.guarding = true;
+        this.returns = 0;
+        this._enter('strike', a.duration);
+        break;
+      }
+      case 'hammer': {
+        /* One shell, on a fixed one-second arc, solved to land on the street
+           exactly where the player is standing at the moment it is thrown.
+           The flight time never changes, so the read never changes either:
+           what kills you is the second you spend not moving. */
+        ctx.audio.play('enemy.fire');
+        this.recoil = 4;
+        const street = WORLD.tierY[0];
+        const y0 = this.y - this.def.h / 2;
+        const t = a.flight;
+        this.shots.push({
+          x: this.x, y: y0,
+          vx: (p.x - this.x) / t,
+          vy: (street - y0 - 0.5 * WORLD.gravity * t * t) / t,
+          grav: 1, life: t + 1.2, dmg: a.damage, blast: a.radius,
+        });
+        this._enter('strike', 0.3);
+        break;
+      }
+      case 'dive': {
+        // The fall itself is _dive; this only commits to it. The strike window
+        // is generous because the landing, not the clock, is what ends it.
+        ctx.audio.play('drone.thrust');
+        this.diveHit = false;
+        this._enter('strike', 3.0);
+        break;
+      }
+      case 'rain': {
+        // Shells walked across the player's own position from the ceiling.
+        ctx.audio.play('bomb.arm');
+        for (let i = 0; i < a.count; i++) {
+          this.shots.push({
+            x: p.x + (i - (a.count - 1) / 2) * a.spacing,
+            y: this.y + this.def.h / 2,
+            vx: 0, vy: 30, grav: 1, life: 6, dmg: a.damage, blast: a.radius,
+          });
+        }
+        this._enter('strike', 0.35);
+        break;
+      }
+      case 'hatch': {
+        /* The bay opens. Nothing exotic comes out of it — these are the same
+           scouts and bombers the track is full of, which is the joke: the
+           carrier's whole threat is that it makes the ordinary fight happen
+           inside the arena, and then eats whatever survives. */
+        const bd = this.def.brood;
+        const room = Math.max(0, bd.max - this.liveBrood);
+        const n = Math.min(a.count, room);
+        ctx.audio.play('powerup');
+        for (let i = 0; i < n; i++) {
+          const id = bd.types[Math.floor(Math.random() * bd.types.length)];
+          const def = ENEMIES.find((e) => e.id === id) || ENEMIES[0];
+          const id2 = ++Boss.broodSeq;
+          const e = ctx.spawnEnemy && ctx.spawnEnemy({
+            def, tier: ctx.player.tier, elite: false, broodId: id2,
+            x: this.x + (i - (n - 1) / 2) * 24,
+          });
+          if (e) this.brood.push({ e, id: id2 });
+        }
+        ctx.particles.explode(this.x, this.y + this.def.h / 2, 0.7, 'P');
+        this._enter('strike', 0.4);
+        break;
+      }
+      case 'flood': {
+        // The street, for four and a half seconds. It seals itself under it.
+        ctx.audio.play('gadget.emp');
+        ctx.shake && ctx.shake(5);
+        this.flood = a.life;
+        this.floodTick = 0;
+        for (let i = 0; i < 6; i++) {
+          ctx.particles.dust(this.x + (Math.random() - 0.5) * this.def.w, WORLD.tierY[0]);
+        }
+        this._enter('strike', 0.45);
+        break;
+      }
+      case 'overload': {
+        /* The wind-up is over: either enough damage landed on the engine and
+           its capacitors to break the charge, or it did not. There is no
+           partial credit — a meter that half-works is a meter nobody reads. */
+        this.charging = false;
+        if (this.charge >= a.need) {
+          ctx.audio.play('explosion');
+          ctx.shake && ctx.shake(7);
+          ctx.particles.explode(this.x, this.y, 1.4, 'C');
+          ctx.floater && ctx.floater(this.x, this.y - this.def.h / 2 - 8,
+            'OVERLOAD BROKEN', 'Y', 1);
+          // The longest window in the game, and the reward for going for it.
+          this._enter('recover', this.def.recover * 2.4);
+          break;
+        }
+        ctx.audio.play('boss.beam');
+        ctx.shake && ctx.shake(10);
+        this.purge = 0.55;
+        if (p.tier !== this.safeTier) this._hit(ctx, a.damage);
+        for (let i = 0; i < 8; i++) {
+          ctx.particles.debris(this.x + (Math.random() - 0.5) * this.def.w * 2,
+            this.y + (Math.random() - 0.5) * this.def.h, 'P');
+        }
+        this._enter('strike', 0.5);
+        break;
+      }
     }
   }
 
@@ -779,6 +1186,11 @@ export class Boss {
     });
   }
 }
+
+/* Every enemy a carrier has ever hatched gets a number, so a pooled slot that
+   has since been recycled into somebody else's scout cannot be counted as one
+   of its children. */
+Boss.broodSeq = 0;
 
 /* Which boss a gate uses, and how many times the roster has looped. */
 export function bossForGate(gate) {
