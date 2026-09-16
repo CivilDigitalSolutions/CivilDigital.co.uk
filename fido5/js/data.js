@@ -871,7 +871,7 @@ export const BOSSES = [
   {
     id: 'prime',
     name: 'Null Prime',
-    subtitle: 'Final form',
+    subtitle: 'Prime form',
     arena: 'static',
     health: 900,
     contact: 20,
@@ -910,6 +910,227 @@ export const BOSSES = [
       },
     },
   },
+  {
+    id: 'bulwark',
+    name: 'Bulwark',
+    subtitle: 'Siege shield',
+    /* The one fight answered by taking your finger off the trigger. It raises
+       a slab and everything that hits the slab comes back — so a player who
+       has spent six gates learning to hold fire down has to learn, in the
+       space of one wind-up, to stop. The shield is up on a fixed rotation
+       rather than at random, because a rule you cannot see coming is not a
+       rule, it is a tax. */
+    arena: 'static',
+    health: 780,
+    contact: 18,
+    score: 6200,
+    coins: 240,
+    w: 44, h: 36,
+    core: { x: 27, y: 16 },
+    tier: 0,
+    armour: 0.28,
+    armourLabel: 'SHIELDED',
+    telegraph: 0.8,
+    recover: 1.2,
+    walkSpeed: 24,
+    cycleAttacks: true,
+    attacks: ['guard', 'shockwave', 'hammer', 'guard', 'flak'],
+  },
+  {
+    id: 'thresher',
+    name: 'Thresher',
+    subtitle: 'Rooftop diver',
+    /* The Convoy comes down to attack you; the Thresher comes down *into the
+       street* and gets stuck there. It is untouchable on its perch and wide
+       open the moment it lands, so the whole fight is spent baiting a dive
+       and then spending every frame of the pull-out on its core. Each dive
+       takes a stretch of walkway with it, so the ground you dodge on runs
+       out at exactly the rate you are winning. */
+    arena: 'static',
+    /* Light for its place in the roster, like the Convoy and for the same
+       reason: its core is only reachable for the two and a half seconds it
+       spends buried, so the same bar would take twice as long to empty. */
+    health: 640,
+    contact: 20,
+    score: 6800,
+    coins: 260,
+    w: 34, h: 26,
+    core: { x: 17, y: 13 },
+    tier: 2,
+    float: true,
+    perch: true,           // holds the ceiling; only the dive brings it down
+    armour: 0.06,
+    armourLabel: 'ON ITS PERCH',
+    telegraph: 0.9,
+    recover: 1.0,
+    walkSpeed: 46,
+    cycleAttacks: true,
+    attacks: ['dive', 'rain', 'dive', 'salvo'],
+  },
+  {
+    id: 'hatchery',
+    name: 'The Hatchery',
+    subtitle: 'Carrier hull',
+    /* The runner's own bestiary, concentrated. It opens its bay, drops real
+       scouts and bombers, and feeds on them: while one of its brood is alive
+       the bar goes backwards. So the fight is not "shoot the big thing" — it
+       is "clear the sky, then shoot the big thing", which is the one lesson
+       the track teaches that no other boss asks for. */
+    arena: 'static',
+    health: 860,
+    contact: 16,
+    score: 7200,
+    coins: 280,
+    w: 48, h: 24,
+    core: { x: 24, y: 15 },
+    tier: 2,
+    float: true,
+    armour: 0.3,
+    armourLabel: 'PLATED',
+    telegraph: 0.7,
+    recover: 1.1,
+    walkSpeed: 30,
+    /* Heals this much a second for every living member of the brood, so two
+       in the air outrun most weapons and four outrun all of them. */
+    brood: { max: 4, regen: 11, types: ['scout', 'bomber'] },
+    cycleAttacks: true,
+    attacks: ['hatch', 'salvo', 'hatch', 'sweep'],
+  },
+  {
+    id: 'dredge',
+    name: 'Dredge',
+    subtitle: 'Street flooder',
+    /* Takes the floor away. Coolant floods the street and anything standing
+       in it burns, so a fight that starts as a stand-up brawl on the ground
+       becomes a fight held entirely on two ledges — and its spit arcs upward,
+       which is a shot it has no use for until you are above it. It is sealed
+       under the flood and can only be hurt once it surfaces to vent. */
+    arena: 'static',
+    health: 820,
+    contact: 18,
+    score: 7600,
+    coins: 300,
+    w: 48, h: 22,
+    core: { x: 24, y: 11 },
+    tier: 0,
+    armour: 0.26,
+    armourLabel: 'PLATED',
+    submerged: true,       // untouchable while its own flood is up
+    telegraph: 0.85,
+    recover: 1.35,
+    walkSpeed: 22,
+    cycleAttacks: true,
+    attacks: ['flood', 'spit', 'shockwave', 'spit'],
+  },
+  {
+    id: 'arbiter',
+    name: 'Arbiter',
+    subtitle: 'Judgement engine',
+    /* The interrupt. It charges a purge behind a meter you can watch fill,
+       and three capacitors ride the ring: break enough of them before the
+       meter tops out and the whole engine staggers, wide open, for longer
+       than any other window in the game. Let it finish and everything burns
+       except the one level it is floating at — which it shows you, because a
+       boss that kills you without warning is a bug. */
+    arena: 'static',
+    health: 980,
+    contact: 18,
+    score: 8200,
+    coins: 330,
+    w: 32, h: 32,
+    core: { x: 16, y: 15 },
+    tier: 1,
+    float: true,
+    armour: 0.2,
+    armourLabel: 'INSULATED',
+    telegraph: 0.8,
+    recover: 1.2,
+    walkSpeed: 26,
+    cycleAttacks: true,
+    attacks: ['overload', 'beam', 'volley', 'overload', 'sweep'],
+    parts: {
+      kind: 'capacitor',
+      count: 3,
+      health: 85,
+      w: 14, h: 14,
+      layout: 'orbit',
+      orbit: 42,
+      rise: 24,
+      spin: 0.6,
+      respawn: 14,         // long enough that three broken at once is a plan
+      gates: false,        // they are the interrupt, not a shield
+      softens: true,       // ...and every one broken thins the insulation
+    },
+  },
+  {
+    id: 'crown',
+    name: 'Zero Crown',
+    subtitle: 'The last gate',
+    /* The exam. One body, three sets of rules: the Warden's rhythm, then
+       Hexcell's priority problem, then the Arbiter's interrupt with nothing
+       left to hide behind. Nothing here is new — that is the point. It is the
+       roster asking whether all six lessons landed. */
+    arena: 'static',
+    health: 1300,
+    contact: 22,
+    score: 9800,
+    coins: 420,
+    w: 42, h: 42,
+    core: { x: 21, y: 21 },
+    tier: 0,
+    armour: 0.24,
+    armourLabel: 'CROWNED',
+    telegraph: 0.8,
+    recover: 1.1,
+    walkSpeed: 30,
+    attacks: ['stomp', 'charge', 'flak', 'hammer'],
+    /* Stages are walked in order as the bar falls past each `at`. `phase2` is
+       the same idea with one entry; this is the long-form version. */
+    stages: [
+      {
+        at: 0.66,
+        armour: 0,
+        armourLabel: 'SHIELDED',
+        telegraph: 0.7,
+        speedMul: 1.15,
+        attacks: ['beam', 'volley', 'sweep'],
+        announce: 'CROWN RAISED',
+        parts: {
+          kind: 'relay',
+          count: 3,
+          health: 90,
+          w: 12, h: 12,
+          layout: 'orbit',
+          orbit: 48,
+          rise: 26,
+          spin: 0.9,
+          respawn: 9,
+        },
+      },
+      {
+        at: 0.33,
+        armour: 1,
+        armourLabel: 'UNCROWNED',
+        telegraph: 0.55,
+        speedMul: 1.35,
+        attacks: ['charge', 'overload', 'flak', 'charge'],
+        cycleAttacks: true,
+        announce: 'CROWN BROKEN',
+        parts: {
+          kind: 'shard',
+          count: 4,
+          health: 85,
+          w: 14, h: 11,
+          layout: 'orbit',
+          orbit: 50,
+          rise: 28,
+          spin: 1.2,
+          respawn: 0,
+          gates: false,
+        },
+      },
+    ],
+  },
 ];
 
 /* Per-attack tuning, kept out of the behaviour code. */
@@ -943,4 +1164,33 @@ export const BOSS_ATTACKS = {
   flak: { damage: 14, shots: 5, speed: 130, spread: 0.55 },
   /* Walks the player down. The answer is to change level. */
   charge: { damage: 20, speed: 118, duration: 1.5 },
+  /* Bulwark. The guard is the only attack in the game answered by not
+     shooting: the slab is up, nothing gets through it, and every shot that
+     hits it is thrown back down the line it arrived on. Capped, because a
+     player holding a machine pistol should be punished for the habit, not
+     deleted for it. */
+  guard:  { duration: 2.0, returnSpeed: 200, returnDamage: 10, maxReturns: 8 },
+  /* One shell, lobbed to land exactly where the player is standing now. The
+     flight time is fixed so the arc is always the same read: it is the second
+     you spend not moving that kills you. */
+  hammer: { damage: 26, radius: 30, flight: 1.0 },
+  /* Thresher. The dive is the fight — it is both its heaviest attack and the
+     only thing that puts its core inside the arena. `embed` is how long it
+     spends stuck in the street afterwards, which is the damage window. */
+  dive:   { damage: 28, speed: 540, embed: 2.4, waveSpeed: 200, waveLife: 1.3,
+            collapse: true },
+  /* Shells walked across the player's own position from the ceiling. */
+  rain:   { damage: 14, count: 5, spacing: 34, radius: 18 },
+  /* The Hatchery. Two at a time, up to the hull's capacity. */
+  hatch:  { count: 2 },
+  /* Dredge. The street itself, for four and a half seconds. It only catches a
+     player standing in it, so the answer is the walkway — and the answer to
+     the walkway is the spit, which is why the two are cycled together. */
+  flood:  { damage: 9, life: 4.5, tick: 0.55 },
+  /* Arbiter. `need` is how much damage has to land during the wind-up to
+     break the charge. Body hits count after insulation and capacitor hits
+     count in full, so the number is set against the capacitors: three seconds
+     of rifle fire into the plating gets nowhere near it, and the same three
+     seconds spent on a capacitor clears it twice over. */
+  overload: { damage: 36, charge: 3.2, need: 150 },
 };

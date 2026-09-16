@@ -13,7 +13,7 @@
        that matters to gameplay is
    ========================================================================== */
 
-import { WORLD, PAL, BOSS_INTRO, BOSS_OUTRO } from './data.js';
+import { WORLD, PAL, BOSS_INTRO, BOSS_OUTRO, BOSS_ATTACKS } from './data.js';
 import { S } from './sprites.js';
 import { makeRng } from './world.js';
 
@@ -724,6 +724,45 @@ export class Renderer {
     if (!b || !b.active) return;
     const def = b.def;
 
+    /* The Dredge's flood. Drawn first and drawn as a surface rather than as a
+       glow, because it is the floor now and the player has to believe that
+       from a glance: if it reads as decoration they will stand in it. */
+    if (b.flood > 0) {
+      const gy = Math.round(WORLD.tierY[0]);
+      const fade = Math.min(1, b.flood * 2);
+      const x0 = Math.max(0, Math.round((b.arena ? b.arena.startX : cam) - cam));
+      const x1 = Math.min(W, Math.round((b.arena ? b.arena.endX : cam + W) - cam));
+      x.globalAlpha = fade * 0.5;
+      x.fillStyle = '#35d0ff';
+      x.fillRect(x0, gy - 6, x1 - x0, 7);
+      x.globalAlpha = fade;
+      x.fillStyle = '#ffffff';
+      for (let i = x0; i < x1; i += 4) {
+        const h = 2 + Math.round(2 * (0.5 + 0.5 * Math.sin(b.t * 7 + i * 0.35)));
+        x.fillRect(i, gy - 5 - h, 2, h);
+      }
+      x.globalAlpha = 1;
+    }
+
+    /* Where a dive is going to land, from the moment it commits. The column
+       line matters more than the mark on the ground: at a glance the player is
+       reading "not there", and they need it in their peripheral vision. */
+    if (b.phase === 'telegraph' && b.attack === 'dive') {
+      const mx = Math.round(b.markX - cam);
+      const gy = Math.round(WORLD.tierY[0]);
+      const f = 1 - Math.max(0, b.phaseT) / b.telegraphT;
+      x.globalAlpha = 0.2 + 0.4 * f;
+      x.fillStyle = '#ff3d68';
+      // From under the boss rather than from the top of the screen: run it to
+      // y=0 and it draws straight through the health bar.
+      const top = Math.max(30, Math.round(b.y + def.h / 2));
+      x.fillRect(mx - 1, top, 2, gy - top);
+      x.globalAlpha = 0.4 + 0.5 * Math.abs(Math.sin(b.t * 14));
+      const half = 16 - Math.round(6 * f);
+      x.fillRect(mx - half, gy - 2, half * 2, 2);
+      x.globalAlpha = 1;
+    }
+
     // Shockwaves: a ground-hugging crest that has to be jumped.
     for (const wv of b.waves) {
       const sx = Math.round(wv.x - cam);
@@ -849,7 +888,10 @@ export class Renderer {
                       beam: 'BEAM', volley: 'VOLLEY',
                       strafe: 'STRAFING RUN', salvo: 'SALVO', mines: 'MINES',
                       chorus: 'CHORUS', sweep: 'SWEEP',
-                      lunge: 'LUNGE', spit: 'SPIT', shockwave: 'SHOCKWAVE' }[b.attack];
+                      lunge: 'LUNGE', spit: 'SPIT', shockwave: 'SHOCKWAVE',
+                      guard: 'SHIELD UP', hammer: 'HAMMER', dive: 'DIVE',
+                      rain: 'SHELLING', hatch: 'LAUNCH', flood: 'FLOOD',
+                      overload: 'OVERLOAD' }[b.attack];
       if (label) this.text(label, dx + dw / 2, dy - 16, 'R', 1, 'center');
     }
 
@@ -895,6 +937,65 @@ export class Renderer {
     }
 
     this._bossParts(x, cam, b);
+
+    /* Bulwark's slab, drawn in front of the body it is protecting — which is
+       the whole read. It is deliberately the same amber as the shockwave and
+       the mine: in this game amber means "this will hurt you". */
+    if (b.guarding) {
+      const sx = Math.round(b.x - cam + b.dir * (def.w / 2 + 6));
+      const top = Math.round(b.y - def.h / 2 - 2);
+      const h = Math.round(def.h + 4);
+      x.globalAlpha = 0.3 + 0.25 * Math.abs(Math.sin(b.t * 9));
+      x.fillStyle = '#ffe66d';
+      x.fillRect(sx - 5, top - 2, 10, h + 4);
+      x.globalAlpha = 0.95;
+      x.fillStyle = '#ffb238';
+      x.fillRect(sx - 2, top, 4, h);
+      x.fillStyle = '#ffe66d';
+      for (let i = 3; i < h - 3; i += 6) x.fillRect(sx - 1, top + i, 2, 3);
+      x.globalAlpha = 1;
+    }
+
+    /* The overload: a meter the player fills by hitting the thing, and a lit
+       band on the one level the purge will spare. Both have to be on screen
+       for the whole wind-up, because both are the answer to it. */
+    if (b.phase === 'telegraph' && b.attack === 'overload') {
+      const sy = Math.round(WORLD.tierY[b.safeTier]);
+      x.globalAlpha = 0.2 + 0.2 * Math.abs(Math.sin(b.t * 8));
+      x.fillStyle = '#2ee6a6';
+      x.fillRect(0, sy - 26, W, 26);
+      x.globalAlpha = 0.9;
+      x.fillRect(0, sy - 2, W, 2);
+      x.globalAlpha = 1;
+      this.text('SAFE', 4, sy - 34, 'G', 1, 'left');
+
+      const need = BOSS_ATTACKS.overload.need;
+      const k = Math.min(1, b.charge / need);
+      const mw = 46;
+      const mx = Math.round(b.x - cam - mw / 2);
+      const my = Math.round(b.y - def.h / 2 - 28);
+      x.fillStyle = '#080a12';
+      x.fillRect(mx - 1, my - 1, mw + 2, 5);
+      x.fillStyle = '#161b33';
+      x.fillRect(mx, my, mw, 3);
+      x.fillStyle = k >= 1 ? '#2ee6a6' : '#35d0ff';
+      x.fillRect(mx, my, Math.round(mw * k), 3);
+    }
+
+    /* The purge itself: every level but one, all at once. */
+    if (b.purge > 0) {
+      const f = Math.min(1, b.purge / 0.55);
+      x.globalAlpha = f * 0.7;
+      x.fillStyle = '#8b5cf6';
+      for (let t = 0; t < WORLD.tierCount; t++) {
+        if (t === b.safeTier) continue;
+        x.fillRect(0, Math.round(WORLD.tierY[t]) - 26, W, 26);
+      }
+      x.globalAlpha = f * 0.3;
+      x.fillStyle = '#ffffff';
+      x.fillRect(0, 0, W, H);
+      x.globalAlpha = 1;
+    }
 
     // The intro carries the boss's name itself; two name plates at once is one
     // too many.
@@ -962,15 +1063,18 @@ export class Renderer {
     // there would say they were.
     const pd = b.partDef;
     const counts = b.parts.length && pd && (pd.gates !== false || pd.softens);
-    const shielded = counts
-      ? `${b.def.armourLabel || 'SHIELDED'}  ${b.liveParts}`
-      : (b.def.armourLabel || 'ARMOURED');
+    // A carrier being fed outranks every other label: the one thing the player
+    // has to know is why the bar is going the wrong way.
+    const fed = b.def.brood ? b.liveBrood : 0;
+    const shielded = fed
+      ? `FEEDING  ${fed}`
+      : (counts ? `${b.armourLabel}  ${b.liveParts}` : b.armourLabel);
     // Driven off the multiplier a hit would actually get, not off the phase:
     // a boss whose plating has been stripped a piece at a time, or thrown off
     // wholesale, is taking full damage and the bar has to say so.
     const open = b.armourNow >= 0.95;
-    this.text(open ? 'CORE EXPOSED' : shielded, bx + bw, by - 8,
-      open ? 'Y' : 'S', 1, 'right');
+    const say = open && !fed ? 'CORE EXPOSED' : shielded;
+    this.text(say, bx + bw, by - 8, open && !fed ? 'Y' : (fed ? 'G' : 'S'), 1, 'right');
   }
 
   _blasts(x, cam, g) {

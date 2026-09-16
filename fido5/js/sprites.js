@@ -633,6 +633,242 @@ const B_SHARD = rows('shard', [
   '.....KKKKK....',
 ]);
 
+/* ---- Boss: Bulwark ------------------------------------------------------
+   A siege walker built around the slab it carries. The shield is the left
+   third of the sprite on purpose: it faces the player for the whole fight,
+   and the body behind it is what they are trying to get at. 44x36. */
+const B_BULWARK = rows('bulwark', [
+  '........................KKKKKK..............',
+  '.......................KMMMMMMK.............',
+  '.......................KMSWWSMK.............',
+  '.......................KMSSSSMK.............',
+  '.KKKKKKKKKKK.KKKKKKKKKKKKKKKKKKKKKKKKKK.....',
+  '.KMMMMMMMMMK.KMMMMMMMMMMMMMMMMMMMMMMMMK.....',
+  '.KMSSSSSSSMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMSSSSSSSMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMAAAAAAAMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMAAAAAAAMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMSSSSSSSMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMSSSSSSSMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMSSSSSSSMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMAAAAAAAMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMAAAAAAAMK.KMSSSSSSSSSSrrrrrrrSSSSSMK.....',
+  '.KMSSSSSSSMKMMMSSSSSSSSSrrRRRRrrSSSSSMK.....',
+  '.KMSSSSSSSMKMMMSSSSSSSSrrRRYYRRrrSSSSMK.....',
+  '.KMSSSSSSSMKMMMSSSSSSSSSrrRRRRrrSSSSSMK.....',
+  '.KMSSSSSSSMK.KMSSSSSSSSSSrrrrrrrSSSSSMK.....',
+  '.KMAAAAAAAMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMAAAAAAAMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMSSSSSSSMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMSSSSSSSMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMSSSSSSSMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMAAAAAAAMK.KMSSSSSSSSSSSSSSSSSSSSSSMK.....',
+  '.KMAAAAAAAMK.KMMMMMMMMMMMMMMMMMMMMMMMMK.....',
+  '.KMSSSSSSSMK.KKKKKKKKKKKKKKKKKKKKKKKKKK.....',
+  '.KMSSSSSSSMK....KSSSSSSSK...KSSSSSSSK.......',
+  '.KMMMMMMMMMK....KSSSSSSSK...KSSSSSSSK.......',
+  '.KKKKKKKKKKK....KSSSSSSSK...KSSSSSSSK.......',
+  '................KSSSSSSSK...KSSSSSSSK.......',
+  '................KSSSSSSSK...KSSSSSSSK.......',
+  '................KSSSSSSSK...KSSSSSSSK.......',
+  '...............KSSSSSSSSK..KSSSSSSSSK.......',
+  '...............KLLLLLLLLK..KLLLLLLLLK.......',
+  '...............KKKKKKKKKK..KKKKKKKKKK.......',
+]);
+
+/* ---- Boss: Thresher -----------------------------------------------------
+   A drill slung under two rotor arms, drawn nose-down because that is the
+   only direction it ever travels in anger. 34x26. */
+const B_THRESHER = rows('thresher', [
+  '............KKKKKKKKKK............',
+  '...........KMMMMMMMMMMK...........',
+  '..........KMSSSSSSSSSSMK..........',
+  '....KKK...KMSSSSSSSSSSMK...KKK....',
+  '...KAAK...KMSSSSSSSSSSMK...KAAK...',
+  '...KAAKKKKKMSSSSSSSSSSMKKKKKAAK...',
+  '...KAAKSSSKMSSSSSSSSSSMKSSSKAAK...',
+  '...KKKKSSSKMSSSSSSSSSSMKSSSKKKK...',
+  '.......SSSKMSSSSSSSSSSMKSSS.......',
+  '.......KKKKMSSSSSSSSSSMKKKK.......',
+  '..........KMSSSSSSSSSSMK..........',
+  '..........KMSSCCCCCCSSMK..........',
+  '..........KMSCCccccCCSMK..........',
+  '..........KMSCcEEEEcCSMK..........',
+  '..........KMSCCccccCCSMK..........',
+  '..........KMSSCCCCCCSSMK..........',
+  '..........KMSSSSSSSSSSMK..........',
+  '...........KMSSSSSSSSMK...........',
+  '...........KMSSSSSSSSMK...........',
+  '............KMSSSSSSMK............',
+  '.............KMSSSSMK.............',
+  '..............KMSSMK..............',
+  '..............KMAAMK..............',
+  '...............KAAK...............',
+  '...............KAAK...............',
+  '................KK................',
+]);
+
+/* ---- Boss: The Hatchery -------------------------------------------------
+   A carrier hull with its bay doors already open — the thing it is going to
+   do to you is visible before it does it. 48x24. */
+const B_HATCHERY = rows('hatchery', [
+  '..........KKKKKKKKKKKKKKKKKKKKKKKKKKKK..........',
+  '........KKMMMMMMMMMMMMMMMMMMMMMMMMMMMMKK........',
+  '......KKMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMKK......',
+  '....KKMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMKK....',
+  '..KKMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMKK..',
+  'KKMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMKK',
+  'KMMSNSSSSNSSSSNSSSSNSSSSSSSSNSSSSNSSSSNSSSSNSMMK',
+  'KMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMK',
+  'KKMMSSCCCCSSSSCCCCSSSSSSSSSSSSCCCCSSSSCCCCSSMMKK',
+  '.KKMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMKK.',
+  '..KKMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMKK..',
+  '...KKMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMKK...',
+  '....KKMMSSSSSSSSKKKKKKKKKKKKKKKKSSSSSSSSMMKK....',
+  '.....KKMMSSSSSSKPPPPPPPPPPPPPPPPKSSSSSSMMKK.....',
+  '......KKMMSSSSSKPppppppppppppppPKSSSSSMMKK......',
+  '......KKMMSSSSSKPpEEEEEEEEEEEEpPKSSSSSMMKK......',
+  '......KKMMSSSSSKPppppppppppppppPKSSSSSMMKK......',
+  '.....KKMMSSSSSSKPPPPPPPPPPPPPPPPKSSSSSSMMKK.....',
+  '....KKMMSSSSSSSSKKKKKKKKKKKKKKKKSSSSSSSSMMKK....',
+  '.....KKMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMKK.....',
+  '......KKMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMKK......',
+  '.......KKAAMMMMAAMMMMAAMMAAMMMMAAMMMMAAKK.......',
+  '........KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK........',
+  '................................................',
+]);
+
+/* ---- Boss: Dredge -------------------------------------------------------
+   A low crawler with four vent stacks and a tread skirt, built to sit in the
+   street it is about to flood. 48x22. */
+const B_DREDGE = rows('dredge', [
+  '....KKKK.......KKKK..........KKKK.......KKKK....',
+  '....KGGK.......KGGK..........KGGK.......KGGK....',
+  '....KGGK.......KGGK..........KGGK.......KGGK....',
+  '....KMMK.......KMMK..........KMMK.......KMMK....',
+  '...KKMMKK.....KKMMKK........KKMMKK.....KKMMKK...',
+  '...KMMMMKKKKKKKMMMMMMKKKKKKMMMMMMKKKKKKKMMMMK...',
+  'KKKMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMKKK',
+  'KMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMK',
+  'KMSSNSSSSNSSSSNSSSSNSSSSSSSSNSSSSNSSSSNSSSSNSSMK',
+  'KMSSSSSSSSSSSSSSSSCCCCCCCCCCCCSSSSSSSSSSSSSSSSMK',
+  'KMSSSSSSSSSSSSSSKCccccccccccccCKSSSSSSSSSSSSSSMK',
+  'KMSSSSSSSSSSSSSSKCcEEEEEEEEEEcCKSSSSSSSSSSSSSSMK',
+  'KMSSSSSSSSSSSSSSKCccccccccccccCKSSSSSSSSSSSSSSMK',
+  'KMSSSSSSSSSSSSSSSSCCCCCCCCCCCCSSSSSSSSSSSSSSSSMK',
+  'KMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMK',
+  'KKMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMKK',
+  '.KKNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNKK.',
+  '.KMMSSMMSSMMSSMMSSMMSSMMMMSSMMSSMMSSMMSSMMSSMMK.',
+  '.KMMSSMMSSMMSSMMSSMMSSMMMMSSMMSSMMSSMMSSMMSSMMK.',
+  '.KKNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNKK.',
+  '..KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK..',
+  '................................................',
+]);
+
+/* ---- Boss: Arbiter ------------------------------------------------------
+   A ring around one unblinking eye. Nothing about it suggests legs, because
+   it never comes down. 32x32. */
+const B_ARBITER = rows('arbiter', [
+  '..........KKKKKKKKKKKK..........',
+  '.......KKKPPPPPPPPPPPPKKK.......',
+  '.....KKPPFFFFFFFFFFFFFFPPKK.....',
+  '....KPPFFFFFFFFFFFFFFFFFFPPK....',
+  '...KPFFFMMMMMMMMMMMMMMMMFFFPK...',
+  '..KPFFMMMSSSSSSSSSSSSSSMMMFFPK..',
+  '..KPFMMSSSSSSSSSSSSSSSSSSMMFPK..',
+  '.KPFMMSSSSSSSSSSSSSSSSSSSSMMFPK.',
+  '.KPFMSSSSSSSSSSSSSSSSSSSSSSMFPK.',
+  'KPFMSSSSSSSSSSSSSSSSSSSSSSSSMFPK',
+  'KPFMSSSSSSSCCCCCCCCCCSSSSSSSMFPK',
+  'KPFMSSSSSCCccccccccccCCSSSSSMFPK',
+  'KPFMSSSSCCccEEEEEEEEccCCSSSSMFPK',
+  'KPFMSSSCCcccEEEEEEEEcccCCSSSMFPK',
+  'KPFMSSSCcccEEEEEEEEEEcccCSSSMFPK',
+  'KPFMSSSCcccEEEEEEEEEEcccCSSSMFPK',
+  'KPFMSSSCcccEEEEEEEEEEcccCSSSMFPK',
+  'KPFMSSSCCcccEEEEEEEEcccCCSSSMFPK',
+  'KPFMSSSSCCccEEEEEEEEccCCSSSSMFPK',
+  'KPFMSSSSSCCccccccccccCCSSSSSMFPK',
+  'KPFMSSSSSSSCCCCCCCCCCSSSSSSSMFPK',
+  'KPFMSSSSSSSSSSSSSSSSSSSSSSSSMFPK',
+  '.KPFMSSSSSSSSSSSSSSSSSSSSSSMFPK.',
+  '.KPFMMSSSSSSSSSSSSSSSSSSSSMMFPK.',
+  '..KPFMMSSSSSSSSSSSSSSSSSSMMFPK..',
+  '..KPFFMMMSSSSSSSSSSSSSSMMMFFPK..',
+  '...KPFFFMMMMMMMMMMMMMMMMFFFPK...',
+  '....KPPFFFFFFFFFFFFFFFFFFPPK....',
+  '.....KKPPFFFFFFFFFFFFFFPPKK.....',
+  '.......KKKPPPPPPPPPPPPKKK.......',
+  '..........KKKKKKKKKKKK..........',
+  '................................',
+]);
+
+/* ---- Boss: Zero Crown ---------------------------------------------------
+   The last gate: Null Prime's silhouette grown a size, given a crown and a
+   core big enough to read from across the arena. 42x42. */
+const B_CROWN = rows('crown', [
+  '.......KKK...KKK..........KKK...KKK.......',
+  '.......KYK...KYK..........KYK...KYK.......',
+  '.......KYK...KYK..........KYK...KYK.......',
+  '.....KKKYKKKKKYKKK......KKKYKKKKKYKKK.....',
+  '.....KYYYYYYYYYYYYK....KYYYYYYYYYYYYK.....',
+  '.....KAAAAAAAAAAAAK....KAAAAAAAAAAAAK.....',
+  '......KKMMMMMMMMMMMMMMMMMMMMMMMMMMKK......',
+  '.......KMSSSSSSSSSSSSSSSSSSSSSSSSMK.......',
+  '.......KMSRRRRRRRRRRRRRRRRRRRRRRSMK.......',
+  '.......KMSRYYYYYYYYYYYYYYYYYYYYRSMK.......',
+  '.......KMSRRRRRRRRRRRRRRRRRRRRRRSMK.......',
+  '......KKMSSSSSSSSSSSSSSSSSSSSSSSSMKK......',
+  'KKKKKKMMMSSSSSSSSSSSMMSSSSSSSSSSSMMMKKKKKK',
+  'KMMMMMMMMSSSSSSSSSSSSSSSSSSSSSSSSMMMMMMMMK',
+  'KMSSSSSSMMSSSSSSSSSSSSSSSSSSSSSSMMSSSSSSMK',
+  'KMSFFFFSMSSSSSSSSSSSSSSSSSSSSSSSSMSFFFFSMK',
+  'KMSFFFFSMSSSSSFFFFFFFFFFFFFFSSSSSMSFFFFSMK',
+  'KMSFFFFSMSSSFFPPPPPPPPPPPPPPFFSSSMSFFFFSMK',
+  'KMSFFFFSMSSFPPppppppppppppppPPFSSMSFFFFSMK',
+  'KMSSSSSSMSSFPPppppppppppppppPPFSSMSSSSSSMK',
+  'KMSSSSSSMSSFPPpppEEEEEEEEpppPPFSSMSSSSSSMK',
+  'KMSSSSSSMSSFPPppEEEEEEEEEEppPPFSSMSSSSSSMK',
+  'KMSSSSSSMSSFPPpppEEEEEEEEpppPPFSSMSSSSSSMK',
+  'KMSSSSSSMSSFPPppppppppppppppPPFSSMSSSSSSMK',
+  'KMSSSSSSMSSFFPPPPPPPPPPPPPPPPFFSSMSSSSSSMK',
+  'KMMMMMMMMSSSFFFFFFFFFFFFFFFFFFSSSMMMMMMMMK',
+  'KKKKKKKKKSSSSSSFFFFFFFFFFFFSSSSSSKKKKKKKKK',
+  '...KKKKKSSSSSSSSSSSSSSSSSSSSSSSSSSKKKKK...',
+  '....KMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMK....',
+  '....KMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMK....',
+  '....KKKKKMMMMMMMMMMMMMMMMMMMMMMMMKKKKK....',
+  '.........KMMMMMMMMMMMMMMMMMMMMMMK.........',
+  '.........KMMMMMKKKKKKKKKKKKMMMMMK.........',
+  '.........KMMMMMK..........KMMMMMK.........',
+  '........KSSSSSSSK........KSSSSSSSK........',
+  '........KSSASASSK........KSSASASSK........',
+  '........KSSSSSSSK........KSSSSSSSK........',
+  '........KSMMMMMSK........KSMMMMMSK........',
+  '.......KKMMMMMMMKK......KKMMMMMMMKK.......',
+  '......KSSSSSSSSSSK......KSSSSSSSSSSK......',
+  '......KLLLLLLLLLLK......KLLLLLLLLLLK......',
+  '......KKKKKKKKKKKK......KKKKKKKKKKKK......',
+]);
+
+/* The Arbiter's capacitors. Three of them, and they are the interrupt. */
+const B_CAPACITOR = rows('capacitor', [
+  '.....KKKK.....',
+  '....KCCCCK....',
+  '...KCEEEECK...',
+  '..KKCCEECCKK..',
+  '.KMSSCCCCSSMK.',
+  'KMSSSSCCSSSSMK',
+  'KMSSSCCCCSSSMK',
+  'KMSSSCCCCSSSMK',
+  'KMSSSSCCSSSSMK',
+  '.KMSSCCCCSSMK.',
+  '..KKCCEECCKK..',
+  '...KCEEEECK...',
+  '....KCCCCK....',
+  '.....KKKK.....',
+]);
 const E_TANK = rows('tank', [
   '.........KKKKKK...........',
   '........KMRRRRMK..........',
@@ -853,6 +1089,9 @@ export function buildSprites() {
   S.boss = {
     warden: fromRows(B_WARDEN), hexcell: fromRows(B_HEXCELL), convoy: fromRows(B_CONVOY),
     choir: fromRows(B_CHOIR), ripper: fromRows(B_RIPPER), prime: fromRows(B_PRIME),
+    bulwark: fromRows(B_BULWARK), thresher: fromRows(B_THRESHER),
+    hatchery: fromRows(B_HATCHERY), dredge: fromRows(B_DREDGE),
+    arbiter: fromRows(B_ARBITER), crown: fromRows(B_CROWN),
   };
   S.bossFlip = {};
   for (const k in S.boss) S.bossFlip[k] = flip(S.boss[k]);
@@ -860,6 +1099,7 @@ export function buildSprites() {
   // that has to be killed separately.
   S.bossPart = {
     relay: fromRows(B_RELAY), pod: fromRows(B_POD), shard: fromRows(B_SHARD),
+    capacitor: fromRows(B_CAPACITOR),
   };
   // Turrets and tanks are ground-mounted and face left already; flying enemies
   // get a mirrored copy for the rare case they are drawn retreating.
