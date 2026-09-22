@@ -354,6 +354,32 @@ body {
 .pad__btn svg { width: 46%; height: 46%; fill: currentColor; stroke: currentColor; stroke-width: 1.6; }
 .pad__btn.is-down { background: rgba(139,92,246,.55); border-color: var(--purple-l); transform: scale(.94); }
 .pad__btn:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
+/* Padding on the touch target only, for the held pair.
+
+   Hit testing respects border-radius, so two circles on a diagonal leave a
+   dead corridor between them where a tap lands on neither and the run just
+   carries on without you — the worst of the three ways to miss, and the one a
+   player cannot learn around. The corridor is about 12px at every size,
+   because it is `--btn-gap` times root-two plus a rounding of the button.
+
+   An absolutely positioned child is not a grid item, so this changes no
+   layout and draws nothing; a tap on it bubbles to the button. Tying the
+   inset to --btn-gap is what keeps the residual gap constant: the one number
+   that opens the corridor is the number that closes it. About 3px is left, so
+   the two never actually overlap and neither can steal the other's tap.
+
+   Deliberately not on the gadget — overshooting a reach for jump into a
+   cooldown is the one miss the layout below is built to keep expensive. */
+.pad__btn--jump::before,
+.pad__btn--fire::before {
+  content: ''; position: absolute;
+  /* The 2px is the button's own border: an absolutely positioned child is
+     placed against the padding box, so without it the border quietly eats
+     that much of the reach. Measured, not assumed — it was the difference
+     between a 6px residual corridor and a 2.5px one. */
+  inset: calc(-2px - var(--btn-gap) * .62);
+  border-radius: 50%;
+}
 /* The right-hand cluster, laid out from four numbers rather than from four
    sets of hand-computed offsets. Sizes are clamps in vh, so rem arithmetic
    cannot tell you whether two buttons touch — expressing every position in
@@ -361,10 +387,14 @@ body {
    @media block below only has to restate these four. */
 .pad {
   position: absolute; inset: 0; pointer-events: none;
-  --btn-main: clamp(70px, calc(13.5vh + 4px), 92px); /* jump and fire: the held pair */
+  --btn-main: clamp(76px, calc(14.5vh + 6px), 98px); /* jump and fire: the held pair */
   --btn-alt:  clamp(64px, calc(11.5vh + 8px), 86px); /* gadget */
   --btn-gap:  .5rem;
-  --pad-r:    calc(var(--safe-r) + .7rem);
+  /* Held in from the right edge rather than tucked against it. A thumb
+     reaching the last few millimetres of the corner is a thumb at the end of
+     its travel, which is where aim goes first: the cluster sits far enough in
+     that both held buttons are taken mid-sweep instead. */
+  --pad-r:    calc(var(--safe-r) + 1.4rem);
   --pad-b:    calc(var(--safe-b) + 1.1rem);
   /* How far apart the staggered pair sits, on both axes. At 0.72 of a button
      plus the gap the two circles clear each other by about 12px even at the
@@ -460,7 +490,7 @@ body {
 /* Health bars sit low-left, so on very short screens shrink the pad instead. */
 @media (max-height: 400px) {
   /* Only these numbers change; every size and position above follows them. */
-  .pad { --btn-main: 72px; --btn-alt: 58px; --btn-gap: .4rem;
+  .pad { --btn-main: 78px; --btn-alt: 58px; --btn-gap: .4rem;
          --pad-b: calc(var(--safe-b) + .7rem); }
   .stick__base { width: 92px; height: 92px; margin: -46px 0 0 -46px;
                  left: calc(var(--safe-l) + 3.6rem); bottom: calc(var(--safe-b) + 3.2rem); }
