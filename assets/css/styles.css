@@ -146,6 +146,9 @@ p { max-width: var(--maxw-prose); }
 .nav__links a:hover { color: var(--accent); background: var(--accent-tint); text-decoration: none; }
 .nav__links a[aria-current="page"] { color: var(--accent); }
 .nav__cta { margin-left: var(--sp-2); }
+/* `.nav__links a` outranks `.btn--primary`, so restate the button colours here */
+.nav__links .btn--primary { color: #fff; }
+.nav__links .btn--primary:hover { color: #fff; background: var(--accent-dark); }
 
 .nav__toggle {
   display: none; background: none; border: 1px solid var(--line); border-radius: var(--radius-sm);
@@ -438,6 +441,9 @@ p { max-width: var(--maxw-prose); }
 .book-row { display: grid; grid-template-columns: 1fr; gap: var(--sp-3); max-width: 48rem; margin: 0 auto var(--sp-6); }
 @media (min-width: 640px) { .book-row { grid-template-columns: repeat(2, 1fr); } }
 .cta-band .book-row .btn { width: 100%; }
+.theme-plum .cta-band { padding: var(--sp-6) var(--sp-4); }
+@media (min-width: 640px) { .theme-plum .cta-band { padding: var(--sp-8); } }
+.theme-plum [id] { scroll-margin-top: 80px; } /* clear the sticky header on anchor jumps */
 .cta-band a:not(.btn) { color: #fff; text-decoration: underline; }
 
 /* Intake form */
