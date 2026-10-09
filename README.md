@@ -17,7 +17,7 @@ The repository root **is** the website root (no build step).
 ## App Testing Service
 
 Pages: `/app-testing/` (service page), `/app-testing/book/` (booking form), `/app-testing/thank-you/`
-(Stripe redirect), both `noindex` and not in the sitemap, and `/app-testing/terms/` (draft terms).
+(Stripe redirect), both `noindex` and not in the sitemap, and `/app-testing/terms/` (service terms).
 
 Booking runs **details first, then payment**: Book buttons open `/app-testing/book/?option=<option>`. The
 form posts to the booking function (`firebase/`), which creates a Stripe Checkout with the details attached
