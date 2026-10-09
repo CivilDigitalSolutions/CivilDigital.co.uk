@@ -14,7 +14,7 @@ held in memory per function instance, and `maxInstances` is 2, so no database is
 ## One-off setup
 
 1. Create the Firebase project for services (Blaze plan, which Cloud Functions require). Put its ID in
-   `firebase/.firebaserc` in place of `REPLACE_WITH_SERVICES_PROJECT_ID`.
+   `firebase/.firebaserc` (currently `civil-digital`).
 2. **Resend:** add and verify the `civildigital.co.uk` domain (it gives you DNS records to add), then create
    an API key with *Sending access* only.
 3. Store the key as a secret (it prompts for the value, so the key never goes in a file):
