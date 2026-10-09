@@ -15,7 +15,11 @@ with `https://` counts as a placeholder, and that button stays an email link
 | Statement descriptor | Settings → Business → Public details | `CIVIL DIGITAL TESTING` (21 of 22 characters allowed) |
 | Terms of service URL | Settings → Business → Public details | `https://civildigital.co.uk/app-testing/terms/` |
 | Brand colour and accent | Settings → Branding | `#7D0A70` |
-| Icon / logo | Settings → Branding | Export `assets/brand/CivilDigitalIcon.svg` and `CivilDigital.svg` to PNG (Stripe does not take SVG) |
+| Icon | Settings → Branding → Icon | `docs/stripe-branding/civil-digital-stripe-icon.png` (512×512, plum mark on white) |
+| Logo | Settings → Branding → Logo | `docs/stripe-branding/civil-digital-stripe-logo.png` (2100×300 wordmark on white) |
+
+Stripe does not take SVG, so both PNGs are rendered from `assets/brand/CivilDigitalIcon.svg` and
+`assets/brand/CivilDigital.svg`. Re-render them if the brand files change.
 | Tax | Settings → Tax | Leave Stripe Tax off. No VAT is added. |
 | Customer emails | Settings → Customer emails | Turn on **Successful payments** so the receipt is sent |
 
