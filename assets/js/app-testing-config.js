@@ -17,5 +17,5 @@ window.CD_APP_TESTING = {
     LAUNCH_PACK:   "LAUNCH_PACK_URL",
     EXTRA_JOURNEY: "EXTRA_JOURNEY_URL"
   },
-  intakeEndpoint: "INTAKE_ENDPOINT_URL"
+  intakeEndpoint: "https://europe-west2-civil-digital.cloudfunctions.net/intake"
 };
