@@ -14,6 +14,20 @@ The repository root **is** the website root (no build step).
    - (optional) `www` as `CNAME` → `<github-user>.github.io`
 5. Enable **Enforce HTTPS** once the certificate provisions.
 
+## App Testing Service
+
+Pages: `/app-testing/` (service page), `/app-testing/thank-you/` (Stripe redirect and intake form,
+`noindex`, not in the sitemap) and `/app-testing/terms/` (draft terms).
+
+- **Book buttons** read Stripe Payment Link URLs from `assets/js/app-testing-config.js`. Placeholders fall
+  back to email. The Stripe dashboard settings are in `docs/stripe-payment-links.md`.
+- **Service guide PDF (placeholder):** Tom will copy
+  `Civil Digital – App Testing Service – 2026-10-08.pdf` into the site root as `app-testing.pdf`. The
+  service page links to `/app-testing.pdf`, which 404s until then.
+- **Intake form:** posts JSON to `intakeEndpoint` in the same config file. While that is a placeholder,
+  the form opens the visitor's email app with the details filled in. Without JavaScript it falls back to
+  a `mailto:` form, and the page also gives the email address.
+
 ## FarmFlow (moved to subdomain)
 
 The FarmFlow support site now lives in its own repo, published at
