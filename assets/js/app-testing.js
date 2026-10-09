@@ -1,23 +1,16 @@
 /* App Testing Service — booking form (/app-testing/book/).
-   Details first, then payment: the form is sent to the booking endpoint, which returns a booking
-   reference, and the visitor is taken to the Stripe Payment Link for their option with that reference
-   (client_reference_id) and their email filled in. Vanilla JS, progressive enhancement only: without
-   it the form falls back to the visitor's email app and we reply with a payment link. */
+   Details first, then payment: the form goes to the booking function, which creates a Stripe Checkout
+   with the details attached and returns its address. Once the payment succeeds, Stripe tells the
+   function, which sends one confirmation email to the customer and one to us. Vanilla JS, progressive
+   enhancement only: without it the form falls back to the visitor's email app. */
 
 (function () {
   "use strict";
 
-  var cfg = window.CD_APP_TESTING || { links: {} };
+  var cfg = window.CD_APP_TESTING || {};
   // A real URL is https://, or a local emulator address while testing; anything else is a placeholder
   var isLive = function (url) {
     return typeof url === "string" && /^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)[:/])/.test(url);
-  };
-  var LINK_KEYS = {
-    "quick-check": "QUICK_CHECK",
-    "feature-test": "FEATURE_TEST",
-    "rolling": "ROLLING",
-    "launch-pack": "LAUNCH_PACK",
-    "extra-journey": "EXTRA_JOURNEY"
   };
 
   var form = document.getElementById("intake");
@@ -26,15 +19,17 @@
   var submit = form.querySelector("button[type=submit]");
   var submitLabel = submit.textContent;
 
-  // Book buttons link here with ?option=<value>
-  var option = new URLSearchParams(location.search).get("option");
-  if (option && LINK_KEYS[option]) form.option.value = option;
-
   function show(kind, msg) {
     status.className = "status status--" + kind;
     status.textContent = msg;
     status.focus();
   }
+
+  // Book buttons link here with ?option=<value>; Stripe sends people back with &cancelled=1
+  var params = new URLSearchParams(location.search);
+  var option = params.get("option");
+  if (option && form.option.querySelector('option[value="' + option.replace(/[^a-z-]/g, "") + '"]')) form.option.value = option;
+  if (params.get("cancelled")) show("err", "Payment wasn't completed, so nothing has been charged and no booking was made. You can try again below.");
 
   function collect() {
     var data = {};
@@ -45,13 +40,6 @@
       data[el.name] = el.type === "checkbox" ? el.checked : el.value.trim();
     }
     return data;
-  }
-
-  function paymentUrl(d, ref) {
-    var link = cfg.links[LINK_KEYS[d.option]];
-    if (!isLive(link)) return null;
-    return link + (link.indexOf("?") < 0 ? "?" : "&") +
-      "client_reference_id=" + encodeURIComponent(ref) + "&prefilled_email=" + encodeURIComponent(d.email);
   }
 
   function asEmail(d) {
@@ -75,6 +63,11 @@
       "&body=" + encodeURIComponent(lines.join("\n"));
   }
 
+  function reset() {
+    submit.disabled = false;
+    submit.textContent = submitLabel;
+  }
+
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     if (!form.checkValidity()) { form.reportValidity(); return; }
@@ -88,28 +81,28 @@
     }
 
     submit.disabled = true;
-    submit.textContent = "Sending…";
+    submit.textContent = "Please wait…";
     fetch(cfg.intakeEndpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(d)
     }).then(function (res) {
-      if (!res.ok) throw new Error(res.status);
-      return res.json();
-    }).then(function (body) {
-      var pay = paymentUrl(d, body.ref);
-      if (pay) {
-        show("ok", "Thanks, we have your details (booking reference " + body.ref + "). Taking you to secure payment…");
-        location.href = pay;
+      return res.json().then(function (body) { return { status: res.status, body: body }; });
+    }).then(function (r) {
+      if (r.status === 200 && r.body.url) {
+        show("ok", "Taking you to secure payment…");
+        location.href = r.body.url;
+        return;
+      }
+      reset();
+      if (r.status === 409) {
+        show("err", "Sorry, this option is full at the moment. Email info@civildigital.co.uk to join the waiting list, or choose another option.");
       } else {
-        show("ok", "Thanks, we have your details (booking reference " + body.ref + "). We'll email you a payment link shortly.");
-        submit.disabled = false;
-        submit.textContent = submitLabel;
+        show("err", "Sorry, something went wrong and you have not been charged. Please try again, or email info@civildigital.co.uk.");
       }
     }).catch(function () {
-      show("err", "Sorry, that didn't send. Please try again, or email the details to info@civildigital.co.uk.");
-      submit.disabled = false;
-      submit.textContent = submitLabel;
+      reset();
+      show("err", "Sorry, something went wrong and you have not been charged. Please try again, or email info@civildigital.co.uk.");
     });
   });
 })();

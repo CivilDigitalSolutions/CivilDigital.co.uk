@@ -1,21 +1,25 @@
-// App Testing booking form: validation, rate limiting and email building.
-// The form is sent BEFORE payment. Each submission gets a booking reference, which the page passes to
-// Stripe as client_reference_id so the payment and the details email can be matched.
+// App Testing bookings: validation, Stripe Checkout, webhook verification and email building.
+//
+// Flow: the booking form posts here -> we validate it and create a Stripe Checkout Session with the
+// details in its metadata -> the customer pays -> Stripe calls the webhook -> we send ONE email to the
+// owner and ONE to the customer, confirming booking and payment together.
+//
+// No database: between the form and the payment, the details live only on the Stripe Checkout Session.
 // Kept free of Firebase imports so it can be unit-tested with node --test.
-// Nothing here stores a submission: it is validated, emailed and dropped.
+
+import { randomInt, createHmac, timingSafeEqual } from "node:crypto";
 
 export const OPTIONS = {
-  "quick-check": "Quick Check (£19)",
-  "feature-test": "Focused Feature Test (£29)",
-  "rolling": "Rolling Daily Testing (£39)",
-  "launch-pack": "Launch Pack (£69)",
-  "extra-journey": "Extra journeys only (£12 each)"
+  "quick-check": "Quick Check",
+  "feature-test": "Focused Feature Test",
+  "rolling": "Rolling Daily Testing",
+  "launch-pack": "Launch Pack",
+  "extra-journey": "Extra journeys"
 };
-
-import { randomInt } from "node:crypto";
-
 export const OWNER_EMAIL = "info@civildigital.co.uk";
+const SERVICE_TAG = "app-testing";
 const MAX_BODY_BYTES = 20 * 1024;
+const META_CHUNK = 500; // Stripe metadata values are capped at 500 characters
 
 // name: [max length, required, multi-line]
 const TEXT_FIELDS = {
@@ -103,20 +107,128 @@ export function createRateLimiter({ limit = 5, windowMs = 15 * 60 * 1000 } = {})
   };
 }
 
-export function buildEmails(d, from, ref) {
-  const optionLabel = OPTIONS[d.option];
+// ---- Booking details <-> Stripe metadata ---------------------------------------------------
+
+/** Flattens the validated details into Stripe metadata (long text split across 500-character keys). */
+export function packDetails(d, ref) {
+  const meta = {
+    service: SERVICE_TAG, ref, option: d.option, name: d.name, email: d.email, app_link: d.app_link,
+    optin_link: d.optin_link || "", test_username: d.test_username || "", browser: d.browser || "",
+    create_dummy: d.create_dummy ? "yes" : "no"
+  };
+  for (const field of ["do_not_touch", "journeys"]) {
+    const text = d[field] || "";
+    for (let i = 0; i * META_CHUNK < text.length; i++) meta[`${field}_${i + 1}`] = text.slice(i * META_CHUNK, (i + 1) * META_CHUNK);
+  }
+  return meta;
+}
+
+export function unpackDetails(meta) {
+  const join = (field) => {
+    let out = "";
+    for (let i = 1; meta[`${field}_${i}`] !== undefined; i++) out += meta[`${field}_${i}`];
+    return out;
+  };
+  return {
+    ref: meta.ref, option: meta.option, name: meta.name, email: meta.email, app_link: meta.app_link,
+    optin_link: meta.optin_link, test_username: meta.test_username, browser: meta.browser,
+    create_dummy: meta.create_dummy === "yes", do_not_touch: join("do_not_touch"), journeys: join("journeys")
+  };
+}
+
+// ---- Stripe REST (no SDK) -------------------------------------------------------------------
+
+/** Form-encodes nested objects/arrays the way Stripe expects (a[b][0][c]=...). */
+export function formEncode(obj, prefix = "", out = []) {
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined || v === null) continue;
+    const key = prefix ? `${prefix}[${k}]` : k;
+    if (typeof v === "object") formEncode(v, key, out);
+    else out.push(`${encodeURIComponent(key)}=${encodeURIComponent(v)}`);
+  }
+  return out.join("&");
+}
+
+export async function stripe(method, path, params, { key, fetchImpl = fetch }) {
+  const body = params && method !== "GET" ? formEncode(params) : undefined;
+  const qs = params && method === "GET" ? "?" + formEncode(params) : "";
+  const res = await fetchImpl(`https://api.stripe.com/v1${path}${qs}`, {
+    method,
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(`Stripe ${path} ${res.status}: ${json?.error?.message || "error"}`);
+  return json;
+}
+
+/** Number of paid bookings for an option, for the "limited spaces" cap. Search results can lag ~1 minute. */
+export async function countPaid(option, opts) {
+  const r = await stripe("GET", "/payment_intents/search",
+    { query: `status:'succeeded' AND metadata['service']:'${SERVICE_TAG}' AND metadata['option']:'${option}'`, limit: 100 }, opts);
+  return r.data.length;
+}
+
+export function checkoutParams(d, ref, { priceId, siteUrl }) {
+  const meta = packDetails(d, ref);
+  return {
+    mode: "payment",
+    line_items: [d.option === "extra-journey"
+      ? { price: priceId, quantity: 1, adjustable_quantity: { enabled: true, minimum: 1, maximum: 10 } }
+      : { price: priceId, quantity: 1 }],
+    customer_email: d.email,
+    client_reference_id: ref,
+    metadata: meta,
+    payment_intent_data: {
+      description: `App testing ${ref}: ${OPTIONS[d.option]}`,
+      metadata: { service: SERVICE_TAG, ref, option: d.option }
+    },
+    consent_collection: { terms_of_service: "required" },
+    custom_text: { terms_of_service_acceptance: { message:
+      `I agree to the [service terms](${siteUrl}/app-testing/terms/) and ask Civil Digital to start straight away. I understand the right to cancel ends once the report is delivered.` } },
+    success_url: `${siteUrl}/app-testing/thank-you/?option=${d.option}`,
+    cancel_url: `${siteUrl}/app-testing/book/?option=${d.option}&cancelled=1`
+  };
+}
+
+/** Verifies a Stripe-Signature header (v1 HMAC-SHA256 over "timestamp.rawBody"). */
+export function verifyStripeSignature(rawBody, header, secret, nowSec = Math.floor(Date.now() / 1000), tolerance = 300) {
+  if (!header || !secret) return false;
+  let t = null; const sigs = [];
+  for (const piece of String(header).split(",")) {
+    const [k, v] = piece.split("=");
+    if (k === "t") t = Number(v);
+    if (k === "v1" && v) sigs.push(v);
+  }
+  if (!t || !sigs.length || Math.abs(nowSec - t) > tolerance) return false;
+  const expected = createHmac("sha256", secret).update(`${t}.${rawBody}`).digest();
+  return sigs.some((s) => {
+    const got = Buffer.from(s, "hex");
+    return got.length === expected.length && timingSafeEqual(got, expected);
+  });
+}
+
+// ---- Emails ---------------------------------------------------------------------------------
+
+const money = (pence, currency = "gbp") =>
+  new Intl.NumberFormat("en-GB", { style: "currency", currency: currency.toUpperCase() }).format(pence / 100);
+
+/** One email to the owner and one to the customer, sent only once the payment has succeeded. */
+export function buildPaidEmails(d, pay, from) {
+  const option = OPTIONS[d.option] || d.option;
+  const amount = money(pay.amount, pay.currency);
   const owner = {
     from,
     to: [OWNER_EMAIL],
     reply_to: d.email,
-    subject: `App testing booking ${ref} (awaiting payment): ${optionLabel} – ${d.name}`,
+    subject: `Paid ${amount}: ${option} – ${d.ref} – ${d.name}`,
     text: [
-      `Booking reference: ${ref}`,
-      "Payment is taken next, on Stripe. Match it by the payment's client reference.",
+      `PAID: ${amount} received for ${option}.`,
+      `Booking reference: ${d.ref}`,
+      `Stripe payment: ${pay.dashboardUrl || "-"}`,
       "",
       `Name: ${d.name}`,
       `Email: ${d.email}`,
-      `Option booked: ${optionLabel}`,
       `App link: ${d.app_link}`,
       `Play tester opt-in link: ${d.optin_link || "-"}`,
       `Test account username: ${d.test_username || "-"}`,
@@ -134,15 +246,18 @@ export function buildEmails(d, from, ref) {
     from,
     to: [d.email],
     reply_to: OWNER_EMAIL,
-    subject: `Your app testing booking ${ref}`,
+    subject: `Booking confirmed: ${option} (${d.ref})`,
     text: [
       `Hi ${d.name},`,
       "",
-      `Thanks, we have your details for ${optionLabel} (${d.app_link}). Your booking reference is ${ref}.`,
+      `Thanks, your booking is confirmed and your payment of ${amount} has been received.`,
       "",
-      "Once your payment goes through, Stripe will email you a receipt. We'll then check we have everything we need and start testing. Reports arrive within 3 working days of the app being ready to test.",
+      `Booking reference: ${d.ref}`,
+      `Option: ${option}`,
+      `App: ${d.app_link}`,
+      pay.receiptUrl ? `Receipt: ${pay.receiptUrl}` : null,
       "",
-      "If you closed the payment page before paying, reply to this email and we'll send you a payment link.",
+      "What happens next: we'll check we have everything we need, then start testing. Reports arrive within 3 working days of the app being ready to test. Rolling Daily Testing sends daily feedback to your inbox.",
       "",
       d.test_username
         ? "If your test account needs a password, reply to this email with it. Please never send it through the website form."
@@ -151,25 +266,25 @@ export function buildEmails(d, from, ref) {
       "Civil Digital",
       "info@civildigital.co.uk · 07568 296136",
       "https://civildigital.co.uk/app-testing/terms/"
-    ].join("\n")
+    ].filter((l) => l !== null).join("\n")
   };
   return { owner, customer };
 }
 
-export async function sendEmail(message, { apiKey, fetchImpl = fetch, base = "https://api.resend.com" }) {
-  const res = await fetchImpl(`${base}/emails`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify(message)
-  });
+export async function sendEmail(message, { apiKey, fetchImpl = fetch, base = "https://api.resend.com", idempotencyKey }) {
+  const headers = { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" };
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey; // Stripe may deliver an event twice
+  const res = await fetchImpl(`${base}/emails`, { method: "POST", headers, body: JSON.stringify(message) });
   if (!res.ok) throw new Error(`Resend responded ${res.status}`);
 }
 
+// ---- HTTP handlers ----------------------------------------------------------------------------
+
 /**
- * Builds the HTTP handler. Dependencies are injected so tests can run it without Firebase or Resend.
- * deps: { apiKey(), from(), allowedOrigins, fetchImpl, resendBase, log }
+ * Booking form endpoint. Validates, enforces the spaces cap, creates a Checkout Session and returns its URL.
+ * deps: { stripeKey(), prices: {option: priceId}, limits: {option: n}, siteUrl, allowedOrigins, fetchImpl, log }
  */
-export function createHandler(deps) {
+export function createBookingHandler(deps) {
   const allow = createRateLimiter();
   const log = deps.log || console;
 
@@ -191,26 +306,72 @@ export function createHandler(deps) {
     if (!allow(req.ip || "unknown")) return res.status(429).json({ ok: false, error: "rate" });
 
     const body = req.body || {};
-    // Honeypot: people never see the "website" field, bots fill it. Pretend success, send nothing.
-    if (typeof body.website === "string" && body.website.trim()) return res.status(200).json({ ok: true, ref: makeRef() });
+    // Honeypot: people never see the "website" field, bots fill it. Pretend success, do nothing.
+    if (typeof body.website === "string" && body.website.trim()) {
+      return res.status(200).json({ ok: true, url: `${deps.siteUrl}/app-testing/thank-you/` });
+    }
 
     const result = validate(body);
     if (!result.ok) return res.status(400).json({ ok: false, errors: result.errors });
+    const d = result.data;
 
-    const ref = makeRef();
-    const { owner, customer } = buildEmails(result.data, deps.from(), ref);
-    const opts = { apiKey: deps.apiKey(), fetchImpl: deps.fetchImpl, base: deps.resendBase };
+    const opts = { key: deps.stripeKey(), fetchImpl: deps.fetchImpl };
     try {
-      await sendEmail(owner, opts);
+      const limit = deps.limits[d.option];
+      if (limit !== undefined && (await countPaid(d.option, opts)) >= limit) {
+        return res.status(409).json({ ok: false, error: "full" });
+      }
+      const ref = makeRef();
+      const session = await stripe("POST", "/checkout/sessions",
+        checkoutParams(d, ref, { priceId: deps.prices[d.option], siteUrl: deps.siteUrl }), opts);
+      return res.status(200).json({ ok: true, ref, url: session.url });
     } catch (err) {
-      log.error("Owner email failed", err.message); // never log the submission itself
-      return res.status(502).json({ ok: false, error: "send" });
+      log.error("Checkout creation failed", err.message); // never log the submission itself
+      return res.status(502).json({ ok: false, error: "checkout" });
     }
+  };
+}
+
+/**
+ * Stripe webhook. On a paid app-testing Checkout Session, emails the owner and the customer once each.
+ * deps: { stripeKey(), webhookSecret(), resendKey(), from(), resendBase, fetchImpl, log }
+ */
+export function createWebhookHandler(deps) {
+  const log = deps.log || console;
+
+  return async function handler(req, res) {
+    if (req.method !== "POST") return res.status(405).send("method");
+    const raw = req.rawBody ? req.rawBody.toString("utf8") : "";
+    const sig = req.get ? req.get("stripe-signature") : req.headers?.["stripe-signature"];
+    if (!verifyStripeSignature(raw, sig, deps.webhookSecret(), deps.nowSec?.())) return res.status(400).send("signature");
+
+    let event;
+    try { event = JSON.parse(raw); } catch { return res.status(400).send("json"); }
+    const session = event.data?.object;
+    const paidNow =
+      (event.type === "checkout.session.completed" && session?.payment_status === "paid") ||
+      event.type === "checkout.session.async_payment_succeeded";
+    if (!paidNow || session?.metadata?.service !== SERVICE_TAG) return res.status(200).send("ignored");
+
     try {
-      await sendEmail(customer, opts);
+      const opts = { key: deps.stripeKey(), fetchImpl: deps.fetchImpl };
+      const full = await stripe("GET", `/checkout/sessions/${session.id}`, { expand: ["payment_intent.latest_charge"] }, opts);
+      const pi = full.payment_intent;
+      const pay = {
+        amount: full.amount_total,
+        currency: full.currency,
+        receiptUrl: pi?.latest_charge?.receipt_url || "",
+        dashboardUrl: pi?.id ? `https://dashboard.stripe.com/${full.livemode ? "" : "test/"}payments/${pi.id}` : ""
+      };
+      const d = unpackDetails(full.metadata);
+      const { owner, customer } = buildPaidEmails(d, pay, deps.from());
+      const mail = { apiKey: deps.resendKey(), fetchImpl: deps.fetchImpl, base: deps.resendBase };
+      await sendEmail(owner, { ...mail, idempotencyKey: `${session.id}-owner` });
+      await sendEmail(customer, { ...mail, idempotencyKey: `${session.id}-customer` });
+      return res.status(200).send("sent");
     } catch (err) {
-      log.warn("Customer confirmation failed", err.message); // we still have the details, so report success
+      log.error("Paid booking email failed", err.message);
+      return res.status(500).send("retry"); // Stripe retries failed webhooks for up to 3 days
     }
-    return res.status(200).json({ ok: true, ref });
   };
 }
