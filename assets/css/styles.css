@@ -332,3 +332,130 @@ p { max-width: var(--maxw-prose); }
 .closing h2 { font-size: clamp(2.1rem, 5.2vw, 3.1rem); letter-spacing: -0.03em; }
 .closing p { color: var(--muted); font-size: var(--fs-500); max-width: 34rem; margin: var(--sp-4) auto var(--sp-7); }
 .closing .hero__actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); justify-content: center; }
+
+/* ==========================================================================
+   APP TESTING SERVICE — /app-testing/ pages only (additive)
+   `.theme-plum` on <body> swaps the accent tokens to the brand plum, which
+   also lifts link contrast to ~10:1 on white. Everything else reuses the
+   tokens and components above.
+   ========================================================================== */
+.theme-plum {
+  --accent:       #7d0a70;
+  --accent-dark:  #5a0751;
+  --accent-light: #f3e3f1;
+  --accent-tint:  #faf3f9;
+  --focus:        #7d0a70;
+}
+.theme-plum .hero-xl {
+  background: radial-gradient(70% 120% at 50% -10%, rgba(125,10,112,.10), transparent 60%), var(--surface);
+}
+.theme-plum .hero-xl h1 { font-size: clamp(2.1rem, 5.6vw, 3.6rem); }
+.theme-plum .hero-xl .hero-sub { font-size: clamp(1.1rem, 2.4vw, 1.4rem); }
+
+/* 44px minimum tap targets for buttons and links on these pages */
+.theme-plum .btn { min-height: 44px; justify-content: center; }
+.theme-plum .tap { display: inline-block; padding-block: .6rem; }
+.theme-plum .footer-links a { display: inline-block; padding-block: .55rem; }
+.theme-plum .nav__links a { min-height: 44px; display: inline-flex; align-items: center; }
+
+.at-section { padding-block: clamp(3rem, 8vh, 5.5rem); }
+.at-section--tint { background: var(--accent-tint); }
+.at-head { max-width: 46rem; margin-bottom: var(--sp-6); }
+.at-head h2 { font-size: var(--fs-700); }
+.at-head p { color: var(--body); font-size: var(--fs-500); margin-top: var(--sp-2); }
+
+/* Option cards: one column on phones, two on tablets, four on desktop */
+.options { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); }
+@media (min-width: 640px)  { .options { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1100px) { .options { grid-template-columns: repeat(4, 1fr); } }
+.option { gap: var(--sp-2); padding: var(--sp-5); }
+.option h3 { font-size: var(--fs-500); }
+.option__price { font-size: var(--fs-700); font-weight: 800; color: var(--accent); line-height: 1.1; letter-spacing: -0.02em; }
+.option__price small { display: block; font-size: var(--fs-300); font-weight: 600; color: var(--muted); letter-spacing: 0; margin-top: var(--sp-1); }
+.option__dur { font-weight: 600; color: var(--ink); font-size: var(--fs-300); }
+.option dl { display: grid; gap: var(--sp-2); font-size: var(--fs-300); }
+.option dt { font-weight: 700; color: var(--ink); }
+.option dd { margin: 0; }
+.option__actions { margin-top: auto; padding-top: var(--sp-3); display: grid; gap: var(--sp-1); }
+.option__actions .btn { width: 100%; }
+.option__actions .tap { text-align: center; font-size: var(--fs-300); font-weight: 600; }
+.flag {
+  align-self: flex-start; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--accent-dark); background: var(--accent-light); border-radius: 999px; padding: .2rem .65rem;
+}
+.smallprint { font-size: var(--fs-300); color: var(--body); margin-top: var(--sp-5); max-width: 80ch; }
+.smallprint a { font-weight: 600; }
+
+/* How it works */
+.steps { list-style: none; padding: 0; counter-reset: step; display: grid; gap: var(--sp-4); max-width: 52rem; }
+.steps li { counter-increment: step; position: relative; padding-left: 3.25rem; min-height: 2.25rem; }
+.steps li::before {
+  content: counter(step); position: absolute; left: 0; top: 0;
+  width: 2.25rem; height: 2.25rem; border-radius: 50%; background: var(--accent); color: #fff;
+  font-weight: 800; display: flex; align-items: center; justify-content: center;
+}
+.steps strong { color: var(--ink); }
+
+/* What we check */
+.checks { border-top: 1px solid var(--line); max-width: 60rem; }
+.checks > div { display: grid; grid-template-columns: 1fr; gap: var(--sp-1); padding-block: var(--sp-3); border-bottom: 1px solid var(--line); }
+@media (min-width: 720px) { .checks > div { grid-template-columns: 16rem 1fr; gap: var(--sp-5); } }
+.checks dt { font-weight: 700; color: var(--ink); }
+.checks dd { margin: 0; }
+
+/* Example findings */
+.quotes { list-style: none; padding: 0; display: grid; gap: var(--sp-3); max-width: 52rem; }
+.quotes blockquote { border-left: 4px solid var(--accent); background: var(--surface); padding: var(--sp-3) var(--sp-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--ink); }
+
+/* Grades: the word carries the meaning, colour is only a secondary cue */
+.grades { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); }
+@media (min-width: 720px) { .grades { grid-template-columns: repeat(3, 1fr); } }
+.grade { padding: var(--sp-5); }
+.badge { align-self: flex-start; font-weight: 800; font-size: var(--fs-300); border-radius: 999px; padding: .25rem .8rem; color: #fff; }
+.badge--high { background: #b42318; }
+.badge--medium { background: #8a4b00; }
+.badge--low { background: #2f5d3a; }
+
+.rules { display: grid; grid-template-columns: 1fr; gap: var(--sp-6); }
+@media (min-width: 820px) { .rules { grid-template-columns: 1fr 1fr; } }
+.rules h3 { font-size: var(--fs-500); margin-bottom: var(--sp-2); }
+.rules ul, .at-list { padding-left: 1.3rem; display: grid; gap: var(--sp-2); max-width: 52rem; }
+
+/* Disclosure widgets (limits and FAQ) */
+.disclosure { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); max-width: 52rem; }
+.disclosure + .disclosure { margin-top: var(--sp-3); }
+.disclosure summary {
+  cursor: pointer; font-weight: 700; color: var(--ink); padding: var(--sp-3) var(--sp-4);
+  min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); list-style: none;
+}
+.disclosure summary::-webkit-details-marker { display: none; }
+.disclosure summary::after { content: "+"; font-size: 1.4rem; line-height: 1; color: var(--accent); flex: none; }
+.disclosure[open] summary::after { content: "\2212"; }
+.disclosure > div { padding: 0 var(--sp-4) var(--sp-4); }
+.disclosure > div > * + * { margin-top: var(--sp-3); }
+
+/* Closing call to action: compact Book buttons on the dark band */
+.book-row { display: grid; grid-template-columns: 1fr; gap: var(--sp-3); max-width: 48rem; margin: 0 auto var(--sp-6); }
+@media (min-width: 640px) { .book-row { grid-template-columns: repeat(2, 1fr); } }
+.cta-band .book-row .btn { width: 100%; }
+.cta-band a:not(.btn) { color: #fff; text-decoration: underline; }
+
+/* Intake form */
+.form { display: grid; gap: var(--sp-5); max-width: 40rem; }
+.field { display: grid; gap: var(--sp-1); }
+.field label { font-weight: 700; color: var(--ink); }
+.field .hint { font-size: var(--fs-300); color: var(--body); }
+.field input[type="text"], .field input[type="email"], .field input[type="url"], .field select, .field textarea {
+  font: inherit; color: var(--ink); background: #fff; width: 100%;
+  border: 2px solid #6b7480; border-radius: var(--radius-sm); padding: .6rem .75rem; min-height: 44px;
+}
+.field textarea { min-height: 7rem; resize: vertical; }
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible { border-color: var(--accent); }
+.check { display: flex; gap: var(--sp-3); align-items: center; min-height: 44px; font-weight: 600; color: var(--ink); }
+.check input { width: 1.4rem; height: 1.4rem; accent-color: var(--accent); flex: none; }
+.notice { border-left: 4px solid var(--accent); background: var(--accent-tint); padding: var(--sp-3) var(--sp-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--ink); }
+.hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.status { padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-sm); font-weight: 600; }
+.status:empty { display: none; }
+.status--ok { background: #e7f4ea; color: #1e4a29; border: 1px solid #2f5d3a; }
+.status--err { background: #fdecea; color: #7a1a12; border: 1px solid #b42318; }
