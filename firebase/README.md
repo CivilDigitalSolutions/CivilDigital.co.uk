@@ -29,9 +29,9 @@ steps are in `docs/stripe-setup.md`.
 
 ## Settings (`functions/.env`, not secret)
 
-Price IDs, `SITE_URL` (where Stripe returns customers), `EXTRA_ORIGINS`, and the space limits. **They
-currently hold sandbox values with localhost allowed, for testing.** `docs/stripe-setup.md` section 6 lists
-what to change at go-live.
+Price IDs, `SITE_URL` (where Stripe returns customers), `EXTRA_ORIGINS`, and the space limits. They
+hold the **live** values (switched 2026-10-09). `docs/stripe-setup.md` section 6 lists
+what changes between sandbox and live.
 
 ## Deploy
 

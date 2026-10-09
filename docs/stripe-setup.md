@@ -41,7 +41,7 @@ you can also see in the dashboard. Abandoned forms send no email.
 | Launch Pack | £69 | `PRICE_LAUNCH_PACK` |
 | Fix re-check | £5 | not used by the site; make a Payment Link in the dashboard if you want one to email |
 
-The sandbox set was created on 2026-10-09; its IDs are in `firebase/functions/.env`.
+Both sets were created on 2026-10-09. The live IDs are in `firebase/functions/.env`; the sandbox ones are in its git history.
 
 ## 3. Restricted API key (once per mode)
 
