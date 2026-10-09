@@ -67,6 +67,14 @@ Payment Links → **New** → pick the product, then:
 submission can be matched to its payment. Keep the trailing slash after `thank-you/` and `terms/`, because
 GitHub Pages redirects the URL without the slash to the one with it.
 
+## Created by script (2026-10-09)
+
+`docs/stripe-setup.ps1` creates all of the above (products, prices and Payment Links with the custom field,
+terms consent text, redirects and limits) through the Stripe CLI. The sandbox set was created on
+2026-10-09, and its `test_` links are in `assets/js/app-testing-config.js` on the feature branch. For live mode,
+run it once with `-Live` after `stripe login` on the live account, and paste the `buy.stripe.com/...` links over
+the sandbox ones. Running it twice creates duplicates, so archive any extras in the dashboard.
+
 ## 4. Put the links on the site
 
 Copy each link (`https://buy.stripe.com/...`) into `assets/js/app-testing-config.js` over its placeholder,
