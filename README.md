@@ -14,6 +14,22 @@ The repository root **is** the website root (no build step).
    - (optional) `www` as `CNAME` → `<github-user>.github.io`
 5. Enable **Enforce HTTPS** once the certificate provisions.
 
+## App Testing Service
+
+Pages: `/app-testing/` (service page), `/app-testing/book/` (booking form), `/app-testing/thank-you/`
+(Stripe redirect), both `noindex` and not in the sitemap, and `/app-testing/terms/` (service terms).
+
+Booking runs **details first, then payment**: Book buttons open `/app-testing/book/?option=<option>`. The
+form posts to the booking function (`firebase/`), which creates a Stripe Checkout with the details attached
+and returns its address. After payment, Stripe redirects to the thank-you page and calls the webhook
+function, which sends one confirmation email to the customer and one to info@ (booking and payment
+together). Stripe setup is in `docs/stripe-setup.md`.
+- **Service guide PDF:** `app-testing.pdf` in the site root is a copy of
+  `Civil Digital – App Testing Service – 2026-10-09.pdf`. Replace it when the guide changes.
+- **Booking form:** posts JSON to `intakeEndpoint` in `assets/js/app-testing-config.js`. While that is a placeholder,
+  the form opens the visitor's email app with the details filled in. Without JavaScript it falls back to
+  a `mailto:` form, and we reply with a payment link.
+
 ## FarmFlow (moved to subdomain)
 
 The FarmFlow support site now lives in its own repo, published at
