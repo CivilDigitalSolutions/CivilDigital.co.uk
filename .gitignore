@@ -11,3 +11,9 @@ Thumbs.db
 
 # stray FUSE artifacts (do not commit)
 .fuse_hidden*
+
+# Firebase functions (firebase/): dependencies and local-only secrets
+node_modules/
+*.local
+.firebase/
+firebase-debug.log

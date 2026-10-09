@@ -6,7 +6,10 @@
   "use strict";
 
   var cfg = window.CD_APP_TESTING || { links: {} };
-  var isLive = function (url) { return typeof url === "string" && /^https:\/\//.test(url); };
+  // A real URL is https://, or a local emulator address while testing; anything else is a placeholder
+  var isLive = function (url) {
+    return typeof url === "string" && /^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)[:/])/.test(url);
+  };
 
   /* Book buttons: swap the mailto fallback for the Stripe Payment Link once it is set */
   var books = document.querySelectorAll("[data-book]");
