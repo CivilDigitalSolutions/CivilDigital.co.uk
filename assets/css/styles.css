@@ -443,6 +443,9 @@ p { max-width: var(--maxw-prose); }
 .cta-band .book-row .btn { width: 100%; }
 .theme-plum .cta-band { padding: var(--sp-6) var(--sp-4); }
 @media (min-width: 640px) { .theme-plum .cta-band { padding: var(--sp-8); } }
+/* Plum is too close to the body grey to mark a link by colour alone, so underline links in running text */
+.theme-plum main p a:not(.btn), .theme-plum main li a:not(.btn) { text-decoration: underline; text-underline-offset: 2px; }
+.theme-plum .breadcrumb, .theme-plum .breadcrumb a { color: var(--body); }
 .theme-plum [id] { scroll-margin-top: 80px; } /* clear the sticky header on anchor jumps */
 .cta-band a:not(.btn) { color: #fff; text-decoration: underline; }
 
