@@ -22,7 +22,7 @@ Pages: `/app-testing/` (service page), `/app-testing/thank-you/` (Stripe redirec
 - **Book buttons** read Stripe Payment Link URLs from `assets/js/app-testing-config.js`. Placeholders fall
   back to email. The Stripe dashboard settings are in `docs/stripe-payment-links.md`.
 - **Service guide PDF:** `app-testing.pdf` in the site root is a copy of
-  `Civil Digital – App Testing Service – 2026-10-08.pdf`. Replace it when the guide changes.
+  `Civil Digital – App Testing Service – 2026-10-09.pdf`. Replace it when the guide changes.
 - **Intake form:** posts JSON to `intakeEndpoint` in the same config file. While that is a placeholder,
   the form opens the visitor's email app with the details filled in. Without JavaScript it falls back to
   a `mailto:` form, and the page also gives the email address.
