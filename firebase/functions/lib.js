@@ -1,4 +1,6 @@
-// App Testing intake: validation, rate limiting and email building.
+// App Testing booking form: validation, rate limiting and email building.
+// The form is sent BEFORE payment. Each submission gets a booking reference, which the page passes to
+// Stripe as client_reference_id so the payment and the details email can be matched.
 // Kept free of Firebase imports so it can be unit-tested with node --test.
 // Nothing here stores a submission: it is validated, emailed and dropped.
 
@@ -10,6 +12,8 @@ export const OPTIONS = {
   "extra-journey": "Extra journeys only (£12 each)"
 };
 
+import { randomInt } from "node:crypto";
+
 export const OWNER_EMAIL = "info@civildigital.co.uk";
 const MAX_BODY_BYTES = 20 * 1024;
 
@@ -17,7 +21,6 @@ const MAX_BODY_BYTES = 20 * 1024;
 const TEXT_FIELDS = {
   name:          [100,  true,  false],
   email:         [254,  true,  false],
-  receipt:       [50,   false, false],
   test_username: [100,  false, false],
   browser:       [60,   false, false],
   do_not_touch:  [3000, false, true],
@@ -76,10 +79,15 @@ export function validate(body) {
 
   data.create_dummy = body.create_dummy === true || body.create_dummy === "yes";
 
-  const session = clean(body.session_id, false);
-  data.session_id = session && /^cs_(test|live)_[A-Za-z0-9]{1,200}$/.test(session) ? session : "";
-
   return Object.keys(errors).length ? { ok: false, errors } : { ok: true, data };
+}
+
+/** Short booking reference, e.g. AT-7K3QX9. No 0/O or 1/I, so it reads back clearly over email. */
+export function makeRef() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let ref = "AT-";
+  for (let i = 0; i < 6; i++) ref += chars[randomInt(chars.length)];
+  return ref;
 }
 
 /** In-memory sliding window per key. Per function instance, which is fine at maxInstances 2. */
@@ -95,17 +103,19 @@ export function createRateLimiter({ limit = 5, windowMs = 15 * 60 * 1000 } = {})
   };
 }
 
-export function buildEmails(d, from) {
+export function buildEmails(d, from, ref) {
   const optionLabel = OPTIONS[d.option];
   const owner = {
     from,
     to: [OWNER_EMAIL],
     reply_to: d.email,
-    subject: `App testing booking: ${optionLabel} – ${d.name}`,
+    subject: `App testing booking ${ref} (awaiting payment): ${optionLabel} – ${d.name}`,
     text: [
+      `Booking reference: ${ref}`,
+      "Payment is taken next, on Stripe. Match it by the payment's client reference.",
+      "",
       `Name: ${d.name}`,
       `Email: ${d.email}`,
-      `Stripe receipt number: ${d.receipt || "-"}`,
       `Option booked: ${optionLabel}`,
       `App link: ${d.app_link}`,
       `Play tester opt-in link: ${d.optin_link || "-"}`,
@@ -117,22 +127,22 @@ export function buildEmails(d, from) {
       d.do_not_touch || "-",
       "",
       "Journeys and expected results:",
-      d.journeys || "-",
-      "",
-      `Checkout reference: ${d.session_id || "-"}`
+      d.journeys || "-"
     ].join("\n")
   };
   const customer = {
     from,
     to: [d.email],
     reply_to: OWNER_EMAIL,
-    subject: "We have your app testing details",
+    subject: `Your app testing booking ${ref}`,
     text: [
       `Hi ${d.name},`,
       "",
-      `Thanks for booking ${optionLabel}. We have the details you sent for ${d.app_link}.`,
+      `Thanks, we have your details for ${optionLabel} (${d.app_link}). Your booking reference is ${ref}.`,
       "",
-      "Next, we'll check we have everything we need and then start testing. Reports arrive within 3 working days of the app being ready to test.",
+      "Once your payment goes through, Stripe will email you a receipt. We'll then check we have everything we need and start testing. Reports arrive within 3 working days of the app being ready to test.",
+      "",
+      "If you closed the payment page before paying, reply to this email and we'll send you a payment link.",
       "",
       d.test_username
         ? "If your test account needs a password, reply to this email with it. Please never send it through the website form."
@@ -182,12 +192,13 @@ export function createHandler(deps) {
 
     const body = req.body || {};
     // Honeypot: people never see the "website" field, bots fill it. Pretend success, send nothing.
-    if (typeof body.website === "string" && body.website.trim()) return res.status(200).json({ ok: true });
+    if (typeof body.website === "string" && body.website.trim()) return res.status(200).json({ ok: true, ref: makeRef() });
 
     const result = validate(body);
     if (!result.ok) return res.status(400).json({ ok: false, errors: result.errors });
 
-    const { owner, customer } = buildEmails(result.data, deps.from());
+    const ref = makeRef();
+    const { owner, customer } = buildEmails(result.data, deps.from(), ref);
     const opts = { apiKey: deps.apiKey(), fetchImpl: deps.fetchImpl, base: deps.resendBase };
     try {
       await sendEmail(owner, opts);
@@ -200,6 +211,6 @@ export function createHandler(deps) {
     } catch (err) {
       log.warn("Customer confirmation failed", err.message); // we still have the details, so report success
     }
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true, ref });
   };
 }

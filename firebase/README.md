@@ -1,6 +1,6 @@
 # Civil Digital Services: Firebase
 
-One HTTPS Cloud Function, `intake`, in `europe-west2` (London). It receives the App Testing thank-you
+One HTTPS Cloud Function, `intake`, in `europe-west2` (London). It receives the App Testing booking
 page form, checks it, and emails it via **Resend**: the details go to info@civildigital.co.uk (reply-to set
 to the customer) and a short confirmation goes to the customer (reply-to info@). **Nothing is stored.**
 

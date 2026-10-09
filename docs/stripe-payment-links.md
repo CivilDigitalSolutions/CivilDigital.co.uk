@@ -41,10 +41,10 @@ Create one product each, one-off price in GBP:
 Payment Links → **New** → pick the product, then:
 
 - **Quantity:** fixed at 1, except **Extra journey**: tick *Let customers adjust quantity*, min 1, max 10.
-- **Custom field** (Options → Add custom fields): type *Text*, **required**. Label:
-  `App link (Play testing link, store listing or web address)`.
-  Stripe caps custom field labels at 50 characters, and this one is 58. If the dashboard rejects it, use
-  `App link (Play test link, store or web URL)` instead.
+- **No custom fields.** Customers fill in their app details on `/app-testing/book/` *before* paying. That
+  page adds `?client_reference_id=<booking ref>&prefilled_email=<email>` to the link, so each payment shows
+  the same booking reference (for example `AT-7K3QX9`) as the details email. In the dashboard it appears
+  on the payment's Checkout Session as *Client reference ID*.
 - **Require customers to accept your terms of service:** on. It uses the terms URL from section 1.
   The terms page says that by ticking the box the customer asks you to start straight away. Use
   Options → *Add custom text* → *Terms of service acceptance* to make that true at checkout, for example:
@@ -52,24 +52,19 @@ Payment Links → **New** → pick the product, then:
   straight away. I understand the right to cancel ends once the report is delivered."*
 - **Collect:** customer name and email (email is always collected). No address or phone needed.
 - **Promotion codes:** off, unless you are running one.
-- **After payment:** *Don't show confirmation page* → *Redirect customers to your website*. Use a different
-  URL per link so the intake form picks the right option for them:
+- **After payment:** *Don't show confirmation page* → *Redirect customers to your website*:
+  `https://civildigital.co.uk/app-testing/thank-you/?option=<option>`, where `<option>` is `quick-check`,
+  `feature-test`, `extra-journey`, `rolling` or `launch-pack`.
 
-| Link | Redirect URL |
-| --- | --- |
-| Quick Check | `https://civildigital.co.uk/app-testing/thank-you/?option=quick-check&session_id={CHECKOUT_SESSION_ID}` |
-| Focused Feature Test | `https://civildigital.co.uk/app-testing/thank-you/?option=feature-test&session_id={CHECKOUT_SESSION_ID}` |
-| Extra journey | `https://civildigital.co.uk/app-testing/thank-you/?option=extra-journey&session_id={CHECKOUT_SESSION_ID}` |
-| Rolling Daily Testing | `https://civildigital.co.uk/app-testing/thank-you/?option=rolling&session_id={CHECKOUT_SESSION_ID}` |
-| Launch Pack | `https://civildigital.co.uk/app-testing/thank-you/?option=launch-pack&session_id={CHECKOUT_SESSION_ID}` |
+Keep the trailing slash after `thank-you/` and `terms/`, because GitHub Pages redirects the URL without the
+slash to the one with it.
 
-`{CHECKOUT_SESSION_ID}` is filled in by Stripe. The thank-you page puts it in a hidden form field so each
-submission can be matched to its payment. Keep the trailing slash after `thank-you/` and `terms/`, because
-GitHub Pages redirects the URL without the slash to the one with it.
+**Abandoned bookings:** because details come first, you may get a details email (subject says *awaiting
+payment*) with no matching payment. The customer's email invites them to reply for a payment link.
 
 ## Created by script (2026-10-09)
 
-`docs/stripe-setup.ps1` creates all of the above (products, prices and Payment Links with the custom field,
+`docs/stripe-setup.ps1` creates all of the above (products, prices and Payment Links with the
 terms consent text, redirects and limits) through the Stripe CLI. The sandbox set was created on
 2026-10-09, and its `test_` links are in `assets/js/app-testing-config.js` on the feature branch. For live mode,
 run it once with `-Live` after `stripe login` on the live account, and paste the `buy.stripe.com/...` links over

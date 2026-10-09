@@ -16,16 +16,21 @@ The repository root **is** the website root (no build step).
 
 ## App Testing Service
 
-Pages: `/app-testing/` (service page), `/app-testing/thank-you/` (Stripe redirect and intake form,
-`noindex`, not in the sitemap) and `/app-testing/terms/` (draft terms).
+Pages: `/app-testing/` (service page), `/app-testing/book/` (booking form), `/app-testing/thank-you/`
+(Stripe redirect), both `noindex` and not in the sitemap, and `/app-testing/terms/` (draft terms).
 
-- **Book buttons** read Stripe Payment Link URLs from `assets/js/app-testing-config.js`. Placeholders fall
-  back to email. The Stripe dashboard settings are in `docs/stripe-payment-links.md`.
+Booking runs **details first, then payment**: Book buttons open `/app-testing/book/?option=<option>`. The
+form posts to the booking function (`firebase/`), which emails the details and returns a booking reference.
+The page then sends the visitor to that option's Stripe Payment Link, with the reference as
+`client_reference_id`. After payment, Stripe redirects to the thank-you page.
+
+- **Stripe Payment Link URLs** live in `assets/js/app-testing-config.js`. The Stripe dashboard settings are
+  in `docs/stripe-payment-links.md`.
 - **Service guide PDF:** `app-testing.pdf` in the site root is a copy of
   `Civil Digital – App Testing Service – 2026-10-09.pdf`. Replace it when the guide changes.
-- **Intake form:** posts JSON to `intakeEndpoint` in the same config file. While that is a placeholder,
+- **Booking form:** posts JSON to `intakeEndpoint` in the same config file. While that is a placeholder,
   the form opens the visitor's email app with the details filled in. Without JavaScript it falls back to
-  a `mailto:` form, and the page also gives the email address.
+  a `mailto:` form, and we reply with a payment link.
 
 ## FarmFlow (moved to subdomain)
 

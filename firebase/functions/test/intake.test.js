@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { validate, createRateLimiter, buildEmails, createHandler } from "../lib.js";
+import { validate, createRateLimiter, buildEmails, createHandler, makeRef } from "../lib.js";
 
 const good = {
   name: "Test Person",
@@ -9,7 +9,6 @@ const good = {
   app_link: "https://play.google.com/apps/testing/com.example",
   create_dummy: true,
   journeys: "Sign up\nthen checkout",
-  session_id: "cs_test_abc123",
   website: ""
 };
 
@@ -55,12 +54,15 @@ test("rejects missing required fields, bad email, bad option and non-web links",
 test("strips newlines from single-line fields so subjects can't be split", () => {
   const r = validate({ ...good, name: "Eve\r\nBcc: x@y.z" });
   assert.equal(r.ok, true);
-  assert.ok(!/[\r\n]/.test(buildEmails(r.data, "f").owner.subject));
+  assert.ok(!/[\r\n]/.test(buildEmails(r.data, "f", "AT-ABCDEF").owner.subject));
 });
 
-test("enforces length limits and drops malformed session ids", () => {
+test("enforces length limits", () => {
   assert.equal(validate({ ...good, journeys: "x".repeat(3001) }).ok, false);
-  assert.equal(validate({ ...good, session_id: "cs_live_<script>" }).data.session_id, "");
+});
+
+test("booking references are AT- plus 6 unambiguous characters", () => {
+  for (let i = 0; i < 200; i++) assert.match(makeRef(), /^AT-[A-HJ-NP-Z2-9]{6}$/);
 });
 
 test("rate limiter allows 5 per window per key", () => {
@@ -76,12 +78,15 @@ test("handler emails the owner then the customer", async () => {
   const res = fakeRes();
   await handler(fakeReq(good), res);
   assert.equal(res.statusCode, 200);
+  assert.match(res.body.ref, /^AT-/);
   assert.equal(sent.length, 2);
   assert.equal(sent[0].url, "https://resend.invalid/emails");
   assert.equal(sent[0].headers.Authorization, "Bearer re_test");
   assert.deepEqual(sent[0].json.to, ["info@civildigital.co.uk"]);
   assert.equal(sent[0].json.reply_to, "test@example.com");
-  assert.match(sent[0].json.text, /cs_test_abc123/);
+  assert.ok(sent[0].json.subject.includes(res.body.ref));
+  assert.ok(sent[0].json.text.includes("Booking reference: " + res.body.ref));
+  assert.ok(sent[1].json.text.includes(res.body.ref));
   assert.deepEqual(sent[1].json.to, ["test@example.com"]);
   assert.equal(res.headers["Access-Control-Allow-Origin"], "https://civildigital.co.uk");
 });

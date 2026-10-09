@@ -1,6 +1,8 @@
-/* App Testing Service — Book buttons and the thank-you page intake form.
-   Vanilla JS, progressive enhancement only: without it, Book buttons are
-   email links and the form falls back to the visitor's email app. */
+/* App Testing Service — booking form (/app-testing/book/).
+   Details first, then payment: the form is sent to the booking endpoint, which returns a booking
+   reference, and the visitor is taken to the Stripe Payment Link for their option with that reference
+   (client_reference_id) and their email filled in. Vanilla JS, progressive enhancement only: without
+   it the form falls back to the visitor's email app and we reply with a payment link. */
 
 (function () {
   "use strict";
@@ -10,28 +12,23 @@
   var isLive = function (url) {
     return typeof url === "string" && /^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)[:/])/.test(url);
   };
+  var LINK_KEYS = {
+    "quick-check": "QUICK_CHECK",
+    "feature-test": "FEATURE_TEST",
+    "rolling": "ROLLING",
+    "launch-pack": "LAUNCH_PACK",
+    "extra-journey": "EXTRA_JOURNEY"
+  };
 
-  /* Book buttons: swap the mailto fallback for the Stripe Payment Link once it is set */
-  var books = document.querySelectorAll("[data-book]");
-  for (var i = 0; i < books.length; i++) {
-    var url = cfg.links[books[i].getAttribute("data-book")];
-    if (isLive(url)) books[i].href = url;
-  }
-
-  /* Intake form */
   var form = document.getElementById("intake");
   if (!form) return;
   var status = document.getElementById("intake-status");
   var submit = form.querySelector("button[type=submit]");
+  var submitLabel = submit.textContent;
 
-  // Stripe's redirect can carry ?option=<value>&session_id={CHECKOUT_SESSION_ID}
-  var params = new URLSearchParams(location.search);
-  var option = params.get("option");
-  if (option && form.option.querySelector('option[value="' + option.replace(/[^a-z-]/g, "") + '"]')) {
-    form.option.value = option;
-  }
-  var session = params.get("session_id");
-  if (session && /^cs_[A-Za-z0-9_]+$/.test(session)) form.session_id.value = session;
+  // Book buttons link here with ?option=<value>
+  var option = new URLSearchParams(location.search).get("option");
+  if (option && LINK_KEYS[option]) form.option.value = option;
 
   function show(kind, msg) {
     status.className = "status status--" + kind;
@@ -50,12 +47,18 @@
     return data;
   }
 
+  function paymentUrl(d, ref) {
+    var link = cfg.links[LINK_KEYS[d.option]];
+    if (!isLive(link)) return null;
+    return link + (link.indexOf("?") < 0 ? "?" : "&") +
+      "client_reference_id=" + encodeURIComponent(ref) + "&prefilled_email=" + encodeURIComponent(d.email);
+  }
+
   function asEmail(d) {
     var lines = [
       "Name: " + d.name,
       "Email: " + d.email,
-      "Stripe receipt number: " + (d.receipt || "-"),
-      "Option booked: " + d.option,
+      "Option: " + form.option.options[form.option.selectedIndex].text,
       "App link: " + d.app_link,
       "Play tester opt-in link: " + (d.optin_link || "-"),
       "Test account username: " + (d.test_username || "-"),
@@ -68,8 +71,7 @@
       "Journeys and expected results:",
       d.journeys || "-"
     ];
-    if (d.session_id) lines.push("", "Checkout reference: " + d.session_id);
-    return "mailto:info@civildigital.co.uk?subject=" + encodeURIComponent("App testing details: " + d.name) +
+    return "mailto:info@civildigital.co.uk?subject=" + encodeURIComponent("App testing booking: " + d.name) +
       "&body=" + encodeURIComponent(lines.join("\n"));
   }
 
@@ -81,7 +83,7 @@
 
     if (!isLive(cfg.intakeEndpoint)) {
       location.href = asEmail(d);
-      show("ok", "Your email app should now open with these details filled in. Press send to finish. If nothing opens, email info@civildigital.co.uk.");
+      show("ok", "Your email app should now open with these details filled in. Press send and we'll reply with a payment link. If nothing opens, email info@civildigital.co.uk.");
       return;
     }
 
@@ -93,13 +95,21 @@
       body: JSON.stringify(d)
     }).then(function (res) {
       if (!res.ok) throw new Error(res.status);
-      form.reset();
-      show("ok", "Thanks, we have your details. A copy is on its way to your inbox. We'll be in touch to confirm we have everything.");
+      return res.json();
+    }).then(function (body) {
+      var pay = paymentUrl(d, body.ref);
+      if (pay) {
+        show("ok", "Thanks, we have your details (booking reference " + body.ref + "). Taking you to secure payment…");
+        location.href = pay;
+      } else {
+        show("ok", "Thanks, we have your details (booking reference " + body.ref + "). We'll email you a payment link shortly.");
+        submit.disabled = false;
+        submit.textContent = submitLabel;
+      }
     }).catch(function () {
-      show("err", "Sorry, that didn't send. Please try again, or email the details to info@civildigital.co.uk with your receipt number.");
-    }).then(function () {
+      show("err", "Sorry, that didn't send. Please try again, or email the details to info@civildigital.co.uk.");
       submit.disabled = false;
-      submit.textContent = "Send details";
+      submit.textContent = submitLabel;
     });
   });
 })();

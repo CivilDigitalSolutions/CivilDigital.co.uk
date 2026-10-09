@@ -1,4 +1,4 @@
-// App Testing intake form endpoint: validates the thank-you page form and emails it via Resend.
+// App Testing booking form endpoint: validates the form (sent before payment) and emails it via Resend.
 // No database: submissions are never stored. See firebase/README.md.
 
 import { onRequest } from "firebase-functions/v2/https";

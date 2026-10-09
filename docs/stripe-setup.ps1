@@ -36,12 +36,11 @@ foreach ($i in $items) {
   $product = Post "/v1/products" @("name=$($i.name)", "description=$($i.desc)", "metadata[cd_key]=$($i.key)", "statement_descriptor=CIVIL DIGITAL TESTING")
   $price = Post "/v1/prices" @("product=$($product.id)", "currency=gbp", "unit_amount=$($i.pence)", "tax_behavior=unspecified")
 
-  $redirect = if ($i.option) { "$($thanks)?option=$($i.option)&session_id={CHECKOUT_SESSION_ID}" } else { $thanks + "?session_id={CHECKOUT_SESSION_ID}" }
+  $redirect = if ($i.option) { "$($thanks)?option=$($i.option)" } else { $thanks }
   $p = @(
+    # No custom fields: app details are collected on /app-testing/book/ before payment,
+    # and the page adds ?client_reference_id=<booking ref>&prefilled_email=<email> to the link.
     "line_items[0][price]=$($price.id)", "line_items[0][quantity]=1",
-    "custom_fields[0][key]=applink", "custom_fields[0][type]=text", "custom_fields[0][optional]=false",
-    "custom_fields[0][label][type]=custom", "custom_fields[0][label][custom]=App link (Play test link, store or web URL)",
-    "custom_fields[0][text][maximum_length]=255",
     "consent_collection[terms_of_service]=required",
     "custom_text[terms_of_service_acceptance][message]=$consent",
     "after_completion[type]=redirect", "after_completion[redirect][url]=$redirect",
