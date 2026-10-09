@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking confirmed | App Testing | Civil Digital</title>
+  <meta name="description" content="Your app testing booking is confirmed. Send the details we need to start testing.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#7d0a70">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/images/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/styles.css">
+</head>
+<body class="theme-plum">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="/" aria-label="Civil Digital home">
+        <img class="brand__mark" src="/assets/brand/CivilDigitalIcon.svg" alt="" aria-hidden="true" width="36" height="36">
+        <span class="brand__text">Civil Digital<small>Practical digital delivery</small></span>
+      </a>
+      <button class="nav__toggle" aria-expanded="false" aria-controls="primary-nav">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <span class="visually-hidden">Menu</span>
+      </button>
+      <ul class="nav__links" id="primary-nav">
+        <li><a href="/">Home</a></li>
+        <li><a href="/services/">Services</a></li>
+        <li><a href="/about.html">About</a></li>
+        <li><a href="/contact.html">Contact</a></li>
+        <li class="nav__cta"><a class="btn btn--primary" href="/contact.html">Contact Us</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="page-head">
+      <div class="container">
+        <p class="breadcrumb"><a href="/">Home</a> / <a href="/app-testing/">App testing</a> / Booking confirmed</p>
+        <h1>Thanks, your booking is confirmed.</h1>
+        <p>A receipt is on its way from Stripe.</p>
+      </div>
+    </div>
+
+    <section class="at-section" aria-labelledby="next-h">
+      <div class="container">
+        <div class="at-head">
+          <h2 id="next-h">What happens next</h2>
+        </div>
+        <ol class="steps">
+          <li><strong>Send the details below.</strong> We need the app link and a test account, or a request for dummy details.</li>
+          <li><strong>We confirm we have everything,</strong> then testing starts.</li>
+          <li><strong>Your report arrives</strong> within 3 working days of the app being ready to test. Rolling Daily Testing sends one sentence of feedback a day.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="at-section at-section--tint" aria-labelledby="intake-h">
+      <div class="container">
+        <div class="at-head">
+          <h2 id="intake-h">Your app details</h2>
+          <p>Fields marked (required) must be filled in. Everything else helps but is optional.</p>
+        </div>
+
+        <form class="form" id="intake" action="mailto:info@civildigital.co.uk?subject=App%20testing%20details" method="post" enctype="text/plain">
+          <p class="notice"><strong>Please send the test account password by replying to your confirmation email, never through this form.</strong></p>
+
+          <div class="field">
+            <label for="f-name">Your name (required)</label>
+            <input type="text" id="f-name" name="name" autocomplete="name" required>
+          </div>
+
+          <div class="field">
+            <label for="f-email">Email address (required)</label>
+            <input type="email" id="f-email" name="email" autocomplete="email" required>
+          </div>
+
+          <div class="field">
+            <label for="f-receipt">Stripe receipt number</label>
+            <span class="hint" id="f-receipt-hint">On the receipt email, for example 1234-5678.</span>
+            <input type="text" id="f-receipt" name="receipt" aria-describedby="f-receipt-hint">
+          </div>
+
+          <div class="field">
+            <label for="f-option">Option booked (required)</label>
+            <select id="f-option" name="option" required>
+              <option value="">Choose an option</option>
+              <option value="quick-check">Quick Check (£19)</option>
+              <option value="feature-test">Focused Feature Test (£29)</option>
+              <option value="rolling">Rolling Daily Testing (£39)</option>
+              <option value="launch-pack">Launch Pack (£69)</option>
+              <option value="extra-journey">Extra journeys only (£12 each)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="f-app">App link (required)</label>
+            <span class="hint" id="f-app-hint">A Play testing link, a store listing or a web address, starting https://</span>
+            <input type="url" id="f-app" name="app_link" inputmode="url" placeholder="https://" aria-describedby="f-app-hint" required>
+          </div>
+
+          <div class="field">
+            <label for="f-optin">Play tester opt-in link</label>
+            <span class="hint" id="f-optin-hint">For a Play testing track, so our Google account can be added as a tester.</span>
+            <input type="url" id="f-optin" name="optin_link" inputmode="url" placeholder="https://" aria-describedby="f-optin-hint">
+          </div>
+
+          <div class="field">
+            <label for="f-user">Test account username</label>
+            <span class="hint" id="f-user-hint">A dummy account only, never a real customer account.</span>
+            <input type="text" id="f-user" name="test_username" autocomplete="off" aria-describedby="f-user-hint">
+          </div>
+
+          <label class="check" for="f-dummy">
+            <input type="checkbox" id="f-dummy" name="create_dummy" value="yes">
+            Please create dummy details for us
+          </label>
+
+          <div class="field">
+            <label for="f-avoid">Things not to touch</label>
+            <span class="hint" id="f-avoid-hint">Screens, data or actions we must leave alone.</span>
+            <textarea id="f-avoid" name="do_not_touch" aria-describedby="f-avoid-hint"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="f-journeys">Journeys and expected results</label>
+            <span class="hint" id="f-journeys-hint">The journeys that matter most, and the right answer where it is not obvious.</span>
+            <textarea id="f-journeys" name="journeys" aria-describedby="f-journeys-hint"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="f-browser">Browser for web apps</label>
+            <span class="hint" id="f-browser-hint">For example Chrome or Brave. Leave blank for Android apps.</span>
+            <input type="text" id="f-browser" name="browser" aria-describedby="f-browser-hint">
+          </div>
+
+          <div class="hp" aria-hidden="true">
+            <label for="f-website">Leave this empty</label>
+            <input type="text" id="f-website" name="website" tabindex="-1" autocomplete="off">
+          </div>
+          <input type="hidden" name="session_id" value="">
+
+          <div>
+            <button class="btn btn--primary btn--lg" type="submit">Send details</button>
+          </div>
+          <p class="status" id="intake-status" role="status" aria-live="polite" tabindex="-1"></p>
+        </form>
+
+        <p class="mt-6">Prefer email? Send the details to <a href="mailto:info@civildigital.co.uk?subject=App%20testing%20details">info@civildigital.co.uk</a> with your receipt number.</p>
+        <p>Read the <a class="tap" href="/app-testing/terms/">service terms</a>.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="/">
+            <img class="brand__mark" src="/assets/brand/CivilDigitalIconWhite.svg" alt="" aria-hidden="true" width="36" height="36">
+            <span class="brand__text" style="color:#fff">Civil Digital</span>
+          </a>
+          <p>Practical, affordable digital solutions for UK businesses and organisations.</p>
+        </div>
+        <nav aria-label="Services">
+          <h2>Services</h2>
+          <ul class="footer-links">
+            <li><a href="/services/microsoft-power-platform.html">Power Platform</a></li>
+            <li><a href="/services/application-development.html">Application Development</a></li>
+            <li><a href="/services/digital-transformation-consulting.html">Digital Transformation</a></li>
+            <li><a href="/services/web-development.html">Web Development</a></li>
+            <li><a href="/app-testing/">App Testing</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Products">
+          <h2>Products</h2>
+          <ul class="footer-links">
+            <li><a href="https://boatlog.civildigital.co.uk/">BoatLog</a></li>
+            <li><a href="https://dispatch.civildigital.co.uk/">Dispatch</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Company">
+          <h2>Company</h2>
+          <ul class="footer-links">
+            <li><a href="/about.html">About</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+            <li><a href="/faq.html">FAQ</a></li>
+          </ul>
+        </nav>
+        <div>
+          <h2>Contact Info</h2>
+          <ul class="footer-links">
+            <li><a href="mailto:info@civildigital.co.uk">info@civildigital.co.uk</a></li>
+            <li><a href="https://wa.me/447568296136">WhatsApp: +44 7568 296136</a></li>
+            <li>Bedford, United Kingdom</li>
+            <li><a href="/privacy.html">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; <span id="year">2026</span> Civil Digital. All rights reserved.</p>
+        <p><a class="tap" href="/app-testing/terms/">App testing terms</a> &middot; <a class="tap" href="/privacy.html">Privacy Policy</a></p>
+      </div>
+    </div>
+  </footer>
+  <script src="/assets/js/main.js" defer></script>
+  <script src="/assets/js/app-testing-config.js" defer></script>
+  <script src="/assets/js/app-testing.js" defer></script>
+</body>
+</html>
