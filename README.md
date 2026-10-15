@@ -30,6 +30,14 @@ together). Stripe setup is in `docs/stripe-setup.md`.
   the form opens the visitor's email app with the details filled in. Without JavaScript it falls back to
   a `mailto:` form, and we reply with a payment link.
 
+## Promotional Graphics service
+
+Service page `/services/social-media-graphics/` with a supporting guide at
+`/guides/ai-business-graphics-checklist/` (both in the sitemap, linked from the Services page and every
+footer). Enquiries go by email (pre-filled `mailto:`), no booking system. No prices, turnaround or
+revision terms are published yet; the page says these are agreed per quote. The Examples section is
+commented out until approved examples exist: see `docs/promotional-graphics-examples.md`.
+
 ## FarmFlow (moved to subdomain)
 
 The FarmFlow support site now lives in its own repo, published at
