@@ -25,6 +25,25 @@
     status.focus();
   }
 
+  // The knot loader (assets/brand/CivilDigitalLoader*.svg), decorative: the text says what's happening
+  function loader(cls, white) {
+    var img = document.createElement("img");
+    img.className = cls;
+    img.src = "/assets/brand/CivilDigitalLoader" + (white ? "White" : "") + ".svg";
+    img.alt = "";
+    img.width = 180;
+    img.height = 100;
+    return img;
+  }
+
+  function showBusy(msg) {
+    status.className = "status status--busy";
+    status.textContent = "";
+    status.appendChild(loader("status__loader"));
+    status.appendChild(document.createTextNode(msg));
+    status.focus();
+  }
+
   // Book buttons link here with ?option=<value>; Stripe sends people back with &cancelled=1
   var params = new URLSearchParams(location.search);
   var option = params.get("option");
@@ -65,8 +84,17 @@
 
   function reset() {
     submit.disabled = false;
+    submit.removeAttribute("aria-busy");
     submit.textContent = submitLabel;
   }
+
+  // Back from Stripe can restore this page from the back/forward cache mid-redirect: don't leave it spinning
+  window.addEventListener("pageshow", function (e) {
+    if (!e.persisted) return;
+    reset();
+    status.className = "status";
+    status.textContent = "";
+  });
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -81,7 +109,9 @@
     }
 
     submit.disabled = true;
+    submit.setAttribute("aria-busy", "true");
     submit.textContent = "Please wait…";
+    submit.insertBefore(loader("btn__loader", true), submit.firstChild);
     fetch(cfg.intakeEndpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -90,7 +120,7 @@
       return res.json().then(function (body) { return { status: res.status, body: body }; });
     }).then(function (r) {
       if (r.status === 200 && r.body.url) {
-        show("ok", "Taking you to secure payment…");
+        showBusy("Taking you to secure payment…");
         location.href = r.body.url;
         return;
       }

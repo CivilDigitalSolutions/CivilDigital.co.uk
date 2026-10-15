@@ -468,3 +468,30 @@ p { max-width: var(--maxw-prose); }
 .status:empty { display: none; }
 .status--ok { background: #e7f4ea; color: #1e4a29; border: 1px solid #2f5d3a; }
 .status--err { background: #fdecea; color: #7a1a12; border: 1px solid #b42318; }
+
+/* ==========================================================================
+   BRAND MOTION — first-load logo trace (assets/js/intro.js, home page only)
+   and the knot loader (assets/brand/CivilDigitalLoader*.svg)
+   ========================================================================== */
+/* Cover the page from first paint until intro.js takes over (set in index.html's <head>) */
+html.cd-intro body::after { content: ""; position: fixed; inset: 0; background: #fff; z-index: 999; }
+.cd-intro-overlay {
+  position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; cursor: pointer;
+  background: #fff radial-gradient(rgba(42,48,56,.07) 1.2px, transparent 1.4px) 0 0 / 22px 22px;
+  transition: opacity .45s ease;
+}
+.cd-intro-overlay.is-leaving { opacity: 0; pointer-events: none; }
+.cd-intro-overlay svg { width: min(86vw, 760px); height: auto; overflow: visible; }
+.cd-intro-overlay .dot, .cd-intro-overlay .ring { transform-box: fill-box; transform-origin: center; }
+.cd-intro__skip {
+  position: absolute; right: var(--sp-5); bottom: var(--sp-5); font: inherit; font-size: var(--fs-300);
+  font-weight: 600; color: var(--muted); background: none; border: 0; padding: var(--sp-2) var(--sp-3); cursor: pointer;
+}
+.cd-intro__skip:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Knot loader: in a busy button, beside a status message, and as a page visual */
+.btn__loader { width: 2.2em; height: auto; flex: none; margin-block: -.3em; }
+.btn[aria-busy="true"] { cursor: progress; }
+.status--busy { display: flex; align-items: center; gap: var(--sp-3); background: var(--accent-tint); color: var(--ink); border: 1px solid var(--accent-light); }
+.status__loader { width: 2.6em; height: auto; flex: none; }
+.loader-visual { display: block; width: 120px; height: auto; margin: 0 auto var(--sp-5); }

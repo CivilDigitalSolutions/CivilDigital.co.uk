@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 40 180 100" width="180" height="100" role="img" aria-label="Loading">
+  <!-- Civil Digital knot loader. The ribbon draws round the knot as one
+       figure-of-eight from the crossing, lavender tip first, then lifts away the
+       same way over a faint track; one cycle is 2.65s. Pure CSS, so it animates
+       as an <img>. Reduced motion shows the knot still.
+       The ribbon is the centreline of CivilDigitalIcon.svg: its 20.5-unit band
+       inset by half, which lands on the two diagonals through (90,90). Designed
+       in docs/brand-motion/civil-digital-logo-trace.html. -->
+  <style>
+    .r { fill: none; stroke-width: 20.5; stroke-linejoin: miter; stroke-dasharray: 0 2; }
+    .lead { animation: lead 2.65s infinite; }
+    .ink { animation: ink 2.65s infinite; }
+    @keyframes lead {
+      0%      { stroke-dasharray: 0 2; stroke-dashoffset: 0; animation-timing-function: cubic-bezier(.65,0,.35,1); }
+      41.509% { stroke-dasharray: 1 2; stroke-dashoffset: 0; }
+      49.057% { stroke-dasharray: 1 2; stroke-dashoffset: 0; animation-timing-function: cubic-bezier(.65,0,.35,1); }
+      90.566%, 100% { stroke-dasharray: 0 2; stroke-dashoffset: -1; }
+    }
+    @keyframes ink {
+      0%, 3.396% { stroke-dasharray: 0 2; stroke-dashoffset: 0; animation-timing-function: cubic-bezier(.65,0,.35,1); }
+      44.906% { stroke-dasharray: 1 2; stroke-dashoffset: 0; }
+      49.057% { stroke-dasharray: 1 2; stroke-dashoffset: 0; animation-timing-function: cubic-bezier(.65,0,.35,1); }
+      90.566%, 100% { stroke-dasharray: 0 2; stroke-dashoffset: -1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lead, .ink { animation: none; }
+      .ink { stroke-dasharray: none; }
+    }
+  </style>
+  <path d="M90 90L120.75 120.75H141.25L160.75 101.25V78.75L141.25 59.25H120.75L90 90L59.25 120.75H38.75L19.25 101.25V78.75L38.75 59.25H59.25Z" fill="none" stroke="#7d0a70" stroke-width="20.5" stroke-linejoin="miter" opacity=".12"/>
+  <path class="r lead" pathLength="1" stroke="#A78ADE" d="M90 90L120.75 120.75H141.25L160.75 101.25V78.75L141.25 59.25H120.75L90 90L59.25 120.75H38.75L19.25 101.25V78.75L38.75 59.25H59.25Z"/>
+  <path class="r ink" pathLength="1" stroke="#7d0a70" d="M90 90L120.75 120.75H141.25L160.75 101.25V78.75L141.25 59.25H120.75L90 90L59.25 120.75H38.75L19.25 101.25V78.75L38.75 59.25H59.25Z"/>
+</svg>

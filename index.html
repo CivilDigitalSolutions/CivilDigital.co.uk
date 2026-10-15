@@ -27,6 +27,18 @@
   <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
   <link rel="stylesheet" href="assets/css/styles.css">
+  <script>
+    // First visit this session: cover the page until the logo trace (assets/js/intro.js) takes
+    // over. Skipped for reduced motion. The cover lifts by itself after 5s if intro.js never runs.
+    (function () {
+      try {
+        if (sessionStorage.getItem("cd-intro") || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      } catch (e) { return; }
+      var d = document.documentElement;
+      d.classList.add("cd-intro");
+      setTimeout(function () { d.classList.remove("cd-intro"); }, 5000);
+    })();
+  </script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -263,6 +275,7 @@
     </div>
   </footer>
 
+  <script src="assets/js/intro.js" defer></script>
   <script src="assets/js/main.js" defer></script>
 </body>
 </html>
