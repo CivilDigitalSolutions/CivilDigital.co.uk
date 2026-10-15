@@ -475,13 +475,12 @@ p { max-width: var(--maxw-prose); }
    ========================================================================== */
 /* Cover the page from first paint until intro.js takes over (set in index.html's <head>) */
 html.cd-intro body::after { content: ""; position: fixed; inset: 0; background: #fff; z-index: 999; }
-.cd-intro-overlay {
-  position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; cursor: pointer;
-  background: #fff radial-gradient(rgba(42,48,56,.07) 1.2px, transparent 1.4px) 0 0 / 22px 22px;
-  transition: opacity .45s ease;
-}
+.cd-intro-overlay { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; cursor: pointer; transition: opacity .45s ease; }
 .cd-intro-overlay.is-leaving { opacity: 0; pointer-events: none; }
-.cd-intro-overlay svg { width: min(86vw, 760px); height: auto; overflow: visible; }
+.cd-intro-overlay.is-merging { pointer-events: none; }
+.cd-intro__bg { position: absolute; inset: 0; background: #fff radial-gradient(rgba(42,48,56,.07) 1.2px, transparent 1.4px) 0 0 / 22px 22px; }
+.cd-intro__lockup { position: relative; width: min(86vw, 760px); }
+.cd-intro__lockup svg { position: absolute; overflow: visible; transform-origin: 0 0; }
 .cd-intro-overlay .dot, .cd-intro-overlay .ring { transform-box: fill-box; transform-origin: center; }
 .cd-intro__skip {
   position: absolute; right: var(--sp-5); bottom: var(--sp-5); font: inherit; font-size: var(--fs-300);

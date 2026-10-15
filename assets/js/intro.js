@@ -1,22 +1,27 @@
 /* Civil Digital — first-load logo trace (home page only).
 
-   Plays once per browser session, over the page, then fades away. The page is
-   already rendered underneath; a white cover set by the inline script in
-   index.html's <head> hides it until this takes over, and that script removes
-   the cover by itself after 5s if this never runs. Any click, key, scroll or
-   touch skips it. Reduced motion never sees it (the head script checks).
+   Plays once per browser session over the page, then hands over to the page's
+   own logos: the white ground fades to reveal the page while the traced
+   logotype drops back onto the hero logo and the knot flies up into the
+   header's brand mark. Both land on identical geometry (CivilDigital.svg and
+   CivilDigitalIcon.svg), so the real images swap in underneath without a jump.
+
+   A white cover set by the inline script in index.html's <head> hides the page
+   until this takes over, and that script lifts the cover by itself after 5s if
+   this never runs. Any click, key, scroll or touch skips to a quick fade.
+   Reduced motion never sees it (the head script checks).
 
    The sequence is docs/brand-motion/civil-digital-logo-trace.html ("Blueprint"),
-   tightened to ~3.4s and rebuilt on the Web Animations API, so the site stays
-   dependency-free:
+   rebuilt on the Web Animations API so the site stays dependency-free:
      guides draw on the knot's 45-degree grid, the knot's outline traces, a pen
      paints the ribbon as one figure-of-eight, the real mark fills in and the
      ribbon lifts to reveal the over-under weave; the logotype traces and fills,
      and the lavender dots on the i and the A land last.
 
-   Geometry: CivilDigitalIcon.svg and CivilDigital.svg verbatim (the logotype's
-   anti-alias fringe layers dropped). Logotype caps are scaled to the knot's
-   height, so the cap line (y=49) and baseline (y=131) run through both. */
+   The lockup is three layers in one box: the guides, the knot and the
+   logotype, each its own <svg> so each can fly to its own target. Logotype
+   caps are scaled to the knot's height, so the cap line (y=49) and baseline
+   (y=131) run through both. */
 
 (function () {
   "use strict";
@@ -32,22 +37,33 @@
   /* The knot's centreline as one figure-of-eight, from the crossing, down-right first. */
   var RIBBON = "M90 90L120.75 120.75H141.25L160.75 101.25V78.75L141.25 59.25H120.75L90 90L59.25 120.75H38.75L19.25 101.25V78.75L38.75 59.25H59.25Z";
 
+  /* Lockup units: the knot's 180 grid. The logotype (974 x 107) sits at WX,WY scaled by WS. */
   var WS = 82 / 102, WX = 211, WY = 49 - 2 * WS, END = WX + 974 * WS;
+  var X0 = -40, W = END + 80, H = 180;
+  var pct = function (v, of) { return (v / of * 100) + "%"; };
+  var box = function (x, y, w, h) {
+    return "left:" + pct(x - X0, W) + ";top:" + pct(y, H) + ";width:" + pct(w, W) + ";height:" + pct(h, H);
+  };
   var GUIDES = [
     "M-30 49H" + (END + 30), "M-30 131H" + (END + 30), "M-30 90H" + (END + 30),
     "M0 0L180 180", "M180 0L0 180", "M9 10V170", "M171 10V170"
   ];
 
   var html =
-    '<svg viewBox="-40 0 ' + (END + 80) + ' 180" aria-hidden="true" focusable="false">' +
-      '<g class="g" fill="none" stroke="rgba(125,10,112,.35)" stroke-width="1.2">' +
-        GUIDES.map(function (d) { return '<path pathLength="1" d="' + d + '"/>'; }).join("") +
-      "</g>" +
-      '<path class="knot" d="' + KNOT + '" fill="#7d0a70"/>' +
-      '<path class="knot-line" pathLength="1" d="' + KNOT + '" fill="none" stroke="#7d0a70" stroke-width="1.6" stroke-linejoin="round"/>' +
-      '<path class="lead" pathLength="1" d="' + RIBBON + '" fill="none" stroke="#A78ADE" stroke-width="20.5"/>' +
-      '<path class="ribbon" pathLength="1" d="' + RIBBON + '" fill="none" stroke="#7d0a70" stroke-width="20.5"/>' +
-      '<g transform="translate(' + WX + "," + WY + ") scale(" + WS + ')">' +
+    '<div class="cd-intro__bg"></div>' +
+    '<div class="cd-intro__lockup" style="aspect-ratio:' + W + "/" + H + '">' +
+      '<svg class="cd-intro__guides" viewBox="' + X0 + " 0 " + W + " " + H + '" aria-hidden="true" focusable="false" style="' + box(X0, 0, W, H) + '">' +
+        '<g class="g" fill="none" stroke="rgba(125,10,112,.35)" stroke-width="1.2">' +
+          GUIDES.map(function (d) { return '<path pathLength="1" d="' + d + '"/>'; }).join("") +
+        "</g>" +
+      "</svg>" +
+      '<svg class="cd-intro__knot" viewBox="0 0 180 180" aria-hidden="true" focusable="false" style="' + box(0, 0, 180, 180) + '">' +
+        '<path class="knot" d="' + KNOT + '" fill="#7d0a70"/>' +
+        '<path class="knot-line" pathLength="1" d="' + KNOT + '" fill="none" stroke="#7d0a70" stroke-width="1.6" stroke-linejoin="round"/>' +
+        '<path class="lead" pathLength="1" d="' + RIBBON + '" fill="none" stroke="#A78ADE" stroke-width="20.5"/>' +
+        '<path class="ribbon" pathLength="1" d="' + RIBBON + '" fill="none" stroke="#7d0a70" stroke-width="20.5"/>' +
+      "</svg>" +
+      '<svg class="cd-intro__word" viewBox="0 0 974 107" aria-hidden="true" focusable="false" style="' + box(WX, WY, 974 * WS, 107 * WS) + '">' +
         WORD.letters.map(function (l) {
           return '<g transform="translate(' + l.t + ')"><path class="lf" d="' + l.d + '" fill="#2A3038"/>' +
             '<path class="ll" pathLength="1" d="' + l.d + '" fill="none" stroke="#2A3038" stroke-width="2.2" stroke-linejoin="round"/></g>';
@@ -56,8 +72,8 @@
         WORD.dots.map(function (l) {
           return '<g transform="translate(' + l.t + ')"><path class="dot" d="' + l.d + '" fill="#A78ADE"/></g>';
         }).join("") +
-      "</g>" +
-    "</svg>" +
+      "</svg>" +
+    "</div>" +
     '<button type="button" class="cd-intro__skip">Skip intro</button>';
 
   var overlay = document.createElement("div");
@@ -66,8 +82,15 @@
   document.body.appendChild(overlay);
   try { sessionStorage.setItem("cd-intro", "1"); } catch (e) { /* private mode: plays again next time */ }
 
+  /* Where the two halves land: the hero logotype and the header's brand mark. Hidden until they do. */
+  var targets = [
+    { el: overlay.querySelector(".cd-intro__word"), to: document.querySelector(".hero-logo"), delay: 0 },
+    { el: overlay.querySelector(".cd-intro__knot"), to: document.querySelector(".site-header .brand__mark"), delay: 90 }
+  ].filter(function (t) { return t.to; });
+  targets.forEach(function (t) { t.to.style.visibility = "hidden"; });
+
   var q = function (s) { return [].slice.call(overlay.querySelectorAll(s)); };
-  var EASE = { inOut: "cubic-bezier(.45,0,.55,1)", sine: "cubic-bezier(.37,0,.63,1)", out: "cubic-bezier(.25,1,.5,1)", in: "cubic-bezier(.5,0,.75,0)" };
+  var EASE = { inOut: "cubic-bezier(.45,0,.55,1)", sine: "cubic-bezier(.37,0,.63,1)", out: "cubic-bezier(.25,1,.5,1)", in: "cubic-bezier(.5,0,.75,0)", move: "cubic-bezier(.65,0,.25,1)" };
   var anims = [];
 
   /* Draw a stroke between [start, end] fractions of its length (pathLength="1"). A second animation on
@@ -109,20 +132,55 @@
   draw(guides, [0, 1], [1, 1], 2400, 500, 40, EASE.in, "forwards");
 
   var done = false;
-  function finish(fast) {
+  var timers = [];
+  function events(on) {
+    ["pointerdown", "keydown", "wheel", "touchstart"].forEach(function (ev) {
+      if (on) window.addEventListener(ev, skip, { capture: true, passive: true });
+      else window.removeEventListener(ev, skip, true);
+    });
+  }
+  function cleanup() {
+    anims.forEach(function (a) { a.cancel(); });
+    targets.forEach(function (t) { t.to.style.visibility = ""; });
+    overlay.remove();
+  }
+
+  /* The merge: fly each half onto its target (FLIP: from its box to the target's box) while the ground fades. */
+  function handOff() {
     if (done) return;
     done = true;
-    ["pointerdown", "keydown", "wheel", "touchstart"].forEach(function (ev) { window.removeEventListener(ev, skip, true); });
+    events(false);
     root.classList.remove("cd-intro");
-    if (fast) overlay.style.transitionDuration = ".2s";
-    overlay.classList.add("is-leaving");
-    setTimeout(function () {
-      anims.forEach(function (a) { a.cancel(); });
-      overlay.remove();
-    }, fast ? 220 : 470);
+    var MOVE = 950, last = 0;
+    targets.forEach(function (t) {
+      var a = t.el.getBoundingClientRect(), b = t.to.getBoundingClientRect();
+      if (!a.width || !b.width) return;   // target not laid out (e.g. hidden): it just fades with the ground
+      var dx = b.left - a.left, dy = b.top - a.top, sx = b.width / a.width, sy = b.height / a.height;
+      anims.push(t.el.animate(
+        [{ transform: "none" }, { transform: "translate(" + dx + "px," + dy + "px) scale(" + sx + "," + sy + ")" }],
+        { delay: t.delay, duration: MOVE, easing: EASE.move, fill: "forwards" }));
+      last = Math.max(last, t.delay + MOVE);
+    });
+    /* the ground trails the move, so the page appears as the logo settles rather than under it mid-flight */
+    anims.push(overlay.querySelector(".cd-intro__bg").animate([{ opacity: 1 }, { opacity: 0 }], { delay: 250, duration: 750, easing: EASE.inOut, fill: "forwards" }));
+    anims.push(overlay.querySelector(".cd-intro__skip").animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" }));
+    overlay.classList.add("is-merging");
+    setTimeout(cleanup, Math.max(last, 1000) + 30);
   }
-  function skip() { finish(true); }
 
-  ["pointerdown", "keydown", "wheel", "touchstart"].forEach(function (ev) { window.addEventListener(ev, skip, { capture: true, passive: true }); });
-  setTimeout(function () { finish(false); }, 3000);
+  /* Skip: a quick fade, the page's own logos straight back. */
+  function skip() {
+    if (done) return;
+    done = true;
+    events(false);
+    timers.forEach(clearTimeout);
+    root.classList.remove("cd-intro");
+    targets.forEach(function (t) { t.to.style.visibility = ""; });
+    overlay.style.transitionDuration = ".2s";
+    overlay.classList.add("is-leaving");
+    setTimeout(cleanup, 220);
+  }
+
+  events(true);
+  timers.push(setTimeout(handOff, 3050));
 })();
