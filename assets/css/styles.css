@@ -187,6 +187,7 @@ p { max-width: var(--maxw-prose); }
 .card--link:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); border-color: var(--accent-light); }
 .card h3 { font-size: var(--fs-600); }
 .card p { color: var(--body); }
+.card img { height: auto; border-radius: var(--radius-sm); }
 .card__more { margin-top: auto; font-weight: 600; color: var(--accent); display: inline-flex; align-items: center; gap: var(--sp-2); }
 .card a.stretched::after { content: ""; position: absolute; inset: 0; }
 

@@ -1,5 +1,9 @@
 # Promotional graphics: adding examples
 
+The live "Do your Facebook adverts still look like this?!" section near the top of the page shows two
+example graphics in `images/examples/`: a recreated Facebook-style poster for a **fictional** cleaning
+business, and an earlier Civil Digital advert. A redesigned version of each exists but isn't published yet.
+
 The Examples section on `/services/social-media-graphics/` is written but **commented out** in
 `services/social-media-graphics/index.html` (search for `EXAMPLES SECTION`). It stays hidden until there
 are approved examples, so the page never shows placeholders to visitors.
