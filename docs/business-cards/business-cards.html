@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>Civil Digital business cards</title>
+<!--
+  Civil Digital business card, print artwork for Instaprint standard
+  85 x 55 mm cards, matte finish. Two pages: front (logo) then back (details).
+
+    Page size  91 x 61 mm: the 85 x 55 mm trim plus 3 mm bleed each side.
+    Safe area  everything that must not be cut sits 4 mm inside the trim
+               (7 mm from the page edge).
+    Colours    ink #2A3038 and lavender as in assets/brand/CivilDigital.svg,
+               plum #7D0A70 as in assets/brand/CivilDigitalIcon.svg.
+
+  Build the PDF with:  node docs/business-cards/build.js
+  Open this file with ?guides in a browser to see the trim and safe lines.
+  Edit the name, role and contact lines in the back card below.
+-->
+<style>
+  @page { size: 91mm 61mm; margin: 0; }
+  :root {
+    --ink: #2a3038;
+    --muted: #5d6573;
+    --plum: #7d0a70;
+    --on-plum: #f1e4ee;
+    --bleed: 3mm;
+    --safe: 7mm;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #fff; }
+  body {
+    font-family: Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .card {
+    position: relative; width: 91mm; height: 61mm; overflow: hidden;
+    break-after: page;
+  }
+  .card:last-child { break-after: auto; }
+
+  /* Front: white, the full logotype centred, services along the foot */
+  .front { background: #fff; }
+  .front .wordmark {
+    position: absolute; left: 50%; top: 27mm; width: 58mm;
+    transform: translate(-50%, -50%);
+  }
+  .front .services {
+    position: absolute; left: 0; right: 0; bottom: calc(var(--safe) + 1.5mm);
+    text-align: center; color: var(--muted);
+    font-size: 5.6pt; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
+  }
+  .front .services span { color: #a78ade; padding: 0 .35em; }
+
+  /* Back: plum, white knot, name and contact details */
+  .back { background: var(--plum); color: #fff; }
+  .back .mark {
+    position: absolute; left: var(--safe); top: calc(var(--safe) - 1.8mm); width: 13mm;
+  }
+  .back .who { position: absolute; left: var(--safe); top: 22mm; }
+  .back .name { font-size: 10.5pt; font-weight: 700; letter-spacing: -.005em; line-height: 1.2; }
+  .back .role { font-size: 7pt; font-weight: 500; color: var(--on-plum); margin-top: .8mm; }
+  .back .contact {
+    position: absolute; left: var(--safe); bottom: var(--safe);
+    list-style: none; font-size: 7pt; line-height: 1.6; font-weight: 500;
+  }
+  .back .contact b { display: inline-block; width: 3.4mm; font-weight: 700; color: var(--on-plum); }
+  .back .place {
+    position: absolute; right: var(--safe); bottom: var(--safe);
+    font-size: 6pt; line-height: 11.2pt; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--on-plum);
+  }
+
+  /* ?guides: trim (solid) and safe area (dashed); never printed */
+  .guides .card::before, .guides .card::after {
+    content: ""; position: absolute; pointer-events: none; z-index: 9;
+  }
+  .guides .card::before { inset: var(--bleed); outline: .2mm solid #e11d48; }
+  .guides .card::after { inset: var(--safe); outline: .2mm dashed #0ea5e9; }
+  @media screen {
+    body { background: #e5e7eb; padding: 10mm; display: grid; gap: 8mm; justify-content: center; }
+    .card { box-shadow: 0 2mm 6mm rgba(0,0,0,.18); }
+  }
+</style>
+</head>
+<body>
+  <section class="card front" aria-label="Front">
+    <img class="wordmark" src="../../assets/brand/CivilDigital.svg" alt="Civil Digital">
+    <p class="services">Power Platform<span>&middot;</span>Apps<span>&middot;</span>Web<span>&middot;</span>Consulting</p>
+  </section>
+
+  <section class="card back" aria-label="Back">
+    <img class="mark" src="../../assets/brand/CivilDigitalIconWhite.svg" alt="">
+    <div class="who">
+      <p class="name">Your Name</p>
+      <p class="role">Founder &amp; Digital Consultant</p>
+    </div>
+    <ul class="contact">
+      <li><b>T</b>07568 296136</li>
+      <li><b>E</b>info@civildigital.co.uk</li>
+      <li><b>W</b>civildigital.co.uk</li>
+    </ul>
+    <p class="place">Bedford</p>
+  </section>
+
+  <script>
+    if (/[?&]guides\b/.test(location.search)) document.body.classList.add('guides');
+  </script>
+</body>
+</html>
