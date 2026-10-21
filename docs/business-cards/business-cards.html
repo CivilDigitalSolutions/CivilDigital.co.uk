@@ -12,8 +12,10 @@
     Page size  88 x 58 mm: the 85 x 55 mm trim plus 1.5 mm bleed each side.
     Safe area  Vistaprint's safety line is 1.5 mm inside the trim (82 x 52);
                text here sits 4 mm inside the trim (5.5 mm from the page edge).
-    PDF        build.js prints on a 1 mm larger page (Chromium rounds page sizes)
-               and set-boxes.py crops it back to exactly 88 x 58 mm.
+    PDF        build.js prints each card on a 90 x 60 mm page, with a 1 mm border
+               in its own colour round the 88 x 58 mm artwork (Chromium rounds
+               sizes and clips), and finish-pdf.py crops exactly the 88 x 58 mm
+               inside it and turns the text into outlines.
     Colours    ink #2A3038 and lavender as in assets/brand/CivilDigital.svg,
                plum #7D0A70 as in assets/brand/CivilDigitalIcon.svg.
 
@@ -22,7 +24,7 @@
   Edit the name, role and contact lines in the back card below.
 -->
 <style>
-  @page { size: 89mm 59mm; margin: 0; }
+  @page { size: 90mm 60mm; margin: 0; }
   :root {
     --ink: #2a3038;
     --muted: #5d6573;
@@ -42,11 +44,12 @@
     break-after: page;
   }
   .card:last-child { break-after: auto; }
-  /* Paint each card's colour past its right and bottom edges, so the crop
-     never shows white (the card sits at the page's top-left) */
+  /* Fill the whole print page with each card's colour: a 1 mm border round
+     the 88 x 58 mm artwork, so the crop never shows white */
   @media print {
-    .front { box-shadow: 0 1mm #fff, 1mm 0 #fff, 1mm 1mm #fff; }
-    .back { box-shadow: 0 1mm var(--plum), 1mm 0 var(--plum), 1mm 1mm var(--plum); }
+    .card { width: 90mm; height: 60mm; border: 1mm solid; }
+    .front { border-color: #fff; }
+    .back { border-color: var(--plum); }
   }
 
   /* Front: white, the full logotype centred, services along the foot */
