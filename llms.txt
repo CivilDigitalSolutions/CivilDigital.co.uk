@@ -13,6 +13,7 @@ Civil Digital works with small and medium UK businesses, tradespeople, charities
 - Email: info@civildigital.co.uk
 - Telephone: +44 7568 296136
 - Website: https://civildigital.co.uk/
+- Google Business Profile: https://www.google.com/maps/place/Civil+Digital/data=!4m2!3m1!1s0x4877b156a3e95d41:0xbdcd9c379b4c2d51
 - Specialisms: Microsoft Power Platform (Power Apps, Power Automate, Power BI, Dataverse), bespoke application development, Android apps, business websites, technical SEO, web accessibility, digital transformation consulting, promotional graphic design, app testing
 - Products operated by Civil Digital: BoatLog (rowing club management, boatlog.civildigital.co.uk) and Dispatch (job management for trades and service businesses, dispatch.civildigital.co.uk)
 
