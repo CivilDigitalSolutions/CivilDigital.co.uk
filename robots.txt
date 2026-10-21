@@ -1,4 +1,10 @@
 User-agent: *
 Allow: /
 
+# Backend configuration for the App Testing Cloud Functions. Not site content,
+# and nothing here is worth a crawler's time. Deliberately a single User-agent
+# group: naming a specific crawler (GPTBot, ClaudeBot, PerplexityBot and so on)
+# would give it its own group, and it would then ignore every rule in this one.
+Disallow: /firebase/
+
 Sitemap: https://civildigital.co.uk/sitemap.xml

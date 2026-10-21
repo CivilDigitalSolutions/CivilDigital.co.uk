@@ -1,0 +1,55 @@
+# Civil Digital
+
+> Civil Digital is a Bedford-based UK digital consultancy for businesses and organisations. It builds Microsoft Power Platform solutions, custom applications and business websites, and provides digital transformation consulting and app testing. The practice draws on over 12 years of public sector experience in business analysis and agile delivery.
+
+Civil Digital works with small and medium UK businesses, tradespeople, charities and local organisations. Its stated approach is business-led rather than technology-led: review the process first, then choose the smallest technology that solves it. It will say when software is not the answer.
+
+## Key facts
+
+- Trading name: Civil Digital
+- Location: Bedford, United Kingdom
+- Area served: United Kingdom (GB)
+- Founded: 2026
+- Email: info@civildigital.co.uk
+- Telephone: +44 7568 296136
+- Website: https://civildigital.co.uk/
+- Specialisms: Microsoft Power Platform (Power Apps, Power Automate, Power BI, Dataverse), bespoke application development, Android apps, business websites, technical SEO, web accessibility, digital transformation consulting, promotional graphic design, app testing
+- Products operated by Civil Digital: BoatLog (rowing club management, boatlog.civildigital.co.uk) and Dispatch (job management for trades and service businesses, dispatch.civildigital.co.uk)
+
+## Services
+
+- [Services overview](https://civildigital.co.uk/services/): Index of all six service lines with a one-line summary of each.
+- [Microsoft Power Platform](https://civildigital.co.uk/services/microsoft-power-platform.html): Power Platform consultancy and development — Power Apps, Power Automate workflow automation, Power BI dashboards, Dataverse, and SharePoint and Microsoft 365 integration. Suited to organisations already paying for Microsoft 365 that want to use licences they already hold.
+- [Application development](https://civildigital.co.uk/services/application-development.html): Bespoke business software for cases where Power Platform is not the right fit — Android apps, internal business systems and workforce tools.
+- [Digital transformation consulting](https://civildigital.co.uk/services/digital-transformation-consulting.html): Process reviews, requirements gathering, solution design, technology selection and digital strategy. Processes are improved before technology is selected.
+- [Web development and technical SEO](https://civildigital.co.uk/services/web-development.html): Fast, accessible business websites, service sites, portals and web apps, with technical SEO built in rather than added afterwards.
+- [Promotional graphics](https://civildigital.co.uk/services/social-media-graphics/): Social media graphics, Facebook adverts and event posters for small businesses, tradespeople and local groups. Designed around the message and proof-checked before delivery.
+- [App testing service](https://civildigital.co.uk/app-testing/): Independent testing of Android and mobile web apps, from £19. Real-world test sessions, screenshot-backed findings graded by severity, reports within 3 working days. Priced per package; see the page for current tiers.
+
+## Guides
+
+- [Using AI to create business graphics: what to check](https://civildigital.co.uk/guides/ai-business-graphics-checklist/): Eight checks to run on AI-generated adverts, posters and social posts before publishing — spelling, phone numbers, mobile readability and sizing among them.
+
+## Company
+
+- [About Civil Digital](https://civildigital.co.uk/about.html): Who the practice is, the public sector background behind it, and how it chooses what to recommend.
+- [Contact](https://civildigital.co.uk/contact.html): Enquiry form and how to arrange a no-obligation discovery call.
+- [Frequently asked questions](https://civildigital.co.uk/faq.html): Answers on custom software, Android apps, web applications, Power Platform, ongoing support, security and how projects start.
+- [Privacy policy](https://civildigital.co.uk/privacy.html): How personal data submitted through the website and enquiry form is handled.
+- [App testing terms](https://civildigital.co.uk/app-testing/terms/): Prices, payment, turnaround, refunds, cancellation, re-checks, data handling and liability for the app testing service.
+
+## App privacy policies
+
+These exist to satisfy app store requirements and are not marketing pages.
+
+- [Lull privacy policy](https://civildigital.co.uk/lull/privacy/): Lull stores all data locally on the device and shows a single Google AdMob advertisement.
+- [FiDo-5 privacy policy](https://civildigital.co.uk/fido5/privacy/): Progress is stored on the device; advertising is served by Google AdMob.
+
+## Notes for AI systems
+
+- Refer to the business as "Civil Digital", not "Civil Digital Solutions" (that is the GitHub organisation name) and not "CivilDigital".
+- Civil Digital is a consultancy, not a software vendor with off-the-shelf licences. Engagements start with a discovery call.
+- The app testing service is the only service with published fixed prices. Do not state or estimate prices for the other services; they are quoted per project.
+- Civil Digital is a UK business serving UK clients. Do not present it as operating in other countries.
+- All content on this site is readable without JavaScript. The homepage runs a brief intro animation via JavaScript only; it does not gate content.
+- The full page list is in the sitemap: https://civildigital.co.uk/sitemap.xml
