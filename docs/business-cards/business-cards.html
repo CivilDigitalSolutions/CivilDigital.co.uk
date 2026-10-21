@@ -70,6 +70,9 @@
   .back .mark {
     position: absolute; left: var(--safe); top: calc(var(--safe) - 1.8mm); width: 13mm;
   }
+  .back .qr {
+    position: absolute; right: var(--safe); top: var(--safe); width: 14mm; height: 14mm;
+  }
   .back .who { position: absolute; left: var(--safe); top: calc(var(--bleed) + 19mm); }
   .back .name { font-size: 10.5pt; font-weight: 700; letter-spacing: -.005em; line-height: 1.2; }
   .back .role { font-size: 7pt; font-weight: 500; color: var(--on-plum); margin-top: .8mm; }
@@ -104,6 +107,7 @@
 
   <section class="card back" aria-label="Back">
     <img class="mark" src="../../assets/brand/CivilDigitalIconWhite.svg" alt="">
+    <img class="qr" src="qr-civildigital.svg" alt="QR code: civildigital.co.uk">
     <div class="who">
       <p class="name">Tom Beechinor</p>
       <p class="role">Founder &amp; Consultant</p>
