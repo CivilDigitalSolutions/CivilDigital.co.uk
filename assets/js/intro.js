@@ -8,7 +8,10 @@
 
    A white cover set by the inline script in index.html's <head> hides the page
    until this takes over, and that script lifts the cover by itself after 5s if
-   this never runs. Any click, key, scroll or touch skips to a quick fade.
+   this never runs. A click, a tap or a non-scrolling key skips to a quick fade;
+   scrolling (wheel, touch drag, scrollbar, arrow/page keys) does not stop the
+   sequence — it winds it on faster, each further scroll ramping the playback
+   rate up to 5x, so the whole thing still plays through, just sooner.
    Reduced motion never sees it (the head script checks).
 
    The sequence is docs/brand-motion/civil-digital-logo-trace.html ("Blueprint"),
@@ -91,19 +94,23 @@
 
   var q = function (s) { return [].slice.call(overlay.querySelectorAll(s)); };
   var EASE = { inOut: "cubic-bezier(.45,0,.55,1)", sine: "cubic-bezier(.37,0,.63,1)", out: "cubic-bezier(.25,1,.5,1)", in: "cubic-bezier(.5,0,.75,0)", move: "cubic-bezier(.65,0,.25,1)" };
-  var anims = [];
+  /* Scrolling winds the sequence on instead of ending it: every animation below, and the clock that
+     fires the hand-off, share one playback rate that each scroll nudges up (see hurry()). Anything
+     started later — the merge included — picks up the rate as it stands, via track(). */
+  var anims = [], rate = 1, RATE_FIRST = 2.5, RATE_STEP = 0.35, RATE_MAX = 5, clock = null;
+  function track(a) { a.playbackRate = rate; anims.push(a); return a; }
 
   /* Draw a stroke between [start, end] fractions of its length (pathLength="1"). A second animation on
      the same stroke (a retract) must fill "forwards" only, or its first frame overrides the draw-in. */
   function seg(a) { return { strokeDasharray: (a[1] - a[0]) + " 2", strokeDashoffset: -a[0] }; }
   function draw(els, from, to, t, dur, gap, ease, fill) {
     els.forEach(function (el, i) {
-      anims.push(el.animate([seg(from), seg(to)], { delay: t + i * (gap || 0), duration: dur, easing: ease || EASE.inOut, fill: fill || "both" }));
+      track(el.animate([seg(from), seg(to)], { delay: t + i * (gap || 0), duration: dur, easing: ease || EASE.inOut, fill: fill || "both" }));
     });
   }
   function fade(els, from, to, t, dur, gap, ease) {
     els.forEach(function (el, i) {
-      anims.push(el.animate([{ opacity: from }, { opacity: to }], { delay: t + i * (gap || 0), duration: dur, easing: ease || EASE.out, fill: "both" }));
+      track(el.animate([{ opacity: from }, { opacity: to }], { delay: t + i * (gap || 0), duration: dur, easing: ease || EASE.out, fill: "both" }));
     });
   }
 
@@ -120,12 +127,12 @@
   fade(q(".lf"), 0, 1, 1750, 350, 35);
   draw(letters, [0, 1], [1, 1], 1900, 450, 35, EASE.sine, "forwards");
   q(".dot").forEach(function (el, i) {
-    anims.push(el.animate(
+    track(el.animate(
       [{ transform: "scale(0)" }, { transform: "scale(1.25)", offset: 0.45 }, { transform: "scale(.92)", offset: 0.7 }, { transform: "scale(1)" }],
       { delay: 2250 + i * 120, duration: 600, easing: "ease-out", fill: "both" }));
   });
   q(".ring").forEach(function (el) {
-    anims.push(el.animate(
+    track(el.animate(
       [{ transform: "scale(.8)", opacity: 0 }, { transform: "scale(.8)", opacity: 0.9, strokeWidth: 2.5, offset: 0.01 }, { transform: "scale(2.6)", opacity: 0, strokeWidth: 0.5 }],
       { delay: 2370, duration: 800, easing: EASE.out, fill: "both" }));
   });
@@ -133,13 +140,28 @@
 
   var done = false;
   var timers = [];
+
+  /* Scrolling means "get on with it", not "stop": wind the whole sequence on faster, the first
+     scroll jumping it to RATE_FIRST and each one after ramping towards RATE_MAX. */
+  function hurry() {
+    if (done) return;
+    rate = rate === 1 ? RATE_FIRST : Math.min(RATE_MAX, rate + RATE_STEP);
+    anims.forEach(function (a) { a.playbackRate = rate; });
+    if (clock) clock.playbackRate = rate;
+  }
+
+  /* Keys that scroll the page hurry it along; any other key is a skip, as a click is. */
+  var SCROLL_KEYS = { ArrowDown: 1, ArrowUp: 1, PageDown: 1, PageUp: 1, Home: 1, End: 1, " ": 1, Spacebar: 1 };
+  function onKey(e) { if (SCROLL_KEYS[e.key]) hurry(); else skip(); }
+  var LISTEN = [["pointerdown", skip], ["keydown", onKey], ["wheel", hurry], ["touchmove", hurry], ["scroll", hurry]];
   function events(on) {
-    ["pointerdown", "keydown", "wheel", "touchstart"].forEach(function (ev) {
-      if (on) window.addEventListener(ev, skip, { capture: true, passive: true });
-      else window.removeEventListener(ev, skip, true);
+    LISTEN.forEach(function (l) {
+      if (on) window.addEventListener(l[0], l[1], { capture: true, passive: true });
+      else window.removeEventListener(l[0], l[1], true);
     });
   }
   function cleanup() {
+    if (clock) clock.cancel();
     anims.forEach(function (a) { a.cancel(); });
     targets.forEach(function (t) { t.to.style.visibility = ""; });
     overlay.remove();
@@ -150,22 +172,25 @@
     if (done) return;
     done = true;
     events(false);
+    if (clock) clock.cancel();
+    timers.forEach(clearTimeout);
     root.classList.remove("cd-intro");
-    var MOVE = 950, last = 0;
+    var MOVE = 950, last = 0, vh = window.innerHeight || root.clientHeight;
     targets.forEach(function (t) {
       var a = t.el.getBoundingClientRect(), b = t.to.getBoundingClientRect();
       if (!a.width || !b.width) return;   // target not laid out (e.g. hidden): it just fades with the ground
+      if (b.bottom < 0 || b.top > vh) return;   // scrolled past its target: fade rather than fly off-screen
       var dx = b.left - a.left, dy = b.top - a.top, sx = b.width / a.width, sy = b.height / a.height;
-      anims.push(t.el.animate(
+      track(t.el.animate(
         [{ transform: "none" }, { transform: "translate(" + dx + "px," + dy + "px) scale(" + sx + "," + sy + ")" }],
         { delay: t.delay, duration: MOVE, easing: EASE.move, fill: "forwards" }));
       last = Math.max(last, t.delay + MOVE);
     });
     /* the ground trails the move, so the page appears as the logo settles rather than under it mid-flight */
-    anims.push(overlay.querySelector(".cd-intro__bg").animate([{ opacity: 1 }, { opacity: 0 }], { delay: 250, duration: 750, easing: EASE.inOut, fill: "forwards" }));
-    anims.push(overlay.querySelector(".cd-intro__skip").animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" }));
+    track(overlay.querySelector(".cd-intro__bg").animate([{ opacity: 1 }, { opacity: 0 }], { delay: 250, duration: 750, easing: EASE.inOut, fill: "forwards" }));
+    track(overlay.querySelector(".cd-intro__skip").animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" }));
     overlay.classList.add("is-merging");
-    setTimeout(cleanup, Math.max(last, 1000) + 30);
+    timers.push(setTimeout(cleanup, (Math.max(last, 1000) + 30) / rate));
   }
 
   /* Skip: a quick fade, the page's own logos straight back. */
@@ -182,5 +207,9 @@
   }
 
   events(true);
-  timers.push(setTimeout(handOff, 3050));
+  /* The hand-off is driven by an animation rather than a timer, so hurry() moves it in with the rest.
+     The timer behind it is only a backstop if the clock never fires; handOff is idempotent. */
+  clock = overlay.animate([{ opacity: 1 }, { opacity: 1 }], { duration: 3050, fill: "none" });
+  clock.onfinish = handOff;
+  timers.push(setTimeout(handOff, 6000));
 })();
