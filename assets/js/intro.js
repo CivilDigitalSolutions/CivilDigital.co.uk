@@ -234,7 +234,11 @@
   /* Keys that scroll the page hurry it along; any other key is a skip, as a click is. */
   var SCROLL_KEYS = { ArrowDown: 1, ArrowUp: 1, PageDown: 1, PageUp: 1, Home: 1, End: 1, " ": 1, Spacebar: 1 };
   function onKey(e) { if (SCROLL_KEYS[e.key]) onGesture(e); else skip(e); }
-  var LISTEN = [["pointerdown", skip], ["keydown", onKey], ["wheel", onGesture], ["touchmove", onGesture], ["scroll", onScroll]];
+  /* The deliberate skip is a click, not a pointerdown. On a touch screen a scroll starts with the
+     finger landing, which is a pointerdown, so listening for that skipped the intro on the first
+     instant of every swipe - the whole thing was unreachable on a phone. A click is the browser's
+     own verdict on tap versus pan: a tap produces one, a scroll gesture never does. */
+  var LISTEN = [["click", skip], ["keydown", onKey], ["wheel", onGesture], ["touchmove", onGesture], ["scroll", onScroll]];
   function events(on) {
     LISTEN.forEach(function (l) {
       if (on) window.addEventListener(l[0], l[1], { capture: true, passive: true });
