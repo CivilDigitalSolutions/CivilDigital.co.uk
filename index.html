@@ -30,10 +30,13 @@
   <script>
     // First visit this session: cover the page until the logo trace (assets/js/intro.js) takes
     // over. Skipped for reduced motion. The cover lifts by itself after 5s if intro.js never runs.
+    // ?intro=debug bypasses both guards so the sequence can be replayed on demand, with the trace
+    // intro.js pins to the corner reporting what it would have done on a normal visit.
     (function () {
+      var dbg = /[?&]intro=debug\b/.test(location.search);
       try {
-        if (sessionStorage.getItem("cd-intro") || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      } catch (e) { return; }
+        if (!dbg && (sessionStorage.getItem("cd-intro") || matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+      } catch (e) { if (!dbg) return; }
       var d = document.documentElement;
       d.classList.add("cd-intro");
       setTimeout(function () { d.classList.remove("cd-intro"); }, 5000);
