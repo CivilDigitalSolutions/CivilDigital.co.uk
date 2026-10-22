@@ -1,0 +1,45 @@
+{
+  "_comment": [
+    "Hosting config for civildigital.co.uk. Deliberately hosting-only: the Cloud",
+    "Functions for the App Testing booking flow keep their own config at",
+    "firebase/firebase.json and their own deploy path, so this pilot cannot",
+    "disturb a live payment flow. Deploy the site with:",
+    "  firebase deploy --only hosting",
+    "run from this directory. Functions still deploy from firebase/ as before.",
+    "",
+    "cleanUrls is OFF on purpose. Turning it on would 301 every .html URL on the",
+    "site - about.html, contact.html, faq.html and the four service pages are all",
+    "in the sitemap and indexed by Google.",
+    "",
+    "appAssociation is NONE on purpose. Left on AUTO, Firebase generates its own",
+    "/.well-known/assetlinks.json and would silently override the committed one",
+    "that Android App Links verification depends on."
+  ],
+
+  "hosting": {
+    "public": ".",
+    "cleanUrls": false,
+    "appAssociation": "NONE",
+
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "firebase/**",
+      ".git/**",
+      ".github/**",
+      ".gitattributes",
+      ".gitignore",
+      ".nojekyll",
+      "CNAME",
+      "**/node_modules/**",
+      "README.md",
+      "docs/*.md",
+      "docs/stripe-setup.ps1",
+      "docs/stripe-branding/**",
+      "fido5/docs/**",
+      "fido5/audio/vo/*.md",
+      "fido5/audio/vo/*.csv",
+      "fido5/promo/**"
+    ]
+  }
+}
