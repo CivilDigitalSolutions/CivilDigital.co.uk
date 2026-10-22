@@ -13,13 +13,28 @@
     "",
     "appAssociation is NONE on purpose. Left on AUTO, Firebase generates its own",
     "/.well-known/assetlinks.json and would silently override the committed one",
-    "that Android App Links verification depends on."
+    "that Android App Links verification depends on.",
+    "",
+    "The scripts and stylesheets are revalidated rather than cached for an hour.",
+    "These filenames are not fingerprinted, so Firebase's default max-age=3600",
+    "meant a deploy could take an hour to reach anyone who had already visited -",
+    "a returning visitor kept running the old JS. must-revalidate makes the",
+    "browser ask, and the ETag turns the usual answer into a cheap 304."
   ],
 
   "hosting": {
     "public": ".",
     "cleanUrls": false,
     "appAssociation": "NONE",
+
+    "headers": [
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        ]
+      }
+    ],
 
     "ignore": [
       "firebase.json",

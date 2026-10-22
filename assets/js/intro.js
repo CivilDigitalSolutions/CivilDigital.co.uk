@@ -10,8 +10,8 @@
    until this takes over, and that script lifts the cover by itself after 5s if
    this never runs. A click, a tap or a non-scrolling key skips to a quick fade;
    scrolling (wheel, touch drag, scrollbar, arrow/page keys) does not stop the
-   sequence — it winds it on faster, each further scroll ramping the playback
-   rate up to 5x, so the whole thing still plays through, just sooner.
+   sequence — it winds it on faster, the rate easing up with the distance
+   scrolled to RATE_MAX, so the whole thing still plays through, just sooner.
    Reduced motion never sees it (the head script checks).
 
    The sequence is docs/brand-motion/civil-digital-logo-trace.html ("Blueprint"),
@@ -97,7 +97,7 @@
   /* Scrolling winds the sequence on instead of ending it: every animation below, and the clock that
      fires the hand-off, share one playback rate that each scroll nudges up (see hurry()). Anything
      started later — the merge included — picks up the rate as it stands, via track(). */
-  var anims = [], rate = 1, RATE_FIRST = 2.5, RATE_STEP = 0.35, RATE_MAX = 5, clock = null;
+  var anims = [], rate = 1, clock = null;
   function track(a) { a.playbackRate = rate; anims.push(a); return a; }
 
   /* Draw a stroke between [start, end] fractions of its length (pathLength="1"). A second animation on
@@ -141,24 +141,62 @@
   var done = false;
   var timers = [];
 
-  /* Scrolling means "get on with it", not "stop": wind the whole sequence on faster, the first
-     scroll jumping it to RATE_FIRST and each one after ramping towards RATE_MAX. */
-  function hurry() {
-    if (done) return;
-    rate = rate === 1 ? RATE_FIRST : Math.min(RATE_MAX, rate + RATE_STEP);
+  /* Scrolling means "get on with it", not "stop": wind the sequence on faster. The rate follows how
+     far the page has been scrolled, not how many events arrived — one flick of a wheel or trackpad
+     fires a scroll and a wheel and often dozens of each, so counting events pinned the rate at its
+     cap instantly and the sequence blinked past, which reads as a cancel rather than a wind-on.
+     RATE_MAX keeps the fast end watchable, FULL is the scroll distance that reaches it, and STEP_MS
+     eases between rates so the change of pace isn't a jolt (a timer rather than rAF: the ramp should
+     still arrive if the tab is in the background, where rAF never fires). */
+  var RATE_MAX = 2.4, FULL = 700, STEP_MS = 40;
+  var scrolled = 0, want = 1, lastY = window.scrollY || 0, step = 0, pending = 0;
+  function apply() {
     anims.forEach(function (a) { a.playbackRate = rate; });
     if (clock) clock.playbackRate = rate;
   }
-
+  function ramp() {
+    if (step || done || rate === want) return;
+    step = setTimeout(function () {
+      step = 0;
+      rate += (want - rate) * 0.18;
+      if (want - rate < 0.01) rate = want;
+      apply();
+      ramp();
+    }, STEP_MS);
+  }
+  function hurry(px) {
+    if (done) return;
+    scrolled += px;
+    want = 1 + (RATE_MAX - 1) * Math.min(1, scrolled / FULL);
+    ramp();
+  }
+  /* A wheel tick or a touch drag normally lands as a scroll, and that scroll's distance is what
+     counts; the gesture only stands in for distance when the page itself cannot move (already at
+     the end, or too short to scroll), so the same flick is never counted twice. */
+  function onScroll() {
+    clearTimeout(pending);
+    var y = window.scrollY || 0;
+    hurry(Math.abs(y - lastY));
+    lastY = y;
+  }
+  function onGesture() {
+    clearTimeout(pending);
+    pending = setTimeout(function () { hurry(60); }, 120);
+  }
   /* Keys that scroll the page hurry it along; any other key is a skip, as a click is. */
   var SCROLL_KEYS = { ArrowDown: 1, ArrowUp: 1, PageDown: 1, PageUp: 1, Home: 1, End: 1, " ": 1, Spacebar: 1 };
-  function onKey(e) { if (SCROLL_KEYS[e.key]) hurry(); else skip(); }
-  var LISTEN = [["pointerdown", skip], ["keydown", onKey], ["wheel", hurry], ["touchmove", hurry], ["scroll", hurry]];
+  function onKey(e) { if (SCROLL_KEYS[e.key]) onGesture(); else skip(); }
+  var LISTEN = [["pointerdown", skip], ["keydown", onKey], ["wheel", onGesture], ["touchmove", onGesture], ["scroll", onScroll]];
   function events(on) {
     LISTEN.forEach(function (l) {
       if (on) window.addEventListener(l[0], l[1], { capture: true, passive: true });
       else window.removeEventListener(l[0], l[1], true);
     });
+    if (!on) {   // no more rate changes once we're handing over or skipping
+      clearTimeout(pending);
+      clearTimeout(step);
+      step = 0;
+    }
   }
   function cleanup() {
     if (clock) clock.cancel();
