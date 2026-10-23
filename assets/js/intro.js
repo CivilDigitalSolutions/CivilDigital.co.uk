@@ -117,8 +117,8 @@
 
   /* Where the two halves land: the hero logotype and the header's brand mark. Hidden until they do. */
   var targets = [
-    { el: overlay.querySelector(".cd-intro__word"), to: document.querySelector(".hero-logo"), delay: 0 },
-    { el: overlay.querySelector(".cd-intro__knot"), to: document.querySelector(".site-header .brand__mark"), delay: 90 }
+    { name: "logotype", el: overlay.querySelector(".cd-intro__word"), to: document.querySelector(".hero-logo"), delay: 0 },
+    { name: "knot", el: overlay.querySelector(".cd-intro__knot"), to: document.querySelector(".site-header .brand__mark"), delay: 90 }
   ].filter(function (t) { return t.to; });
   targets.forEach(function (t) { t.to.style.visibility = "hidden"; });
 
@@ -267,11 +267,30 @@
     if (clock) clock.cancel();
     timers.forEach(clearTimeout);
     root.classList.remove("cd-intro");
+    /* Back to the top before anything is measured. The reader may have scrolled while the cover was
+       up, but they were winding the sequence on, not navigating - nothing they passed was visible.
+       The header is sticky, so the knot's target rides along and always lands; the hero logotype is
+       an ordinary block, so a scroll of one screen used to carry it out of view and leave the word
+       with nowhere to go but a fade. The reveal belongs at the top with both halves landing. */
+    if (window.scrollY || window.pageYOffset) {
+      var sb = root.style.scrollBehavior;
+      root.style.scrollBehavior = "auto";   // the sheet sets smooth scrolling; this jump must be instant
+      window.scrollTo(0, 0);
+      root.style.scrollBehavior = sb;
+      trace("page put back to the top so both halves have their targets");
+    }
     var MOVE = 950, last = 0, vh = window.innerHeight || root.clientHeight;
     targets.forEach(function (t) {
       var a = t.el.getBoundingClientRect(), b = t.to.getBoundingClientRect();
-      if (!a.width || !b.width) return;   // target not laid out (e.g. hidden): it just fades with the ground
-      if (b.bottom < 0 || b.top > vh) return;   // scrolled past its target: fade rather than fly off-screen
+      if (!a.width || !b.width) {   // target not laid out (e.g. display:none at this width)
+        trace(t.name + ": fading - its target has no box");
+        return;
+      }
+      if (b.bottom < 0 || b.top > vh) {   // should not happen now the page is back at the top
+        trace(t.name + ": fading - its target is off-screen at " + Math.round(b.top));
+        return;
+      }
+      trace(t.name + ": flying to its target at " + Math.round(b.left) + "," + Math.round(b.top));
       var dx = b.left - a.left, dy = b.top - a.top, sx = b.width / a.width, sy = b.height / a.height;
       track(t.el.animate(
         [{ transform: "none" }, { transform: "translate(" + dx + "px," + dy + "px) scale(" + sx + "," + sy + ")" }],
