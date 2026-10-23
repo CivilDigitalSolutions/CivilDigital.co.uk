@@ -171,20 +171,20 @@
   var done = false;
   var timers = [];
 
-  /* Scrolling means "get on with it", not "stop": wind the sequence on faster. The rate follows how
-     far the page has been scrolled, not how many events arrived — one flick of a wheel or trackpad
-     fires a scroll and a wheel and often dozens of each, so counting events pinned the rate at its
-     cap instantly and the sequence blinked past, which reads as a cancel rather than a wind-on.
+  /* Scrolling means "get on with it", not "stop": wind the sequence on faster. The rate follows the
+     distance of the gesture, not how many events arrived — one flick of a wheel or trackpad fires
+     dozens of them, so counting events pinned the rate at its cap instantly and the sequence
+     blinked past, which reads as a cancel rather than a wind-on.
      The fast end has to stay slow enough to read as a wind-on. Two and a half times was not: it
      compressed the three seconds left into one and whipped the hand-off past, which is exactly the
      cancel this was meant to replace. FIRST is the bump a reader feels the moment they scroll,
      RATE_MAX the ceiling however far they go, FULL the distance that reaches it, CAP_PER_EVENT the
-     most one event may contribute (a restored or smooth scroll can land as one 900px jump, and no
-     single event should spend the whole budget), and MERGE_MAX holds the landing back to a pace the
+     most one event may contribute (no single event should spend the whole budget), and MERGE_MAX
+     holds the landing back to a pace the
      eye can follow whatever the rest ran at. STEP_MS eases between rates so the change of pace
      isn't a jolt - a timer rather than rAF, which never fires in a background tab. */
   var FIRST = 1.35, RATE_MAX = 1.9, FULL = 1200, CAP_PER_EVENT = 240, MERGE_MAX = 1.4, STEP_MS = 40;
-  var scrolled = 0, want = 1, lastY = window.scrollY || 0, step = 0, pending = 0;
+  var scrolled = 0, want = 1, step = 0;
   function apply() {
     anims.forEach(function (a) { a.playbackRate = rate; });
     if (clock) clock.playbackRate = rate;
@@ -206,51 +206,67 @@
     trace("hurry " + Math.round(px) + "px (total " + Math.round(scrolled) + ") -> rate " + want.toFixed(2));
     ramp();
   }
-  /* A wheel tick or a touch drag normally lands as a scroll, and that scroll's distance is what
-     counts; the gesture only stands in for distance when the page itself cannot move (already at
-     the end, or too short to scroll), so the same flick is never counted twice.
+  /* The page itself is held still for as long as the cover is up, and the distance comes from the
+     gesture rather than from the page moving.
 
-     A scroll with no gesture behind it is not the reader hurrying: the browser restoring the
-     position on reload fires one, and on a page that was left scrolled it is a jump of hundreds of
-     pixels, which used to slam the rate to its cap before anyone had touched anything. Those are
-     ignored, so the sequence only ever responds to a real gesture. */
-  var GESTURE_WINDOW = 600, gestureAt = -Infinity;
-  function onScroll() {
-    clearTimeout(pending);
-    var y = window.scrollY || 0, d = Math.abs(y - lastY);
-    lastY = y;
-    if (performance.now() - gestureAt > GESTURE_WINDOW) {
-      trace("ignored a " + Math.round(d) + "px scroll to " + y + ": no gesture behind it (restored or scripted)");
-      return;
-    }
-    hurry(d);
+     Holding it still is what stops the wordmark snapping. The merge measures where the hero
+     logotype is and flies the word there, and that measurement has to stay true for the length of
+     the flight. A touch fling keeps the page moving after the finger has gone - through the
+     hand-off, through the flight - so the logo had slid out from under the word by the time the
+     overlay went and the real one appeared somewhere else: a snap, right at the end. The knot
+     never showed it because its target is in a sticky header that does not move.
+
+     Nothing was gained by letting it scroll anyway. The reader cannot see what goes past behind
+     the cover, and their gesture means "get on with it" here, not "take me down the page". */
+  function block(e) { if (e.cancelable) e.preventDefault(); }
+  function blockKeys(e) { if (SCROLL_KEYS[e.key] && e.cancelable) e.preventDefault(); }
+  function lock(on) {
+    ["wheel", "touchmove"].forEach(function (ev) {
+      if (on) window.addEventListener(ev, block, { capture: true, passive: false });
+      else window.removeEventListener(ev, block, true);
+    });
+    if (on) window.addEventListener("keydown", blockKeys, { capture: true, passive: false });
+    else window.removeEventListener("keydown", blockKeys, true);
   }
-  function onGesture(e) {
-    gestureAt = performance.now();
-    trace("gesture: " + (e && e.type) + (e && e.key ? " (" + e.key + ")" : ""));
-    clearTimeout(pending);
-    pending = setTimeout(function () { trace("no scroll followed it; counting the gesture itself"); hurry(60); }, 120);
+
+  var lastTouch = null;
+  function gesture(px, what) {
+    trace("gesture: " + what);
+    hurry(px);
+  }
+  function onWheel(e) {
+    var px = Math.abs(e.deltaY || e.deltaX || 0);
+    if (e.deltaMode === 1) px *= 16;                                 // lines
+    else if (e.deltaMode === 2) px *= (window.innerHeight || 800);   // pages
+    gesture(px || 60, "wheel " + Math.round(px) + "px");
+  }
+  function onTouchStart() { lastTouch = null; }
+  function onTouchMove(e) {
+    var y = e.touches && e.touches[0] ? e.touches[0].clientY : null, px = 60;
+    if (y !== null && lastTouch !== null) px = Math.abs(y - lastTouch);
+    if (y !== null) lastTouch = y;
+    gesture(px, "touch drag " + Math.round(px) + "px");
   }
   /* Keys that scroll the page hurry it along; any other key is a skip, as a click is. */
   var SCROLL_KEYS = { ArrowDown: 1, ArrowUp: 1, PageDown: 1, PageUp: 1, Home: 1, End: 1, " ": 1, Spacebar: 1 };
-  function onKey(e) { if (SCROLL_KEYS[e.key]) onGesture(e); else skip(e); }
+  function onKey(e) { if (SCROLL_KEYS[e.key]) gesture(80, "key " + e.key); else skip(e); }
   /* The deliberate skip is a click, not a pointerdown. On a touch screen a scroll starts with the
      finger landing, which is a pointerdown, so listening for that skipped the intro on the first
      instant of every swipe - the whole thing was unreachable on a phone. A click is the browser's
      own verdict on tap versus pan: a tap produces one, a scroll gesture never does. */
-  var LISTEN = [["click", skip], ["keydown", onKey], ["wheel", onGesture], ["touchmove", onGesture], ["scroll", onScroll]];
+  var LISTEN = [["click", skip], ["keydown", onKey], ["wheel", onWheel], ["touchstart", onTouchStart], ["touchmove", onTouchMove]];
   function events(on) {
     LISTEN.forEach(function (l) {
       if (on) window.addEventListener(l[0], l[1], { capture: true, passive: true });
       else window.removeEventListener(l[0], l[1], true);
     });
     if (!on) {   // no more rate changes once we're handing over or skipping
-      clearTimeout(pending);
       clearTimeout(step);
       step = 0;
     }
   }
   function cleanup() {
+    lock(false);   // held right through the merge: the flight's target must not move under it
     if (clock) clock.cancel();
     anims.forEach(function (a) { a.cancel(); });
     targets.forEach(function (t) { t.to.style.visibility = ""; });
@@ -319,6 +335,7 @@
   }
 
   events(true);
+  lock(true);
   /* The hand-off is driven by an animation rather than a timer, so hurry() moves it in with the rest.
      The timer behind it is only a backstop if the clock never fires; handOff is idempotent. */
   clock = overlay.animate([{ opacity: 1 }, { opacity: 1 }], { duration: 3050, fill: "none" });
